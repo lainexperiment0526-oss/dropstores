@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PI_API_KEY = Deno.env.get('PI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -22,9 +21,11 @@ const PLAN_DURATIONS: Record<string, number> = {
   product_purchase: 0, // Not a subscription
 };
 
+// Platform fee percentage (5%)
+const PLATFORM_FEE_PERCENT = 0.05;
+
 /**
  * Verify a Pi transaction on-chain using the Horizon API
- * This ensures the payment was actually made to the correct wallet
  */
 async function verifyTransactionOnChain(
   txid: string,
@@ -34,7 +35,6 @@ async function verifyTransactionOnChain(
   try {
     console.log(`Verifying transaction ${txid} on Pi Mainnet blockchain...`);
 
-    // Fetch transaction details from Horizon API
     const txResponse = await fetch(`${PI_HORIZON_URL}/transactions/${txid}`);
     
     if (!txResponse.ok) {
@@ -44,13 +44,11 @@ async function verifyTransactionOnChain(
 
     const txData = await txResponse.json();
 
-    // Check if transaction was successful
     if (!txData.successful) {
       console.error('Transaction was not successful on-chain');
       return { verified: false, error: 'Transaction was not successful' };
     }
 
-    // Fetch operations for this transaction to get payment details
     const opsResponse = await fetch(`${PI_HORIZON_URL}/transactions/${txid}/operations`);
     
     if (!opsResponse.ok) {
@@ -61,8 +59,7 @@ async function verifyTransactionOnChain(
     const opsData = await opsResponse.json();
     const operations = opsData._embedded?.records || [];
 
-    // Find the payment operation (native Pi transfer)
-    const paymentOp = operations.find((op: any) => 
+    const paymentOp = operations.find((op: { type: string; asset_type: string }) => 
       op.type === 'payment' && op.asset_type === 'native'
     );
 
@@ -76,7 +73,6 @@ async function verifyTransactionOnChain(
 
     console.log(`On-chain payment: ${actualAmount} Pi to ${actualRecipient}`);
 
-    // Verify recipient matches expected merchant wallet
     if (actualRecipient !== expectedRecipient) {
       console.error(`Recipient mismatch: expected ${expectedRecipient}, got ${actualRecipient}`);
       return { 
@@ -87,7 +83,6 @@ async function verifyTransactionOnChain(
       };
     }
 
-    // Verify amount matches (with small tolerance for floating point)
     const amountTolerance = 0.0001;
     if (Math.abs(actualAmount - expectedAmount) > amountTolerance) {
       console.error(`Amount mismatch: expected ${expectedAmount}, got ${actualAmount}`);
@@ -124,7 +119,19 @@ serve(async (req) => {
       );
     }
 
+    // Get PI_API_KEY from environment
+    const PI_API_KEY = Deno.env.get('PI_API_KEY');
+    
+    if (!PI_API_KEY) {
+      console.error('PI_API_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: PI_API_KEY not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Completing Pi payment:', paymentId, 'txid:', txid, 'planType:', planType);
+    console.log('Using PI_API_KEY (first 10 chars):', PI_API_KEY.substring(0, 10) + '...');
 
     // Complete the payment with Pi Platform API
     const completeResponse = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/complete`, {
@@ -136,16 +143,24 @@ serve(async (req) => {
       body: JSON.stringify({ txid }),
     });
 
+    const completeResponseText = await completeResponse.text();
+    console.log('Pi API complete response status:', completeResponse.status);
+    console.log('Pi API complete response body:', completeResponseText);
+
     if (!completeResponse.ok) {
-      const errorText = await completeResponse.text();
-      console.error('Pi API completion failed:', completeResponse.status, errorText);
+      console.error('Pi API completion failed:', completeResponse.status, completeResponseText);
       return new Response(
-        JSON.stringify({ error: 'Failed to complete payment', details: errorText }),
+        JSON.stringify({ error: 'Failed to complete payment', details: completeResponseText }),
         { status: completeResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const completionResult = await completeResponse.json();
+    let completionResult;
+    try {
+      completionResult = JSON.parse(completeResponseText);
+    } catch {
+      completionResult = { raw: completeResponseText };
+    }
     console.log('Payment completed on Pi Network:', completionResult);
 
     // Get payment details from Pi Platform API
@@ -169,7 +184,7 @@ serve(async (req) => {
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // For product purchases, verify on-chain and create order
+    // For product purchases, verify on-chain and create order + sales record
     if (planType === 'product_purchase') {
       console.log('Processing product purchase...');
       
@@ -220,9 +235,40 @@ serve(async (req) => {
 
       if (orderError) {
         console.error('Failed to create order:', orderError);
-        // Payment succeeded but order creation failed - log but don't fail the request
       } else {
         console.log('Order created:', order.id);
+
+        // Get store owner info for sales tracking
+        const { data: store } = await supabase
+          .from('stores')
+          .select('owner_id')
+          .eq('id', metadata.store_id)
+          .single();
+
+        if (store) {
+          // Create merchant sales record
+          const platformFee = paymentAmount * PLATFORM_FEE_PERCENT;
+          const netAmount = paymentAmount - platformFee;
+
+          const { error: salesError } = await supabase
+            .from('merchant_sales')
+            .insert({
+              store_id: metadata.store_id,
+              order_id: order.id,
+              owner_id: store.owner_id,
+              amount: paymentAmount,
+              platform_fee: platformFee,
+              net_amount: netAmount,
+              pi_txid: txid,
+              payout_status: 'pending'
+            });
+
+          if (salesError) {
+            console.error('Failed to create sales record:', salesError);
+          } else {
+            console.log('Sales record created for merchant');
+          }
+        }
       }
 
       return new Response(
@@ -239,7 +285,6 @@ serve(async (req) => {
     }
 
     // For subscriptions, continue with existing flow
-    // Find the user by Pi UID
     const { data: piUser, error: piUserError } = await supabase
       .from('pi_users')
       .select('user_id')
@@ -277,7 +322,6 @@ serve(async (req) => {
       .single();
 
     if (existingSub) {
-      // Deactivate old subscription
       await supabase
         .from('subscriptions')
         .update({ status: 'superseded', updated_at: now.toISOString() })

@@ -1,15 +1,15 @@
+import React, { forwardRef } from 'react';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Shield, FileText, Briefcase, AlertTriangle } from 'lucide-react';
-import React from 'react';
 
-export default function TermsPrivacyModal() {
+const TermsPrivacyModal = forwardRef<HTMLButtonElement, object>((props, ref) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="link" className="p-0 h-auto align-baseline text-xs font-medium">Terms, Privacy & Guidelines</Button>
+        <Button ref={ref} variant="link" className="p-0 h-auto align-baseline text-xs font-medium" {...props}>Terms, Privacy & Guidelines</Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh]">
         <DialogHeader>
@@ -222,4 +222,8 @@ export default function TermsPrivacyModal() {
       </DialogContent>
     </Dialog>
   );
-}
+});
+
+TermsPrivacyModal.displayName = 'TermsPrivacyModal';
+
+export default TermsPrivacyModal;
