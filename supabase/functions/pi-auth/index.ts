@@ -7,6 +7,15 @@ const corsHeaders = {
 };
 
 const PI_API_KEY = Deno.env.get('PI_API_KEY');
+const VALIDATION_KEY = Deno.env.get('VALIDATION_KEY') || Deno.env.get('DOMAIN_VALIDATION_KEY');
+
+if (!PI_API_KEY) {
+  console.error('PI_API_KEY not configured in environment');
+}
+
+if (!VALIDATION_KEY) {
+  console.error('VALIDATION_KEY not configured in environment');
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -26,10 +35,15 @@ serve(async (req: Request) => {
 
     console.log('Pi Auth: Verifying user:', piUser.username);
 
-    // Verify the access token with Pi Platform API
-    const verifyResponse = await fetch('https://api.minepi.com/v2/me', {
+    // Verify the access token with Pi Platform API (mainnet)
+    const apiUrl = 'https://api.minepi.com/v2/me';
+    console.log('Pi Auth: Verifying with Pi API:', apiUrl);
+    
+    const verifyResponse = await fetch(apiUrl, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
       },
     });
 

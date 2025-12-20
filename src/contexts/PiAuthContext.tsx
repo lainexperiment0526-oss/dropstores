@@ -36,9 +36,22 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize Pi SDK on mount
   useEffect(() => {
-    // Initialize in mainnet mode (sandbox: false for production)
-    initPiSdk(false);
-    setPiAvailable(isPiAvailable());
+    console.log('PiAuth: Initializing Pi SDK...');
+    const isMainnet = import.meta.env.VITE_PI_MAINNET_MODE === 'true';
+    const isSandbox = !isMainnet; // false for mainnet
+    
+    console.log('PiAuth: Configuration:', {
+      mainnetMode: isMainnet,
+      sandbox: isSandbox,
+      network: import.meta.env.VITE_PI_NETWORK,
+      apiUrl: import.meta.env.VITE_API_URL
+    });
+    
+    initPiSdk(isSandbox);
+    const available = isPiAvailable();
+    setPiAvailable(available);
+    
+    console.log('PiAuth: Pi SDK availability:', available);
   }, []);
 
   // Handle incomplete payments found during authentication

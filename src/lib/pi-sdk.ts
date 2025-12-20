@@ -70,10 +70,18 @@ declare global {
 // Initialize Pi SDK
 export const initPiSdk = (sandbox: boolean = false) => {
   if (typeof window !== 'undefined' && window.Pi) {
-    window.Pi.init({ version: '2.0', sandbox });
-    console.log('Pi SDK initialized', sandbox ? '(sandbox mode)' : '(mainnet)');
+    const config = {
+      version: '2.0',
+      sandbox: sandbox
+    };
+    window.Pi.init(config);
+    console.log('Pi SDK initialized:', {
+      mode: sandbox ? 'sandbox' : 'mainnet',
+      piNetwork: import.meta.env.VITE_PI_NETWORK || 'mainnet',
+      hasApiKey: !!import.meta.env.VITE_PI_API_KEY
+    });
   } else {
-    console.warn('Pi SDK not available');
+    console.warn('Pi SDK not available - ensure app is opened in Pi Browser');
   }
 };
 
