@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Store, ArrowLeft, Loader2, Sparkles, Check } from 'lucide-react';
+import { Store, ArrowLeft, Loader2, Sparkles, Check, Lock, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StoreTypeSelector, StoreTypeInstructions } from '@/components/store/StoreTypeSelector';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const templates = [
   {
@@ -39,11 +40,13 @@ const templates = [
 ];
 
 export default function CreateStore() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isActive, isLoading: subscriptionLoading, planLimits, subscription } = useSubscription();
   
   const [loading, setLoading] = useState(false);
+  const [storeCount, setStoreCount] = useState(0);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -57,6 +60,28 @@ export default function CreateStore() {
 
   const [logoPreview, setLogoPreview] = useState<string | undefined>(undefined);
   const [bannerPreview, setBannerPreview] = useState<string | undefined>(undefined);
+
+  // Check authentication and subscription
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  // Fetch current store count
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('stores')
+        .select('id', { count: 'exact' })
+        .eq('owner_id', user.id)
+        .then(({ count }) => setStoreCount(count || 0));
+    }
+  }, [user]);
+
+  // Check if user can create stores
+  const canCreate = isActive && planLimits && storeCount < planLimits.maxStores;
+  const isLoadingChecks = authLoading || subscriptionLoading;
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,6 +176,105 @@ export default function CreateStore() {
       setLoading(false);
     }
   };
+
+  // Show loading state
+  if (isLoadingChecks) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show subscription required message if no active plan
+  if (!isActive) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
+              <Link to="/dashboard" className="flex items-center gap-2">
+                <div className="w-10 h-10 gradient-hero rounded-xl flex items-center justify-center">
+                  <Store className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-display font-bold text-foreground">Drop Store</span>
+              </Link>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-16 max-w-md">
+          <Card className="text-center">
+            <CardContent className="pt-8 pb-8">
+              <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
+                <Lock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+                Subscription Required
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                You need an active subscription plan to create stores. Choose a plan to unlock store creation and all features.
+              </p>
+              <Button className="gradient-hero shadow-glow hover:opacity-90" asChild>
+                <Link to="/subscription">
+                  <Crown className="w-4 h-4 mr-2" />
+                  View Plans
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  // Show store limit reached message
+  if (!canCreate && planLimits) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
+              <Link to="/dashboard" className="flex items-center gap-2">
+                <div className="w-10 h-10 gradient-hero rounded-xl flex items-center justify-center">
+                  <Store className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-display font-bold text-foreground">Drop Store</span>
+              </Link>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-16 max-w-md">
+          <Card className="text-center">
+            <CardContent className="pt-8 pb-8">
+              <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
+                <Lock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+                Store Limit Reached
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                You've reached the maximum of {planLimits.maxStores} store(s) for your {subscription?.plan_type} plan. Upgrade to create more stores.
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Button variant="outline" asChild>
+                  <Link to="/dashboard">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </Link>
+                </Button>
+                <Button className="gradient-hero shadow-glow hover:opacity-90" asChild>
+                  <Link to="/subscription">
+                    <Crown className="w-4 h-4 mr-2" />
+                    Upgrade
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

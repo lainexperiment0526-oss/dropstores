@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import WelcomeModal from './WelcomeModal';
 import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/AnalyticsCards';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
   Store, 
   Plus, 
@@ -19,7 +20,9 @@ import {
   Crown,
   Globe,
   Download,
-  Building
+  Building,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 
 interface StoreData {
@@ -54,6 +57,7 @@ function Dashboard() {
   const [welcomeOpen, setWelcomeOpen] = useState(true);
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { isActive, isLoading: subscriptionLoading, subscription, daysRemaining } = useSubscription();
   const [stores, setStores] = useState<StoreData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [products, setProducts] = useState<ProductData[]>([]);
@@ -152,7 +156,7 @@ function Dashboard() {
     completedOrders,
   };
 
-  if (authLoading || !user) {
+  if (authLoading || subscriptionLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -176,12 +180,21 @@ function Dashboard() {
               </Link>
 
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/subscription">
-                    <Crown className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Upgrade</span>
-                  </Link>
-                </Button>
+                {isActive ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/subscription">
+                      <Crown className="w-4 h-4 mr-2 text-yellow-500" />
+                      <span className="hidden sm:inline">{subscription?.plan_type} ({daysRemaining}d)</span>
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="default" size="sm" className="gradient-hero" asChild>
+                    <Link to="/subscription">
+                      <Lock className="w-4 h-4 mr-2" />
+                      <span>Get Started</span>
+                    </Link>
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" onClick={handleSignOut}>
                   <LogOut className="w-5 h-5" />
                 </Button>
@@ -192,6 +205,31 @@ function Dashboard() {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
+          {/* Subscription Banner for non-subscribers */}
+          {!isActive && (
+            <Card className="mb-8 border-primary/50 bg-primary/5">
+              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Lock className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Subscribe to Unlock Features</h3>
+                    <p className="text-sm text-muted-foreground">
+                      You need an active subscription to create stores and access all features.
+                    </p>
+                  </div>
+                </div>
+                <Button className="gradient-hero shadow-glow hover:opacity-90 w-full sm:w-auto" asChild>
+                  <Link to="/subscription">
+                    <Crown className="w-4 h-4 mr-2" />
+                    View Plans
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
@@ -216,12 +254,19 @@ function Dashboard() {
           {/* Stores Section */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">Your Stores</h2>
-            <Button className="gradient-hero shadow-glow hover:opacity-90 w-full sm:w-auto" asChild>
-              <Link to="/create-store">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Store
-              </Link>
-            </Button>
+            {isActive ? (
+              <Button className="gradient-hero shadow-glow hover:opacity-90 w-full sm:w-auto" asChild>
+                <Link to="/create-store">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Store
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" className="w-full sm:w-auto" disabled>
+                <Lock className="w-4 h-4 mr-2" />
+                Create Store (Locked)
+              </Button>
+            )}
           </div>
 
           {loading ? (
@@ -232,20 +277,35 @@ function Dashboard() {
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
-                  <Sparkles className="w-8 h-8 text-primary" />
+                  {isActive ? (
+                    <Sparkles className="w-8 h-8 text-primary" />
+                  ) : (
+                    <Lock className="w-8 h-8 text-muted-foreground" />
+                  )}
                 </div>
                 <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-                  Create Your First Store
+                  {isActive ? 'Create Your First Store' : 'Subscription Required'}
                 </h3>
                 <p className="text-muted-foreground text-center max-w-md mb-6">
-                  Get started by creating your first online store. Choose a template, add your products, and start selling!
+                  {isActive 
+                    ? 'Get started by creating your first online store. Choose a template, add your products, and start selling!'
+                    : 'Subscribe to a plan to create stores and unlock all features.'}
                 </p>
-                <Button className="gradient-hero shadow-glow hover:opacity-90" asChild>
-                  <Link to="/create-store">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Store
-                  </Link>
-                </Button>
+                {isActive ? (
+                  <Button className="gradient-hero shadow-glow hover:opacity-90" asChild>
+                    <Link to="/create-store">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Store
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button className="gradient-hero shadow-glow hover:opacity-90" asChild>
+                    <Link to="/subscription">
+                      <Crown className="w-4 h-4 mr-2" />
+                      View Plans
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
