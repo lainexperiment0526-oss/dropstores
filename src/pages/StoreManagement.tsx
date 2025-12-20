@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StoreTypeInstructions } from '@/components/store/StoreTypeSelector';
 import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/AnalyticsCards';
 import { ImageUpload } from '@/components/store/ImageUpload';
+import { MerchantPayouts } from '@/components/store/MerchantPayouts';
 import {
   Store,
   Package,
@@ -33,6 +34,7 @@ import {
   Download,
   Upload,
   Image as ImageIcon,
+  Banknote,
 } from 'lucide-react';
 import {
   Dialog,
@@ -501,6 +503,10 @@ export default function StoreManagement() {
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Orders</span>
             </TabsTrigger>
+            <TabsTrigger value="payouts" className="flex items-center gap-2">
+              <Banknote className="w-4 h-4" />
+              <span className="hidden sm:inline">Payouts</span>
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
@@ -863,6 +869,14 @@ export default function StoreManagement() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* Payouts Tab */}
+          <TabsContent value="payouts">
+            <h2 className="text-xl font-display font-bold text-foreground mb-6">
+              Payouts & Withdrawals
+            </h2>
+            <MerchantPayouts storeId={store.id} payoutWallet={store.payout_wallet} />
           </TabsContent>
 
           {/* Analytics Tab */}

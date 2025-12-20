@@ -233,6 +233,123 @@ export type Database = {
           },
         ]
       }
+      merchant_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          owner_id: string
+          pi_txid: string | null
+          processed_at: string | null
+          requested_at: string
+          status: string
+          store_id: string
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          pi_txid?: string | null
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          pi_txid?: string | null
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_payouts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_sales: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          net_amount: number
+          order_id: string
+          owner_id: string
+          payout_id: string | null
+          payout_status: string
+          pi_txid: string | null
+          platform_fee: number
+          store_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          net_amount?: number
+          order_id: string
+          owner_id: string
+          payout_id?: string | null
+          payout_status?: string
+          pi_txid?: string | null
+          platform_fee?: number
+          store_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          net_amount?: number
+          order_id?: string
+          owner_id?: string
+          payout_id?: string | null
+          payout_status?: string
+          pi_txid?: string | null
+          platform_fee?: number
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_sales_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_sales_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_sales_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
