@@ -38,11 +38,6 @@ CREATE POLICY "Store owners can view reports about their store"
         auth.uid() IN (
             SELECT owner_id FROM public.stores WHERE id = store_id
         )
-        OR
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role = 'admin'
-        )
     );
 
 -- Policy: Admins can update report status
@@ -50,15 +45,13 @@ CREATE POLICY "Admins can update reports"
     ON public.store_reports
     FOR UPDATE
     USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role = 'admin'
+        auth.uid() IN (
+            SELECT owner_id FROM public.stores WHERE id = store_id
         )
     )
     WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role = 'admin'
+        auth.uid() IN (
+            SELECT owner_id FROM public.stores WHERE id = store_id
         )
     );
 

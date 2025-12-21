@@ -37,11 +37,10 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   // Initialize Pi SDK on mount
   useEffect(() => {
     console.log('PiAuth: Initializing Pi SDK...');
-    const isMainnet = import.meta.env.VITE_PI_MAINNET_MODE === 'true';
-    const isSandbox = !isMainnet; // false for mainnet
+    // Use sandbox mode if explicitly enabled, otherwise use mainnet
+    const isSandbox = import.meta.env.VITE_PI_SANDBOX_MODE === 'true';
     
     console.log('PiAuth: Configuration:', {
-      mainnetMode: isMainnet,
       sandbox: isSandbox,
       network: import.meta.env.VITE_PI_NETWORK,
       apiUrl: import.meta.env.VITE_API_URL

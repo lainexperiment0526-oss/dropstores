@@ -144,15 +144,17 @@ export function PiNetwork() {
 
           {/* CTA */}
           <div className="mt-8 text-center">
-            <Button 
-              size="lg" 
-              className="bg-sky-500 hover:bg-sky-600 text-white text-lg px-8 py-6 h-auto"
-              asChild
-            >
-              <Link to="/auth?mode=signup">
-                Start Accepting Pi Payments Today
-              </Link>
-            </Button>
+            <div className="flex justify-center">
+              <Button 
+                size="lg" 
+                className="bg-sky-500 hover:bg-sky-600 text-white text-lg px-8 py-6 h-auto"
+                asChild
+              >
+                <Link to="/auth?mode=signup">
+                  Start Accepting Pi Payments Today
+                </Link>
+              </Button>
+            </div>
             <p className="text-sm text-muted-foreground mt-4">
               No setup fees • No monthly charges • Start earning Pi in minutes
             </p>

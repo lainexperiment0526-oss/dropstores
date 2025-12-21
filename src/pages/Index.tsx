@@ -6,8 +6,11 @@ import { Features } from '@/components/landing/Features';
 import { DroplinkIntegration } from '@/components/landing/DroplinkIntegration';
 import { Templates } from '@/components/landing/Templates';
 import { Testimonials } from '@/components/landing/Testimonials';
+import { PlansShowcase } from '@/components/landing/PlansShowcase';
+import { FAQ } from '@/components/landing/FAQ';
 import { CTA } from '@/components/landing/CTA';
 import { Footer } from '@/components/landing/Footer';
+import { ScrollToTopButton } from '@/components/ui/scroll-to-top';
 
 const Index = () => {
   return (
@@ -20,10 +23,13 @@ const Index = () => {
         <Features />
         <DroplinkIntegration />
         <Templates />
+        <PlansShowcase />
         <Testimonials />
+        <FAQ />
         <CTA />
       </main>
       <Footer />
+      <ScrollToTopButton />
     </div>
   );
 };
