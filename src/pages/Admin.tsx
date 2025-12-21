@@ -63,22 +63,24 @@ const Admin = () => {
     setDataLoading(true);
     try {
       // Fetch total users count
-      const { count: usersCount } = await supabase
+      const { data: allUsersData } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('id');
+      const usersCount = allUsersData?.length || 0;
 
-      // Fetch active stores count
-      const { data: activeStoresData } = await supabase
+      // Fetch active stores count - using any type to bypass TypeScript issues
+      const storesResponse = await (supabase as any)
         .from('stores')
         .select('id')
         .eq('is_active', true);
-      const storesCount = activeStoresData?.length || 0;
+      const storesCount = storesResponse?.data?.length || 0;
 
       // Fetch pending payouts count
-      const { count: payoutsCount } = await supabase
+      const { data: pendingPayoutsData } = await supabase
         .from('merchant_payouts')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('status', 'pending');
+      const payoutsCount = pendingPayoutsData?.length || 0;
 
       // Fetch total revenue
       const { data: ordersData } = await supabase
@@ -89,7 +91,7 @@ const Admin = () => {
       const totalRevenue = ordersData?.reduce((sum: number, order: any) => sum + (parseFloat(order.total) || 0), 0) || 0;
 
       // Fetch recent users
-      const { data: usersData } = await supabase
+      const { data: recentUsersData } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
@@ -116,13 +118,13 @@ const Admin = () => {
         .limit(10);
 
       setStats({
-        totalUsers: usersCount || 0,
-        activeStores: storesCount || 0,
-        pendingPayouts: payoutsCount || 0,
+        totalUsers: usersCount,
+        activeStores: storesCount,
+        pendingPayouts: payoutsCount,
         totalRevenue: Math.round(totalRevenue),
       });
 
-      setUsers(usersData || []);
+      setUsers(recentUsersData || []);
       setStores(storesData || []);
       setPayouts(payoutsData || []);
     } catch (error) {
