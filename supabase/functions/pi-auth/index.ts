@@ -6,23 +6,40 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PI_API_KEY = Deno.env.get('PI_API_KEY');
-const VALIDATION_KEY = Deno.env.get('VALIDATION_KEY') || Deno.env.get('DOMAIN_VALIDATION_KEY');
-
-if (!PI_API_KEY) {
-  console.error('PI_API_KEY not configured in environment');
-}
-
-if (!VALIDATION_KEY) {
-  console.error('VALIDATION_KEY not configured in environment');
-}
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const PI_API_KEY = Deno.env.get('PI_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('Pi Auth: Starting authentication...');
+    console.log('Pi Auth: Environment check:', {
+      hasApiKey: !!PI_API_KEY,
+      apiKeyPrefix: PI_API_KEY ? PI_API_KEY.substring(0, 4) + '...' : 'none',
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+    });
+
+    if (!PI_API_KEY) {
+      console.error('Pi Auth: PI_API_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: PI_API_KEY missing' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Pi Auth: Supabase credentials not configured');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase credentials missing' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { accessToken, piUser } = await req.json();
 
     if (!accessToken || !piUser) {
@@ -36,8 +53,9 @@ serve(async (req: Request) => {
     console.log('Pi Auth: Verifying user:', piUser.username);
 
     // Verify the access token with Pi Platform API (mainnet)
+    // The accessToken is the user's token, not the API key
     const apiUrl = 'https://api.minepi.com/v2/me';
-    console.log('Pi Auth: Verifying with Pi API:', apiUrl);
+    console.log('Pi Auth: Calling Pi API to verify user token...');
     
     const verifyResponse = await fetch(apiUrl, {
       method: 'GET',
@@ -47,39 +65,48 @@ serve(async (req: Request) => {
       },
     });
 
+    console.log('Pi Auth: Pi API response status:', verifyResponse.status);
+
     if (!verifyResponse.ok) {
       const errorText = await verifyResponse.text();
-      console.error('Pi API verification failed:', verifyResponse.status, errorText);
+      console.error('Pi Auth: Pi API verification failed:', verifyResponse.status, errorText);
       return new Response(
-        JSON.stringify({ error: 'Failed to verify Pi authentication', details: errorText }),
+        JSON.stringify({ 
+          error: 'Failed to verify Pi authentication', 
+          details: errorText,
+          status: verifyResponse.status 
+        }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const verifiedUser = await verifyResponse.json();
-    console.log('Pi Auth: User verified:', verifiedUser.username, 'UID:', verifiedUser.uid);
+    console.log('Pi Auth: User verified successfully:', verifiedUser.username, 'UID:', verifiedUser.uid);
 
     // Create Supabase client with service role
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Generate consistent credentials for this Pi user
     const piEmail = `${verifiedUser.uid}@pi.network`;
-    const piPassword = `pi_${verifiedUser.uid}_${PI_API_KEY?.substring(0, 8) || 'secure'}`;
+    const piPassword = `pi_secure_${verifiedUser.uid}_${PI_API_KEY.substring(0, 8)}`;
 
     // Check if this Pi user already exists
-    const { data: existingPiUser } = await supabase
+    const { data: existingPiUser, error: piUserError } = await supabase
       .from('pi_users')
       .select('*')
       .eq('pi_uid', verifiedUser.uid)
       .single();
+
+    if (piUserError && piUserError.code !== 'PGRST116') {
+      console.error('Pi Auth: Error checking existing user:', piUserError);
+    }
 
     let userId = existingPiUser?.user_id;
 
     if (!existingPiUser) {
       console.log('Pi Auth: Creating new user for:', verifiedUser.username);
       
-      // Create a new user in Supabase auth with password
+      // Create a new user in Supabase auth
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: piEmail,
         password: piPassword,
@@ -103,15 +130,15 @@ serve(async (req: Request) => {
       console.log('Pi Auth: New user created with ID:', userId);
 
       // Create Pi user record
-      const { error: piUserError } = await supabase.from('pi_users').insert({
+      const { error: createPiUserError } = await supabase.from('pi_users').insert({
         user_id: userId,
         pi_uid: verifiedUser.uid,
         pi_username: verifiedUser.username,
         wallet_address: verifiedUser.wallet_address || null,
       });
 
-      if (piUserError) {
-        console.error('Pi Auth: Create pi_users record error:', piUserError);
+      if (createPiUserError) {
+        console.error('Pi Auth: Create pi_users record error:', createPiUserError);
       }
     } else {
       console.log('Pi Auth: Existing user found:', existingPiUser.pi_username);
@@ -125,22 +152,22 @@ serve(async (req: Request) => {
             updated_at: new Date().toISOString()
           })
           .eq('pi_uid', verifiedUser.uid);
+        console.log('Pi Auth: Updated wallet address');
       }
     }
 
     // Sign in the user to get a session
-    console.log('Pi Auth: Signing in user...');
+    console.log('Pi Auth: Signing in user to get session...');
     
-    // Use signInWithPassword with the admin client to get tokens
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: piEmail,
       password: piPassword,
     });
 
     if (signInError) {
-      console.error('Pi Auth: Sign in error:', signInError);
+      console.log('Pi Auth: Initial sign-in failed, updating password...');
       
-      // If sign-in fails, try to update the password and retry
+      // Update the password and retry
       const { error: updateError } = await supabase.auth.admin.updateUserById(userId!, {
         password: piPassword,
       });
@@ -148,7 +175,7 @@ serve(async (req: Request) => {
       if (updateError) {
         console.error('Pi Auth: Password update error:', updateError);
         return new Response(
-          JSON.stringify({ error: 'Failed to create session', details: signInError.message }),
+          JSON.stringify({ error: 'Failed to create session', details: updateError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -167,7 +194,7 @@ serve(async (req: Request) => {
         );
       }
       
-      console.log('Pi Auth: Session created successfully for:', verifiedUser.username);
+      console.log('Pi Auth: Session created successfully after retry for:', verifiedUser.username);
       
       return new Response(
         JSON.stringify({

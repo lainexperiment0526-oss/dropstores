@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PLAN_LIMITS, PlanType } from '@/lib/pi-sdk';
+import { PLAN_LIMITS, PlanLimits } from '@/lib/pi-sdk';
 
 interface Subscription {
   id: string;
@@ -17,7 +17,7 @@ interface SubscriptionState {
   isExpired: boolean;
   isLoading: boolean;
   daysRemaining: number;
-  planLimits: typeof PLAN_LIMITS.basic | null;
+  planLimits: PlanLimits | null;
 }
 
 export function useSubscription() {
@@ -58,7 +58,7 @@ export function useSubscription() {
         const isActive = data.status === 'active' && expiresAt > now;
         const isExpired = expiresAt <= now;
         const daysRemaining = isActive ? Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
-        const planLimits = PLAN_LIMITS[data.plan_type as PlanType] || null;
+        const planLimits = PLAN_LIMITS[data.plan_type] || null;
 
         // Auto-expire if needed
         if (data.status === 'active' && isExpired) {
@@ -115,7 +115,7 @@ export function useSubscription() {
     return currentProductCount < state.planLimits.maxProductsPerStore;
   }, [state.isActive, state.planLimits]);
 
-  const hasFeature = useCallback((feature: keyof typeof PLAN_LIMITS.basic): boolean => {
+  const hasFeature = useCallback((feature: keyof PlanLimits): boolean => {
     if (!state.isActive || !state.planLimits) return false;
     const value = state.planLimits[feature];
     if (typeof value === 'boolean') return value;
