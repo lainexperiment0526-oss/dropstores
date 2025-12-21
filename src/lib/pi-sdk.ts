@@ -302,17 +302,28 @@ export const SUBSCRIPTION_PLANS = {
   }
 };
 
-// Plan limits
-export const PLAN_LIMITS = {
+// Plan limits - consistent type structure
+export interface PlanLimits {
+  maxStores: number;
+  maxProductsPerStore: number;
+  hasCustomDomain: boolean;
+  hasAdvancedAnalytics: boolean;
+  hasBranding: boolean;
+  hasApiAccess: boolean;
+  hasPrioritySupport: boolean;
+  allowedStoreTypes: string[];
+}
+
+export const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: {
     maxStores: 1,
     maxProductsPerStore: 1,
     hasCustomDomain: false,
-    hasAnalytics: false,
+    hasAdvancedAnalytics: false,
+    hasBranding: true,
+    hasApiAccess: false,
     hasPrioritySupport: false,
-    hasAPI: false,
     allowedStoreTypes: ['physical'],
-    piAdNetworkEnabled: true,
   },
   basic: {
     maxStores: 1,
@@ -322,33 +333,37 @@ export const PLAN_LIMITS = {
     hasBranding: true,
     hasApiAccess: false,
     hasPrioritySupport: false,
+    allowedStoreTypes: ['physical', 'online', 'digital'],
   },
   grow: {
     maxStores: 3,
-    maxProductsPerStore: Infinity,
+    maxProductsPerStore: 999999,
     hasCustomDomain: false,
     hasAdvancedAnalytics: true,
     hasBranding: false,
     hasApiAccess: false,
     hasPrioritySupport: true,
+    allowedStoreTypes: ['physical', 'online', 'digital'],
   },
   advance: {
     maxStores: 5,
-    maxProductsPerStore: Infinity,
+    maxProductsPerStore: 999999,
     hasCustomDomain: true,
     hasAdvancedAnalytics: true,
     hasBranding: false,
     hasApiAccess: true,
     hasPrioritySupport: true,
+    allowedStoreTypes: ['physical', 'online', 'digital'],
   },
   plus: {
-    maxStores: Infinity,
-    maxProductsPerStore: Infinity,
+    maxStores: 999999,
+    maxProductsPerStore: 999999,
     hasCustomDomain: true,
     hasAdvancedAnalytics: true,
     hasBranding: false,
     hasApiAccess: true,
     hasPrioritySupport: true,
+    allowedStoreTypes: ['physical', 'online', 'digital'],
   }
 };
 
