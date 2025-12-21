@@ -88,6 +88,26 @@ serve(async (req) => {
 
     console.log('Creating payout to merchant:', merchantWallet, 'Amount:', payoutAmount);
 
+    // Fetch merchant's Pi UID from pi_users table
+    const { data: merchantPiUser, error: piUserError } = await supabase
+      .from('pi_users')
+      .select('pi_uid, pi_username')
+      .eq('user_id', order.stores.owner_id)
+      .single();
+
+    if (piUserError || !merchantPiUser) {
+      console.error('Merchant not linked to Pi account:', piUserError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Merchant not linked to Pi account',
+          details: 'The store owner must authenticate with Pi Network first'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Found merchant Pi UID:', merchantPiUser.pi_uid, 'Username:', merchantPiUser.pi_username);
+
     // Create app-to-user payment (payout to merchant)
     // Note: This requires the app to have Pi balance
     const payoutResponse = await fetch('https://api.minepi.com/v2/payments', {
@@ -103,9 +123,10 @@ serve(async (req) => {
           metadata: {
             order_id: orderId,
             store_id: order.store_id,
-            type: 'merchant_payout'
+            type: 'merchant_payout',
+            merchant_pi_username: merchantPiUser.pi_username
           },
-          uid: order.stores.owner_id, // This would need the merchant's Pi UID
+          uid: merchantPiUser.pi_uid, // Use merchant's Pi UID
         }
       }),
     });
