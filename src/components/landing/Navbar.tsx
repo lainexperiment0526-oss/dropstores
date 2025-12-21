@@ -20,12 +20,12 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
               Features
-            </Link>
-            <Link to="/templates" className="text-muted-foreground hover:text-foreground transition-colors">
+            </a>
+            <a href="#templates" className="text-muted-foreground hover:text-foreground transition-colors">
               Templates
-            </Link>
+            </a>
             <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
               Pricing
             </Link>
@@ -73,7 +73,7 @@ export function Navbar() {
                 Templates
               </a>
               <a
-                href="#pricing"
+                href="/templates"
                 className="text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
                 onClick={() => setIsOpen(false)}
               >
