@@ -155,7 +155,7 @@ DropStore is a modern e-commerce platform built specifically for Pi Network inte
 ## Platform Limits (by Plan)
 
 ### Free:
-- 10 products
+- 1 product
 - Basic features only
 
 ### Basic (20π/month):
@@ -366,8 +366,12 @@ export default function Support() {
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-white">
+                    <img 
+                      src="https://i.ibb.co/zT6NRDsy/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1.png" 
+                      alt="AI Support" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div>
                     <CardTitle>DropStore Support</CardTitle>
@@ -396,8 +400,12 @@ export default function Support() {
                     className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-5 h-5 text-white" />
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white">
+                        <img 
+                          src="https://i.ibb.co/zT6NRDsy/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1.png" 
+                          alt="AI Support" 
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     )}
                     

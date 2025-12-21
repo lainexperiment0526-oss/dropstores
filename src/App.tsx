@@ -18,8 +18,10 @@ import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import AdminPayouts from "./pages/AdminPayouts";
+import AdminMrwain from "./pages/AdminMrwain";
 import ExternalRedirect from "./pages/ExternalRedirect";
 import Support from "./pages/Support";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -48,14 +50,15 @@ const App = () => {
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/support" element={<Support />} />
+                <Route path="/help" element={<Help />} />
                 <Route path="/admin-payouts" element={<AdminPayouts />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin-mrwain" element={<AdminMrwain />} />
                 {/* Privacy Policy and Terms of Service external redirects */}
                 <Route path="/privacy" element={<ExternalRedirect to="https://droplink.space/privacy" />} />
                 <Route path="/terms" element={<ExternalRedirect to="https://droplink.space/terms" />} />
                 <Route path="/about" element={<ExternalRedirect to="https://www.droplink.space/about" />} />
                 <Route path="/careers" element={<ExternalRedirect to="https://www.droplink.space/careers" />} />
-                <Route path="/blog" element={<ExternalRedirect to="https://www.droplink.space/blog" />} />
                 <Route path="/help" element={<ExternalRedirect to="https://www.droplink.space/help" />} />
                 <Route path="/community" element={<ExternalRedirect to="https://www.droplink.space/community-guidelines" />} />
                 <Route path="/developers" element={<ExternalRedirect to="https://www.droplink.space/developers" />} />

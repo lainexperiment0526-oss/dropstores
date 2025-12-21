@@ -44,6 +44,9 @@ export function Navbar() {
             <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
               Pricing
             </Link>
+            <Link to="/help" className="text-muted-foreground hover:text-foreground transition-colors">
+              Help
+            </Link>
             <Link to="/support" className="text-muted-foreground hover:text-foreground transition-colors">
               Support
             </Link>
@@ -108,6 +111,13 @@ export function Navbar() {
               >
                 Pricing
               </a>
+              <Link
+                to="/help"
+                className="text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
+                onClick={() => setIsOpen(false)}
+              >
+                Help
+              </Link>
               <Link
                 to="/support"
                 className="text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
