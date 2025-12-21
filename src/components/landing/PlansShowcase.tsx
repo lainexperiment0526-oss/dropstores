@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Check, Sparkles, Zap, Crown, Rocket } from 'lucide-react';
+import { Check, Sparkles, Zap, Crown, Rocket, Star } from 'lucide-react';
 
 interface PlanFeature {
   text: string;
@@ -21,8 +21,30 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    name: 'Basic',
+    name: 'Free',
     icon: Sparkles,
+    price: '0',
+    period: 'Forever',
+    description: 'Get started with basic features',
+    features: [
+      { text: '1 Store (Physical only)', included: true },
+      { text: '1 Product listing', included: true },
+      { text: 'Pi payment integration', included: true },
+      { text: 'Pi Ad Network enabled', included: true },
+      { text: 'Basic store customization', included: true },
+      { text: 'Community support', included: true },
+      { text: 'Multiple products', included: false },
+      { text: 'Online/Digital stores', included: false },
+      { text: 'Premium templates', included: false },
+      { text: 'Priority support', included: false },
+      { text: 'Advanced analytics', included: false },
+    ],
+    buttonText: 'Start Free',
+    buttonVariant: 'outline',
+  },
+  {
+    name: 'Basic',
+    icon: Zap,
     price: '20',
     period: 'per month in Pi',
     description: 'Perfect for starting your Pi business',
@@ -44,7 +66,7 @@ const plans: Plan[] = [
   },
   {
     name: 'Grow',
-    icon: Zap,
+    icon: Rocket,
     price: '49',
     period: 'per month in Pi',
     description: 'For growing businesses',
@@ -66,7 +88,7 @@ const plans: Plan[] = [
   },
   {
     name: 'Advance',
-    icon: Rocket,
+    icon: Crown,
     price: '60',
     period: 'per month in Pi',
     description: 'Advanced features for serious sellers',
@@ -86,7 +108,7 @@ const plans: Plan[] = [
   },
   {
     name: 'Plus',
-    icon: Crown,
+    icon: Star,
     price: '100',
     period: 'per month in Pi',
     description: 'Enterprise-level features',
@@ -126,7 +148,7 @@ export function PlansShowcase() {
         </div>
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
             <div
               key={index}

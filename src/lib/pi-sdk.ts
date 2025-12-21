@@ -202,6 +202,23 @@ export const STORE_TYPES = {
 
 // Subscription Plans - Updated pricing
 export const SUBSCRIPTION_PLANS = {
+  free: {
+    id: 'free',
+    name: 'Free',
+    amount: 0,
+    period: 'forever',
+    description: 'Get started with basic features',
+    features: [
+      '1 Store (Physical only)',
+      '1 Product listing',
+      'Pi payment integration',
+      'Pi Ad Network enabled',
+      'Basic store customization',
+      'Community support',
+    ],
+    storeTypes: ['physical'],
+    popular: false
+  },
   basic: {
     id: 'basic',
     name: 'Basic',
@@ -287,6 +304,16 @@ export const SUBSCRIPTION_PLANS = {
 
 // Plan limits
 export const PLAN_LIMITS = {
+  free: {
+    maxStores: 1,
+    maxProductsPerStore: 1,
+    hasCustomDomain: false,
+    hasAnalytics: false,
+    hasPrioritySupport: false,
+    hasAPI: false,
+    allowedStoreTypes: ['physical'],
+    piAdNetworkEnabled: true,
+  },
   basic: {
     maxStores: 1,
     maxProductsPerStore: 25,

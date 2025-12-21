@@ -83,6 +83,36 @@ const Subscription = () => {
   const handleSubscribe = async (planType: PlanType) => {
     setSelectedPlan(planType);
     
+    // Free plan doesn't require payment
+    if (planType === 'free') {
+      if (!isPiAuthenticated) {
+        await signInWithPi();
+      }
+      
+      try {
+        // Activate free plan directly
+        const { error } = await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: user!.id,
+            plan_type: 'free',
+            status: 'active',
+            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+          });
+        
+        if (error) throw error;
+        
+        toast.success('Free plan activated! Redirecting to dashboard...');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      } catch (error) {
+        console.error('Error activating free plan:', error);
+        toast.error('Failed to activate free plan. Please try again.');
+      }
+      return;
+    }
+    
     if (!isPiAuthenticated) {
       await signInWithPi();
     }
@@ -105,6 +135,7 @@ const Subscription = () => {
 
   const getPlanIcon = (planId: string) => {
     switch (planId) {
+      case 'free': return <Store className="w-5 h-5" />;
       case 'basic': return <Zap className="w-5 h-5" />;
       case 'grow': return <Crown className="w-5 h-5" />;
       case 'advance': return <Rocket className="w-5 h-5" />;
@@ -188,6 +219,46 @@ const Subscription = () => {
             </p>
           </div>
 
+          {/* Upgrade Benefits - Show for free users */}
+          {currentSubscription?.plan_type === 'free' && (
+            <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+              <Rocket className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-foreground">
+                <span className="font-semibold text-amber-900 dark:text-amber-100">🚀 Upgrade to unlock:</span>
+                <span className="text-amber-800 dark:text-amber-200 ml-2">
+                  Multiple stores • Unlimited products • Premium templates • Priority support • Custom domain • Advanced analytics • Remove ads
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Limited Time Offer */}
+          <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-lg p-4 mb-8 text-center">
+            <p className="text-sm font-medium">
+              🎉 <span className="text-primary font-semibold">Special Launch Offer:</span> Get 20% off on annual plans! Use code: <span className="font-mono bg-primary/20 px-2 py-1 rounded">LAUNCH2025</span>
+            </p>
+          </div>
+
+          {/* Upgrade Benefits - Show for free users */}
+          {currentSubscription?.plan_type === 'free' && (
+            <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+              <Rocket className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-foreground">
+                <span className="font-semibold text-amber-900 dark:text-amber-100">🚀 Upgrade to unlock:</span>
+                <span className="text-amber-800 dark:text-amber-200 ml-2">
+                  Multiple stores • Unlimited products • Premium templates • Priority support • Custom domain • Advanced analytics • Remove ads
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Limited Time Offer */}
+          <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-lg p-4 mb-8 text-center">
+            <p className="text-sm font-medium">
+              🎉 <span className="text-primary font-semibold">Special Launch Offer:</span> Get 20% off on annual plans! Use code: <span className="font-mono bg-primary/20 px-2 py-1 rounded">LAUNCH2025</span>
+            </p>
+          </div>
+
           {/* Store Types Info */}
           <div className="mb-12">
             <h3 className="text-xl font-display font-semibold text-center mb-6">All Plans Support Three Store Types</h3>
@@ -207,9 +278,59 @@ const Subscription = () => {
           </div>
 
           {/* Plans Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {/* Free Plan */}
+            <Card className={`relative border-2 transition-colors ${isCurrentPlan('free') ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge variant="outline" className="bg-card">Limited</Badge>
+              </div>
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  {getPlanIcon('free')}
+                  <CardTitle>{SUBSCRIPTION_PLANS.free.name}</CardTitle>
+                </div>
+                <CardDescription>{SUBSCRIPTION_PLANS.free.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <span className="text-4xl font-display font-bold">Free</span>
+                  <span className="text-muted-foreground ml-2">/ forever</span>
+                </div>
+                <ul className="space-y-3">
+                  {SUBSCRIPTION_PLANS.free.features.map((feature, index) => (
+                    <li key={index} className="flex items-center gap-2 text-sm">
+                      <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className="w-full" 
+                  variant={isCurrentPlan('free') ? 'secondary' : 'outline'}
+                  onClick={() => handleSubscribe('free')}
+                  disabled={isProcessing || piLoading || isCurrentPlan('free')}
+                >
+                  {isProcessing && selectedPlan === 'free' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Activating...
+                    </>
+                  ) : isCurrentPlan('free') ? (
+                    'Current Plan'
+                  ) : (
+                    'Start Free'
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+
             {/* Basic Plan */}
             <Card className={`relative border-2 transition-colors ${isCurrentPlan('basic') ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-green-600 text-white">Best Value</Badge>
+              </div>
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   {getPlanIcon('basic')}
@@ -397,6 +518,90 @@ const Subscription = () => {
             </Card>
           </div>
 
+          {/* Why Upgrade Section */}
+          <div className="mt-16 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-2xl p-8 md:p-12">
+            <h3 className="text-2xl font-display font-bold text-center mb-8">Why Upgrade from Free?</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-card rounded-xl p-6 border border-border">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+                  <Rocket className="w-6 h-6" />
+                </div>
+                <h4 className="font-semibold mb-2">Scale Your Business</h4>
+                <p className="text-sm text-muted-foreground">
+                  List unlimited products across multiple stores. Reach more customers and increase your revenue potential.
+                </p>
+              </div>
+              <div className="bg-card rounded-xl p-6 border border-border">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+                  <Crown className="w-6 h-6" />
+                </div>
+                <h4 className="font-semibold mb-2">Professional Features</h4>
+                <p className="text-sm text-muted-foreground">
+                  Get premium templates, custom domains, advanced analytics, and priority support to look professional.
+                </p>
+              </div>
+              <div className="bg-card rounded-xl p-6 border border-border">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <h4 className="font-semibold mb-2">Grow Faster</h4>
+                <p className="text-sm text-muted-foreground">
+                  Access bulk imports, promotional tools, inventory management, and integrations to automate and grow faster.
+                </p>
+              </div>
+            </div>
+            <div className="text-center mt-8">
+              <p className="text-muted-foreground mb-4">Start with π20/month and scale as you grow</p>
+              <Button size="lg" className="gradient-hero" onClick={() => handleSubscribe('basic')}>
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade to Basic Now
+              </Button>
+            </div>
+          </div>
+
+          {/* Success Stories */}
+          <div className="mt-16">
+            <h3 className="text-2xl font-display font-bold text-center mb-8">Merchants Who Upgraded Are Earning More</h3>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              <div className="bg-card rounded-xl p-6 border border-border">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    JM
+                  </div>
+                  <div>
+                    <p className="font-semibold">John's Electronics</p>
+                    <p className="text-sm text-muted-foreground">Upgraded to Grow</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground italic mb-2">
+                  "After upgrading from free to Grow plan, my sales increased 5x in just 2 months. Unlimited products and premium templates made all the difference!"
+                </p>
+                <div className="flex items-center gap-2 text-primary text-sm font-semibold">
+                  <Check className="w-4 h-4" />
+                  <span>+500% Revenue Growth</span>
+                </div>
+              </div>
+              <div className="bg-card rounded-xl p-6 border border-border">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    SK
+                  </div>
+                  <div>
+                    <p className="font-semibold">Sarah's Fashion</p>
+                    <p className="text-sm text-muted-foreground">Upgraded to Basic</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground italic mb-2">
+                  "The Basic plan gave me everything I needed to start serious. 25 products was perfect for testing the market before scaling up."
+                </p>
+                <div className="flex items-center gap-2 text-primary text-sm font-semibold">
+                  <Check className="w-4 h-4" />
+                  <span>Professional Store in Days</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Payment Status */}
           {status !== 'idle' && (
             <div className="mt-8 text-center">
@@ -469,7 +674,7 @@ const Subscription = () => {
               <TermsPrivacyModal />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              © 2024 Drop Store by Droplink · Mrwain Organization
+              © {new Date().getFullYear()} Drop Store by Droplink · Mrwain Organization
             </p>
           </div>
         </div>

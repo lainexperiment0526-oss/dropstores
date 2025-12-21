@@ -103,7 +103,41 @@ const Pricing: React.FC = () => {
         </div>
 
         {/* Plans Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+          {/* Free Plan */}
+          <Card className="relative border-2 hover:border-primary/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2 text-primary">
+                <Store className="w-6 h-6" />
+                <CardTitle>{SUBSCRIPTION_PLANS.free.name}</CardTitle>
+              </div>
+              <CardDescription>{SUBSCRIPTION_PLANS.free.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6">
+                <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.free.amount} π</span>
+                <span className="text-muted-foreground ml-2">/ forever</span>
+              </div>
+              <ul className="space-y-3">
+                {SUBSCRIPTION_PLANS.free.features.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-2 text-sm">
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => handleGetStarted('free')}
+              >
+                Start Free
+              </Button>
+            </CardFooter>
+          </Card>
+
           {/* Basic Plan */}
           <Card className="relative border-2 hover:border-primary/50 transition-colors">
             <CardHeader>
@@ -301,7 +335,7 @@ const Pricing: React.FC = () => {
           <div className="mt-2">
             <TermsPrivacyModal />
           </div>
-          <p className="mt-2">© 2024 Drop Store by Droplink · Mrwain Organization</p>
+          <p className="mt-2">© {new Date().getFullYear()} Drop Store by Droplink · Mrwain Organization</p>
         </div>
       </footer>
     </div>
