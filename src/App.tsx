@@ -59,7 +59,6 @@ const App = () => {
                 <Route path="/terms" element={<ExternalRedirect to="https://droplink.space/terms" />} />
                 <Route path="/about" element={<ExternalRedirect to="https://www.droplink.space/about" />} />
                 <Route path="/careers" element={<ExternalRedirect to="https://www.droplink.space/careers" />} />
-                <Route path="/help" element={<ExternalRedirect to="https://www.droplink.space/help" />} />
                 <Route path="/community" element={<ExternalRedirect to="https://www.droplink.space/community-guidelines" />} />
                 <Route path="/developers" element={<ExternalRedirect to="https://www.droplink.space/developers" />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
