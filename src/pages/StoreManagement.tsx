@@ -14,6 +14,7 @@ import { StoreTypeInstructions } from '@/components/store/StoreTypeSelector';
 import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/AnalyticsCards';
 import { ImageUpload } from '@/components/store/ImageUpload';
 import { MerchantPayouts } from '@/components/store/MerchantPayouts';
+import { StoreQRCode } from '@/components/store/StoreQRCode';
 import {
   Store,
   Package,
@@ -450,6 +451,12 @@ export default function StoreManagement() {
                   onCheckedChange={handleTogglePublish}
                 />
               </div>
+              <StoreQRCode
+                storeUrl={`${window.location.origin}/shop/${store.slug}`}
+                storeName={store.name}
+                storeDescription={store.description || undefined}
+                storeLogo={store.logo_url || undefined}
+              />
               <Button variant="outline" size="sm" asChild>
                 <a
                   href={`/shop/${store.slug}`}

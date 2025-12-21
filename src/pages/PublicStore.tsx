@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { PaymentModal, OrderForm } from '@/components/store/PaymentModal';
+import { StoreReportModal } from '@/components/store/StoreReportModal';
 import { createPiPayment, initPiSdk } from '@/lib/pi-sdk';
 import {
   Store,
@@ -340,24 +341,29 @@ export default function PublicStore() {
               </span>
             </div>
 
-            <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative text-white hover:bg-white/20 flex-shrink-0"
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-xs font-bold rounded-full flex items-center justify-center"
-                      style={{ color: primaryColor }}
-                    >
-                      {cartCount}
-                    </span>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+            <div className="flex items-center gap-2">
+              <StoreReportModal
+                storeId={store.id}
+                storeName={store.name}
+              />
+              <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative text-white hover:bg-white/20 flex-shrink-0"
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-xs font-bold rounded-full flex items-center justify-center"
+                        style={{ color: primaryColor }}
+                      >
+                        {cartCount}
+                      </span>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Your Cart ({cartCount})</SheetTitle>
                 </SheetHeader>
@@ -449,6 +455,7 @@ export default function PublicStore() {
                 )}
               </SheetContent>
             </Sheet>
+            </div>
           </div>
         </div>
       </header>
@@ -584,6 +591,15 @@ export default function PublicStore() {
                 >
                   Buy Now
                 </Button>
+                <div className="pt-2 border-t mt-2">
+                  <StoreReportModal
+                    storeId={store.id}
+                    storeName={store.name}
+                    productId={selectedProduct.id}
+                    productName={selectedProduct.name}
+                    variant="inline"
+                  />
+                </div>
               </div>
             </div>
           )}
