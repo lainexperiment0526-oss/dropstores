@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import AdminPayouts from "./pages/AdminPayouts";
 import ExternalRedirect from "./pages/ExternalRedirect";
+import Support from "./pages/Support";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => {
                 <Route path="/shop/:slug" element={<PublicStore />} />
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/support" element={<Support />} />
                 <Route path="/admin-payouts" element={<AdminPayouts />} />
                 <Route path="/admin" element={<Admin />} />
                 {/* Privacy Policy and Terms of Service external redirects */}
