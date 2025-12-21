@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import WelcomeModal from './WelcomeModal';
 import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/AnalyticsCards';
 import { useSubscription } from '@/hooks/useSubscription';
+import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
 import {
   Store, 
   Plus, 
@@ -167,6 +168,10 @@ function Dashboard() {
   return (
     <>
       <WelcomeModal open={welcomeOpen} onOpenChange={setWelcomeOpen} userName={user?.user_metadata?.full_name} />
+      
+      {/* Show interstitial ad after visiting dashboard (every 3 visits) */}
+      <InterstitialAdTrigger actionCount={stores.length} showEvery={3} delay={2000} />
+      
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b border-border bg-card">

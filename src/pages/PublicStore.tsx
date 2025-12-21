@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { PaymentModal, OrderForm } from '@/components/store/PaymentModal';
 import { StoreReportModal } from '@/components/store/StoreReportModal';
 import { createPiPayment, initPiSdk } from '@/lib/pi-sdk';
+import { RewardedAdButton } from '@/components/ads/RewardedAdButton';
+import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
 import {
   Store,
   ShoppingCart,
@@ -74,6 +76,7 @@ export default function PublicStore() {
   const [cartOpen, setCartOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [productViewCount, setProductViewCount] = useState(0);
 
   useEffect(() => {
     initPiSdk(false);
@@ -316,7 +319,11 @@ export default function PublicStore() {
   const primaryColor = store.primary_color || '#0EA5E9';
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {/* Show interstitial ad every 5 product views */}
+      <InterstitialAdTrigger actionCount={productViewCount} showEvery={5} delay={1500} />
+      
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header
         className="border-b border-border sticky top-0 z-50"
@@ -440,6 +447,20 @@ export default function PublicStore() {
                         <span>Total:</span>
                         <span style={{ color: primaryColor }}>{cartTotal.toFixed(2)} π</span>
                       </div>
+                      
+                      {/* Rewarded Ad Button - Earn discount */}
+                      <div className="mb-3">
+                        <RewardedAdButton
+                          onReward={async (adId) => {
+                            console.log('User earned reward by watching ad:', adId);
+                            toast({ title: '🎉 Discount Applied!', description: 'You earned 5% off for watching the ad!' });
+                          }}
+                          buttonText="Watch Ad for 5% Off"
+                          rewardText="🎉 You earned 5% off!"
+                          className="w-full"
+                        />
+                      </div>
+                      
                       <Button
                         className="w-full"
                         style={{ backgroundColor: primaryColor }}
@@ -495,7 +516,10 @@ export default function PublicStore() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden group cursor-pointer" onClick={() => setSelectedProduct(product)}>
+              <Card key={product.id} className="overflow-hidden group cursor-pointer" onClick={() => {
+                setSelectedProduct(product);
+                setProductViewCount(prev => prev + 1);
+              }}>
                 <div className="aspect-square bg-secondary overflow-hidden">
                   {product.images && product.images[0] ? (
                     <img
@@ -679,6 +703,7 @@ export default function PublicStore() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }

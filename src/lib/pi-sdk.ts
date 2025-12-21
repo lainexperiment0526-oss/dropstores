@@ -47,6 +47,16 @@ export interface PiPaymentCallbacks {
   onError: (error: Error, payment?: PiPaymentDTO) => void;
 }
 
+export interface PiAdReadyResponse {
+  ready: boolean;
+}
+
+export interface PiAdShowResponse {
+  result: 'AD_CLOSED' | 'AD_REWARDED' | 'AD_NOT_READY' | 'ADS_NOT_SUPPORTED';
+  adId: string;
+  reward?: boolean;
+}
+
 declare global {
   interface Window {
     Pi?: {
@@ -60,8 +70,9 @@ declare global {
         callbacks: PiPaymentCallbacks
       ) => void;
       Ads?: {
-        isAdReady: (adType: string) => Promise<boolean>;
-        showAd: (adType: string) => Promise<{ adId: string; reward?: boolean }>;
+        isAdReady: (adType: string) => Promise<PiAdReadyResponse>;
+        showAd: (adType: string) => Promise<PiAdShowResponse>;
+        requestAd: (adType: string) => Promise<{ result: 'AD_LOADED' | 'AD_NOT_AVAILABLE' | 'ADS_NOT_SUPPORTED' }>;
       };
     };
   }
@@ -132,8 +143,26 @@ export const isPiAdReady = async (adType: 'interstitial' | 'rewarded'): Promise<
   }
 
   try {
-    return await window.Pi.Ads.isAdReady(adType);
+    const response = await window.Pi.Ads.isAdReady(adType);
+    return response.ready === true;
   } catch {
+    return false;
+  }
+};
+
+// Pi AdNetwork - Request ad (manually load ad)
+export const requestPiAd = async (
+  adType: 'interstitial' | 'rewarded'
+): Promise<boolean> => {
+  if (!isPiAvailable() || !window.Pi?.Ads?.requestAd) {
+    return false;
+  }
+
+  try {
+    const response = await window.Pi.Ads.requestAd(adType);
+    return response.result === 'AD_LOADED';
+  } catch (error) {
+    console.error('Failed to request Pi ad:', error);
     return false;
   }
 };
@@ -147,7 +176,16 @@ export const showPiAd = async (
   }
 
   try {
-    return await window.Pi.Ads.showAd(adType);
+    const response = await window.Pi.Ads.showAd(adType);
+    
+    if (response.result === 'AD_REWARDED' || response.result === 'AD_CLOSED') {
+      return {
+        adId: response.adId,
+        reward: response.result === 'AD_REWARDED',
+      };
+    }
+    
+    return null;
   } catch (error) {
     console.error('Failed to show Pi ad:', error);
     return null;
