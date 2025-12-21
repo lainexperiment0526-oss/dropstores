@@ -2,18 +2,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "env": {
-    "VITE_SUPABASE_URL": "@vite_supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key",
-    "VITE_SUPABASE_PUBLISHABLE_KEY": "@vite_supabase_publishable_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "VITE_PI_API_KEY": "@vite_pi_api_key",
-    "VITE_PI_MAINNET_MODE": "true",
-    "VITE_PI_NETWORK": "mainnet",
-    "VITE_API_URL": "https://api.minepi.com",
-    "VITE_DOMAIN": "dropshops.space",
-    "VITE_PLATFORM_URL": "https://dropshops.space"
-  },
+  "installCommand": "npm install",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ],
@@ -32,6 +21,19 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/validation-key.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain"
         }
       ]
     }
