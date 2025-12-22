@@ -63,6 +63,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   const signInWithPi = async (shouldNavigate: boolean = true) => {
     if (!piAvailable) {
       toast.error('Pi Network is not available. Please open this app in Pi Browser.');
+      setIsLoading(false);
       return;
     }
 
@@ -71,62 +72,82 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       console.log('PiAuth: Starting Pi authentication...');
       const result: PiAuthResult | null = await authenticateWithPi(handleIncompletePayment);
       
-      if (result) {
-        console.log('PiAuth: Pi SDK auth successful, user:', result.user.username);
-        setPiUser(result.user);
-        setPiAccessToken(result.accessToken);
-        
-        // Verify the authentication on the backend and get Supabase session
-        console.log('PiAuth: Calling backend pi-auth function...');
-        const { data, error } = await supabase.functions.invoke('pi-auth', {
-          body: { 
-            accessToken: result.accessToken,
-            piUser: result.user
-          }
-        });
-
-        if (error) {
-          console.error('PiAuth: Backend verification failed:', error);
-          toast.error('Authentication verification failed. Please try again.');
-          return;
-        }
-
-        console.log('PiAuth: Backend response:', data);
-
-        // If backend returns a Supabase session, set it
-        if (data && data.session) {
-          console.log('PiAuth: Setting Supabase session...');
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
-          
-          if (sessionError) {
-            console.error('PiAuth: Failed to set session:', sessionError);
-            toast.error('Failed to complete sign in. Please try again.');
-            return;
-          }
-          
-          console.log('PiAuth: Session set successfully!');
-          toast.success(`Welcome, ${result.user.username}!`);
-          
-          // Only navigate if requested
-          if (shouldNavigate) {
-            // Small delay to ensure session is propagated
-            setTimeout(() => {
-              navigate('/dashboard');
-            }, 100);
-          }
-        } else {
-          console.error('PiAuth: No session returned from backend');
-          toast.error('Authentication failed. Please try again.');
-        }
-      } else {
+      if (!result) {
         console.log('PiAuth: No result from Pi authentication');
         toast.error('Pi authentication was cancelled or failed.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!result.user?.uid || !result.user?.username) {
+        console.error('PiAuth: Invalid user data from Pi:', result.user);
+        toast.error('Invalid user data received. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('PiAuth: Pi SDK auth successful, user:', result.user.username);
+      setPiUser(result.user);
+      setPiAccessToken(result.accessToken);
+      
+      // Verify the authentication on the backend and get Supabase session
+      console.log('PiAuth: Calling backend pi-auth function...');
+      const { data, error } = await supabase.functions.invoke('pi-auth', {
+        body: { 
+          accessToken: result.accessToken,
+          piUser: result.user
+        }
+      });
+
+      if (error) {
+        console.error('PiAuth: Backend verification failed:', error);
+        setPiUser(null);
+        setPiAccessToken(null);
+        toast.error('Authentication verification failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('PiAuth: Backend response:', data);
+
+      // If backend returns a Supabase session, set it
+      if (data && data.session) {
+        console.log('PiAuth: Setting Supabase session...');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+        
+        if (sessionError) {
+          console.error('PiAuth: Failed to set session:', sessionError);
+          setPiUser(null);
+          setPiAccessToken(null);
+          toast.error('Failed to complete sign in. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('PiAuth: Session set successfully!');
+        toast.success(`Welcome, ${result.user.username}!`);
+        
+        // Only navigate if requested
+        if (shouldNavigate) {
+          // Small delay to ensure session is propagated
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 100);
+        }
+      } else {
+        console.error('PiAuth: No session returned from backend');
+        setPiUser(null);
+        setPiAccessToken(null);
+        toast.error('Authentication failed. Please try again.');
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('PiAuth: Pi authentication error:', error);
+      setPiUser(null);
+      setPiAccessToken(null);
       toast.error('Failed to authenticate with Pi Network. Please try again.');
     } finally {
       setIsLoading(false);
@@ -149,29 +170,45 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await authenticateWithPi(handleIncompletePayment);
       
-      if (result) {
-        // Store Pi user data linked to current user
-        const { error } = await supabase
-          .from('pi_users')
-          .upsert({
-            user_id: user.id,
-            pi_uid: result.user.uid,
-            pi_username: result.user.username
-          });
-
-        if (error) {
-          console.error('Failed to link Pi account:', error);
-          toast.error('Failed to link Pi account');
-          return;
-        }
-
-        setPiUser(result.user);
-        setPiAccessToken(result.accessToken);
-        toast.success('Pi account linked successfully!');
+      if (!result) {
+        toast.error('Pi authentication failed. Please try again.');
+        setIsLoading(false);
+        return;
       }
+
+      if (!result.user?.uid || !result.user?.username) {
+        console.error('Invalid user data:', result.user);
+        toast.error('Invalid user data received. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Store Pi user data linked to current user
+      const { error } = await supabase
+        .from('pi_users')
+        .upsert({
+          user_id: user.id,
+          pi_uid: result.user.uid,
+          pi_username: result.user.username,
+          wallet_address: result.user.wallet_address || null,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'pi_uid'
+        });
+
+      if (error) {
+        console.error('Failed to link Pi account:', error);
+        toast.error('Failed to link Pi account. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      setPiUser(result.user);
+      setPiAccessToken(result.accessToken);
+      toast.success('Pi account linked successfully!');
     } catch (error) {
       console.error('Pi linking error:', error);
-      toast.error('Failed to link Pi account');
+      toast.error('Failed to link Pi account. Please try again.');
     } finally {
       setIsLoading(false);
     }

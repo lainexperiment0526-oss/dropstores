@@ -75,6 +75,13 @@ export function usePiAdNetwork() {
     }
 
     if (!canShowAd()) {
+      console.log('Cannot show ad - cooldown or frequency cap active');
+      return false;
+    }
+
+    if (!isPiAvailable()) {
+      console.warn('Pi SDK not available for interstitial ad');
+      toast.error('Ad service not available');
       return false;
     }
 
@@ -85,6 +92,7 @@ export function usePiAdNetwork() {
       
       if (!ready) {
         console.log('Interstitial ad not ready');
+        setIsLoading(false);
         return false;
       }
 
@@ -97,15 +105,18 @@ export function usePiAdNetwork() {
           adsShownCount: prev.adsShownCount + 1,
           lastAdShownAt: Date.now(),
         }));
+        setIsLoading(false);
         return true;
       }
 
+      console.log('Interstitial ad did not complete');
+      setIsLoading(false);
       return false;
     } catch (error) {
       console.error('Failed to show interstitial ad:', error);
-      return false;
-    } finally {
+      toast.error('Failed to show ad');
       setIsLoading(false);
+      return false;
     }
   }, [interstitialEnabled, canShowAd]);
 
@@ -120,7 +131,14 @@ export function usePiAdNetwork() {
     }
 
     if (!canShowAd()) {
+      console.log('Cannot show ad - cooldown or frequency cap active');
       toast.info('Ads are temporarily unavailable. Please try again later.');
+      return { success: false };
+    }
+
+    if (!isPiAvailable()) {
+      console.warn('Pi SDK not available for rewarded ad');
+      toast.error('Ad service not available');
       return { success: false };
     }
 
@@ -132,6 +150,7 @@ export function usePiAdNetwork() {
       if (!ready) {
         console.log('Rewarded ad not ready');
         toast.error('Ad not available right now. Please try again in a moment.');
+        setIsLoading(false);
         return { success: false };
       }
 
@@ -145,9 +164,25 @@ export function usePiAdNetwork() {
           lastAdShownAt: Date.now(),
         }));
         
+        setIsLoading(false);
         return {
           success: true,
           adId: result.adId,
+          rewarded: result.reward,
+        };
+      }
+
+      console.log('Rewarded ad did not complete properly');
+      toast.error('Failed to show ad. Please try again.');
+      setIsLoading(false);
+      return { success: false };
+    } catch (error) {
+      console.error('Failed to show rewarded ad:', error);
+      toast.error('Something went wrong. Please try again.');
+      setIsLoading(false);
+      return { success: false };
+    }
+  }, [rewardedEnabled, canShowAd]);
           rewarded: result.reward,
         };
       }

@@ -2,6 +2,7 @@
 export interface PiUser {
   uid: string;
   username: string;
+  wallet_address?: string;
 }
 
 export interface PiAuthResult {
@@ -112,10 +113,18 @@ export const authenticateWithPi = async (
 
   try {
     const scopes = ['username', 'payments', 'wallet_address'];
-    const result = await window.Pi!.authenticate(
-      scopes,
-      onIncompletePaymentFound || (() => {})
-    );
+    const incompletePaymentHandler = onIncompletePaymentFound || ((payment: PiPaymentDTO) => {
+      console.warn('Incomplete payment detected:', payment);
+    });
+    
+    const result = await window.Pi!.authenticate(scopes, incompletePaymentHandler);
+    
+    if (!result || !result.user || !result.user.uid || !result.user.username) {
+      console.error('Invalid authentication result:', result);
+      return null;
+    }
+    
+    console.log('Pi authentication successful:', result.user.username);
     return result;
   } catch (error) {
     console.error('Pi authentication failed:', error);
@@ -129,23 +138,46 @@ export const createPiPayment = (
   callbacks: PiPaymentCallbacks
 ): void => {
   if (!isPiAvailable()) {
-    callbacks.onError(new Error('Pi SDK not available'));
+    const error = new Error('Pi SDK not available - ensure app is opened in Pi Browser');
+    callbacks.onError(error);
+    console.error('Payment creation failed:', error);
     return;
   }
 
-  window.Pi!.createPayment(paymentData, callbacks);
+  if (!paymentData || paymentData.amount <= 0) {
+    const error = new Error('Invalid payment data: amount must be greater than 0');
+    callbacks.onError(error);
+    console.error('Payment validation failed:', error);
+    return;
+  }
+
+  try {
+    window.Pi!.createPayment(paymentData, callbacks);
+    console.log('Payment created:', { amount: paymentData.amount, memo: paymentData.memo });
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Unknown payment creation error');
+    callbacks.onError(err);
+    console.error('Payment creation error:', err);
+  }
 };
 
 // Pi AdNetwork - Check if ad is ready
 export const isPiAdReady = async (adType: 'interstitial' | 'rewarded'): Promise<boolean> => {
-  if (!isPiAvailable() || !window.Pi?.Ads) {
+  if (!isPiAvailable()) {
+    console.debug('Pi SDK not available for ad check');
+    return false;
+  }
+
+  if (!window.Pi?.Ads?.isAdReady) {
+    console.debug('Pi Ads API not available');
     return false;
   }
 
   try {
     const response = await window.Pi.Ads.isAdReady(adType);
-    return response.ready === true;
-  } catch {
+    return response?.ready === true;
+  } catch (error) {
+    console.error(`Error checking if ${adType} ad is ready:`, error);
     return false;
   }
 };
@@ -154,15 +186,24 @@ export const isPiAdReady = async (adType: 'interstitial' | 'rewarded'): Promise<
 export const requestPiAd = async (
   adType: 'interstitial' | 'rewarded'
 ): Promise<boolean> => {
-  if (!isPiAvailable() || !window.Pi?.Ads?.requestAd) {
+  if (!isPiAvailable()) {
+    console.debug('Pi SDK not available for ad request');
+    return false;
+  }
+
+  if (!window.Pi?.Ads?.requestAd) {
+    console.debug('Pi Ads requestAd API not available');
     return false;
   }
 
   try {
+    console.log(`Requesting ${adType} ad...`);
     const response = await window.Pi.Ads.requestAd(adType);
-    return response.result === 'AD_LOADED';
+    const success = response?.result === 'AD_LOADED';
+    console.log(`${adType} ad request result:`, response?.result);
+    return success;
   } catch (error) {
-    console.error('Failed to request Pi ad:', error);
+    console.error(`Failed to request ${adType} ad:`, error);
     return false;
   }
 };
@@ -171,23 +212,37 @@ export const requestPiAd = async (
 export const showPiAd = async (
   adType: 'interstitial' | 'rewarded'
 ): Promise<{ adId: string; reward?: boolean } | null> => {
-  if (!isPiAvailable() || !window.Pi?.Ads) {
+  if (!isPiAvailable()) {
+    console.error('Pi SDK not available for showing ads');
+    return null;
+  }
+
+  if (!window.Pi?.Ads?.showAd) {
+    console.error('Pi Ads showAd API not available');
     return null;
   }
 
   try {
+    console.log(`Showing ${adType} ad...`);
     const response = await window.Pi.Ads.showAd(adType);
     
+    if (!response || !response.adId) {
+      console.warn(`Ad shown but no adId returned:`, response);
+      return null;
+    }
+    
     if (response.result === 'AD_REWARDED' || response.result === 'AD_CLOSED') {
+      console.log(`${adType} ad completed:`, { adId: response.adId, result: response.result });
       return {
         adId: response.adId,
         reward: response.result === 'AD_REWARDED',
       };
     }
     
+    console.log(`${adType} ad result: ${response.result}`);
     return null;
   } catch (error) {
-    console.error('Failed to show Pi ad:', error);
+    console.error(`Failed to show ${adType} ad:`, error);
     return null;
   }
 };
