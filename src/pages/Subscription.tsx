@@ -83,26 +83,23 @@ const Subscription = () => {
   const handleSubscribe = async (planType: PlanType) => {
     setSelectedPlan(planType);
     
-    // Free plan doesn't require payment
+    // Free plan doesn't require Pi authentication or payment
     if (planType === 'free') {
-      if (!isPiAuthenticated) {
-        await signInWithPi();
-      }
-      
       try {
-        // Activate free plan directly
+        // Activate free plan directly without requiring Pi auth
         const { error } = await supabase
           .from('subscriptions')
           .insert({
             user_id: user!.id,
             plan_type: 'free',
             status: 'active',
+            amount: 0,
             expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
           });
         
         if (error) throw error;
         
-        toast.success('Free plan activated! Redirecting to dashboard...');
+        toast.success('🎉 Free plan activated! Redirecting to dashboard...');
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000);
@@ -113,8 +110,14 @@ const Subscription = () => {
       return;
     }
     
+    // For paid plans, require Pi authentication
     if (!isPiAuthenticated) {
-      await signInWithPi();
+      try {
+        await signInWithPi();
+      } catch (error) {
+        toast.error('Please authenticate with Pi Network to continue');
+        return;
+      }
     }
     
     await createSubscriptionPayment(planType);
@@ -232,25 +235,15 @@ const Subscription = () => {
             </Alert>
           )}
 
-          {/* Limited Time Offer */}
-          <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-lg p-4 mb-8 text-center">
+          {/* Welcome Discount Banner */}
+          <div className="bg-gradient-to-r from-green-500/10 via-primary/10 to-green-500/10 rounded-lg p-4 mb-4 text-center border border-green-500/20">
             <p className="text-sm font-medium">
-              🎉 <span className="text-primary font-semibold">Special Launch Offer:</span> Get 20% off on annual plans! Use code: <span className="font-mono bg-primary/20 px-2 py-1 rounded">LAUNCH2025</span>
+              🎁 <span className="text-green-600 dark:text-green-400 font-semibold">Welcome Discount Applied!</span> Save up to 5π on your first subscription
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Basic: -1π • Grow: -2π • Advance: -3π • Plus: -5π
             </p>
           </div>
-
-          {/* Upgrade Benefits - Show for free users */}
-          {currentSubscription?.plan_type === 'free' && (
-            <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-              <Rocket className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-foreground">
-                <span className="font-semibold text-amber-900 dark:text-amber-100">🚀 Upgrade to unlock:</span>
-                <span className="text-amber-800 dark:text-amber-200 ml-2">
-                  Multiple stores • Unlimited products • Premium templates • Priority support • Custom domain • Advanced analytics • Remove ads
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
 
           {/* Limited Time Offer */}
           <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-lg p-4 mb-8 text-center">
@@ -340,8 +333,16 @@ const Subscription = () => {
               </CardHeader>
               <CardContent>
                 <div className="mb-6">
-                  <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.basic.amount} π</span>
-                  <span className="text-muted-foreground ml-2">/ month</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.basic.amount} π</span>
+                    <span className="text-lg line-through text-muted-foreground">{SUBSCRIPTION_PLANS.basic.originalAmount}π</span>
+                  </div>
+                  <span className="text-muted-foreground">/ month</span>
+                  <div className="mt-1">
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-500/10 px-2 py-0.5 rounded">
+                      Save {SUBSCRIPTION_PLANS.basic.welcomeDiscount}π Welcome Discount
+                    </span>
+                  </div>
                 </div>
                 <ul className="space-y-3">
                   {SUBSCRIPTION_PLANS.basic.features.map((feature, index) => (
@@ -390,8 +391,16 @@ const Subscription = () => {
               </CardHeader>
               <CardContent>
                 <div className="mb-6">
-                  <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.grow.amount} π</span>
-                  <span className="text-muted-foreground ml-2">/ month</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.grow.amount} π</span>
+                    <span className="text-lg line-through text-muted-foreground">{SUBSCRIPTION_PLANS.grow.originalAmount}π</span>
+                  </div>
+                  <span className="text-muted-foreground">/ month</span>
+                  <div className="mt-1">
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-500/10 px-2 py-0.5 rounded">
+                      Save {SUBSCRIPTION_PLANS.grow.welcomeDiscount}π Welcome Discount
+                    </span>
+                  </div>
                 </div>
                 <ul className="space-y-3">
                   {SUBSCRIPTION_PLANS.grow.features.map((feature, index) => (
@@ -436,8 +445,16 @@ const Subscription = () => {
               </CardHeader>
               <CardContent>
                 <div className="mb-6">
-                  <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.advance.amount} π</span>
-                  <span className="text-muted-foreground ml-2">/ month</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.advance.amount} π</span>
+                    <span className="text-lg line-through text-muted-foreground">{SUBSCRIPTION_PLANS.advance.originalAmount}π</span>
+                  </div>
+                  <span className="text-muted-foreground">/ month</span>
+                  <div className="mt-1">
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-500/10 px-2 py-0.5 rounded">
+                      Save {SUBSCRIPTION_PLANS.advance.welcomeDiscount}π Welcome Discount
+                    </span>
+                  </div>
                 </div>
                 <ul className="space-y-3">
                   {SUBSCRIPTION_PLANS.advance.features.map((feature, index) => (
@@ -482,8 +499,16 @@ const Subscription = () => {
               </CardHeader>
               <CardContent>
                 <div className="mb-6">
-                  <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.plus.amount} π</span>
-                  <span className="text-muted-foreground ml-2">/ month</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-display font-bold">{SUBSCRIPTION_PLANS.plus.amount} π</span>
+                    <span className="text-lg line-through text-muted-foreground">{SUBSCRIPTION_PLANS.plus.originalAmount}π</span>
+                  </div>
+                  <span className="text-muted-foreground">/ month</span>
+                  <div className="mt-1">
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-500/10 px-2 py-0.5 rounded">
+                      Save {SUBSCRIPTION_PLANS.plus.welcomeDiscount}π Welcome Discount
+                    </span>
+                  </div>
                 </div>
                 <ul className="space-y-3">
                   {SUBSCRIPTION_PLANS.plus.features.map((feature, index) => (
