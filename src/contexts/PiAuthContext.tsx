@@ -20,7 +20,7 @@ interface PiAuthContextType {
   isPiAuthenticated: boolean;
   isPiAvailable: boolean;
   isLoading: boolean;
-  signInWithPi: () => Promise<void>;
+  signInWithPi: (shouldNavigate?: boolean) => Promise<void>;
   linkPiAccount: () => Promise<void>;
 }
 
@@ -60,7 +60,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Sign in with Pi Network
-  const signInWithPi = async () => {
+  const signInWithPi = async (shouldNavigate: boolean = true) => {
     if (!piAvailable) {
       toast.error('Pi Network is not available. Please open this app in Pi Browser.');
       return;
@@ -110,10 +110,13 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
           console.log('PiAuth: Session set successfully!');
           toast.success(`Welcome, ${result.user.username}!`);
           
-          // Small delay to ensure session is propagated
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 100);
+          // Only navigate if requested
+          if (shouldNavigate) {
+            // Small delay to ensure session is propagated
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 100);
+          }
         } else {
           console.error('PiAuth: No session returned from backend');
           toast.error('Authentication failed. Please try again.');

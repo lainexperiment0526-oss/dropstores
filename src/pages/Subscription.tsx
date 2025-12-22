@@ -110,16 +110,21 @@ const Subscription = () => {
       return;
     }
     
-    // For paid plans, require Pi authentication
+    // For paid plans, check if Pi is available first
+    if (!isPiAvailable) {
+      toast.error('Pi Network is not available. Please open this app in Pi Browser.');
+      setSelectedPlan(null);
+      return;
+    }
+
+    // For paid plans, require Pi authentication before payment
     if (!isPiAuthenticated) {
-      try {
-        await signInWithPi();
-      } catch (error) {
-        toast.error('Please authenticate with Pi Network to continue');
-        return;
-      }
+      toast.info('Please authenticate with Pi Network first');
+      setSelectedPlan(null);
+      return;
     }
     
+    // Already authenticated, create payment directly
     await createSubscriptionPayment(planType);
   };
 
@@ -191,6 +196,47 @@ const Subscription = () => {
                 >
                   Download Pi Browser
                 </a>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Pi Authentication Status */}
+          {isPiAvailable && !isPiAuthenticated && (
+            <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+              <Coins className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="flex items-center justify-between">
+                <span className="text-amber-900 dark:text-amber-100">
+                  <span className="font-semibold">Connect Pi Network</span> to subscribe to paid plans
+                </span>
+                <Button 
+                  onClick={() => signInWithPi(false)}
+                  disabled={piLoading}
+                  size="sm"
+                  variant="outline"
+                  className="border-amber-600 text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900/20"
+                >
+                  {piLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Coins className="w-4 h-4 mr-2" />
+                      Connect Pi
+                    </>
+                  )}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Pi Authenticated Success */}
+          {isPiAvailable && isPiAuthenticated && (
+            <Alert className="mb-8 border-green-500 bg-green-50 dark:bg-green-950/20">
+              <Check className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-900 dark:text-green-100">
+                <span className="font-semibold">Pi Network Connected</span> • You can now subscribe to any paid plan
               </AlertDescription>
             </Alert>
           )}
