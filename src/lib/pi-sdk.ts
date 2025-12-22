@@ -238,12 +238,22 @@ export const STORE_TYPES = {
   }
 };
 
-// Subscription Plans - Updated pricing
+// Welcome discounts for each plan
+export const WELCOME_DISCOUNTS: Record<string, number> = {
+  basic: 1,    // 1 Pi discount
+  grow: 2,     // 2 Pi discount
+  advance: 3,  // 3 Pi discount
+  plus: 5,     // 5 Pi discount
+};
+
+// Subscription Plans - Updated pricing with welcome discounts
 export const SUBSCRIPTION_PLANS = {
   free: {
     id: 'free',
     name: 'Free',
     amount: 0,
+    originalAmount: 0,
+    welcomeDiscount: 0,
     period: 'forever',
     description: 'Get started with basic features',
     features: [
@@ -260,7 +270,9 @@ export const SUBSCRIPTION_PLANS = {
   basic: {
     id: 'basic',
     name: 'Basic',
-    amount: 20,
+    amount: 19, // 20 - 1 Pi welcome discount
+    originalAmount: 20,
+    welcomeDiscount: 1,
     period: 'month',
     description: 'Perfect for starting your Pi business',
     features: [
@@ -279,7 +291,9 @@ export const SUBSCRIPTION_PLANS = {
   grow: {
     id: 'grow',
     name: 'Grow',
-    amount: 49,
+    amount: 47, // 49 - 2 Pi welcome discount
+    originalAmount: 49,
+    welcomeDiscount: 2,
     period: 'month',
     description: 'For growing businesses',
     features: [
@@ -300,7 +314,9 @@ export const SUBSCRIPTION_PLANS = {
   advance: {
     id: 'advance',
     name: 'Advance',
-    amount: 60,
+    amount: 57, // 60 - 3 Pi welcome discount
+    originalAmount: 60,
+    welcomeDiscount: 3,
     period: 'month',
     description: 'Advanced features for serious sellers',
     features: [
@@ -320,7 +336,9 @@ export const SUBSCRIPTION_PLANS = {
   plus: {
     id: 'plus',
     name: 'Plus',
-    amount: 100,
+    amount: 95, // 100 - 5 Pi welcome discount
+    originalAmount: 100,
+    welcomeDiscount: 5,
     period: 'month',
     description: 'Enterprise-level features',
     features: [
