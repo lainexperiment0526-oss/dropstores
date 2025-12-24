@@ -11,6 +11,7 @@ import SplashScreen from "@/components/SplashScreen";
 import { PiAuthTest } from "@/components/PiAuthTest";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import RedeemGiftCard from "./pages/RedeemGiftCard";
 import Dashboard from "./pages/Dashboard";
 import CreateStore from "./pages/CreateStore";
 import StoreManagement from "./pages/StoreManagement";
@@ -49,6 +50,7 @@ const App = () => {
                 <Route path="/store/:storeId" element={<StoreManagement />} />
                 <Route path="/shop/:slug" element={<PublicStore />} />
                 <Route path="/subscription" element={<Subscription />} />
+                <Route path="/redeem-gift-card" element={<RedeemGiftCard />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/help" element={<Help />} />
