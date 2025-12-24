@@ -93,7 +93,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
           // This allows dashboard to work without the backend edge function
           try {
             // Sign up a new user with Pi username as email if not already signed in
-            const piEmail = `pi-${result.user.username}@dev.local`;
+            const piEmail = `pi-${result.user.username}@dropstore.test`;
             const piPassword = result.accessToken.substring(0, 32); // Use part of access token as password
             
             // Try to sign in first
