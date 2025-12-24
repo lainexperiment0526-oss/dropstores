@@ -94,16 +94,20 @@ interface Order {
 export default function StoreManagement() {
   const { storeId } = useParams<{ storeId: string }>();
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const [store, setStore] = useState<StoreData | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('products');
-
+  interface Order {
+    id: string;
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string | null;
+    shipping_address: string | null;
+    notes: string | null;
+    status: string;
+    total: number;
+    items: any;
+    created_at: string;
+    pi_payment_id: string | null;
+    pi_txid: string | null;
+  }
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productForm, setProductForm] = useState({
@@ -855,45 +859,115 @@ export default function StoreManagement() {
                             {order.total.toFixed(2)} π
                           </p>
                           <select
-                            value={order.status}
-                            onChange={(e) =>
-                              handleUpdateOrderStatus(order.id, e.target.value)
-                            }
-                            className="px-2 py-1 text-sm rounded border border-border bg-background"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+                            {orders.map((order) => (
+                              <Card key={order.id} className="overflow-hidden">
+                                <CardContent className="pt-6">
+                                  <div className="space-y-4">
+                                    {/* Header with Name and Status */}
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                      <div className="flex-1">
+                                        <h3 className="font-semibold text-lg text-foreground mb-1">
+                                          Order #{order.id.slice(0, 8)}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground">
+                                          {new Date(order.created_at).toLocaleString()}
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <p className="font-bold text-xl text-primary">
+                                          {order.total.toFixed(2)} π
+                                        </p>
+                                        <select
+                                          value={order.status}
+                                          onChange={(e) =>
+                                            handleUpdateOrderStatus(order.id, e.target.value)
+                                          }
+                                          className="px-3 py-2 text-sm rounded-lg border border-border bg-background font-medium"
+                                        >
+                                          <option value="pending">Pending</option>
+                                          <option value="paid">Paid</option>
+                                          <option value="confirmed">Confirmed</option>
+                                          <option value="shipped">Shipped</option>
+                                          <option value="delivered">Delivered</option>
+                                          <option value="completed">Completed</option>
+                                          <option value="cancelled">Cancelled</option>
+                                        </select>
+                                      </div>
+                                    </div>
 
-          {/* Payouts Tab */}
-          <TabsContent value="payouts">
-            <h2 className="text-xl font-display font-bold text-foreground mb-6">
-              Payouts & Withdrawals
-            </h2>
-            <MerchantPayouts storeId={store.id} payoutWallet={store.payout_wallet} />
-          </TabsContent>
+                                    {/* Buyer Details Section */}
+                                    <div className="border-t border-border pt-4">
+                                      <h4 className="font-semibold text-sm text-foreground mb-3">👤 Buyer Details</h4>
+                                      <div className="grid sm:grid-cols-2 gap-3">
+                                        <div>
+                                          <p className="text-xs text-muted-foreground mb-1">Name</p>
+                                          <p className="text-sm font-medium">{order.customer_name}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-muted-foreground mb-1">Email</p>
+                                          <p className="text-sm font-medium">{order.customer_email}</p>
+                                        </div>
+                                        {order.customer_phone && (
+                                          <div>
+                                            <p className="text-xs text-muted-foreground mb-1">Phone</p>
+                                            <p className="text-sm font-medium">{order.customer_phone}</p>
+                                          </div>
+                                        )}
+                                        {order.shipping_address && (
+                                          <div className="sm:col-span-2">
+                                            <p className="text-xs text-muted-foreground mb-1">Shipping Address</p>
+                                            <p className="text-sm font-medium">{order.shipping_address}</p>
+                                          </div>
+                                        )}
+                                        {order.notes && (
+                                          <div className="sm:col-span-2">
+                                            <p className="text-xs text-muted-foreground mb-1">Order Notes</p>
+                                            <p className="text-sm italic">{order.notes}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics">
-            <h2 className="text-xl font-display font-bold text-foreground mb-6">
-              Analytics Overview
-            </h2>
-            <AnalyticsCards data={analyticsData} />
-            <div className="mt-6">
-              <OrderStatusCards pending={pendingOrders} completed={completedOrders} />
+                                    {/* Order Items Section */}
+                                    {Array.isArray(order.items) && order.items.length > 0 && (
+                                      <div className="border-t border-border pt-4">
+                                        <h4 className="font-semibold text-sm text-foreground mb-3">📦 Order Items</h4>
+                                        <div className="space-y-2">
+                                          {order.items.map((item: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between items-center bg-secondary/50 p-2 rounded">
+                                              <div>
+                                                <p className="text-sm font-medium">{item.name}</p>
+                                                <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                              </div>
+                                              <p className="text-sm font-semibold">{(item.price * item.quantity).toFixed(2)} π</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Payment Info */}
+                                    {(order.pi_payment_id || order.pi_txid) && (
+                                      <div className="border-t border-border pt-4">
+                                        <h4 className="font-semibold text-sm text-foreground mb-3">💳 Payment Info</h4>
+                                        <div className="space-y-2 text-xs">
+                                          {order.pi_payment_id && (
+                                            <p className="text-muted-foreground">
+                                              Payment ID: <span className="font-mono">{order.pi_payment_id.slice(0, 20)}...</span>
+                                            </p>
+                                          )}
+                                          {order.pi_txid && (
+                                            <p className="text-muted-foreground">
+                                              Transaction: <span className="font-mono">{order.pi_txid.slice(0, 20)}...</span>
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
             </div>
           </TabsContent>
 
