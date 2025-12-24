@@ -84,7 +84,93 @@ const Subscription = () => {
 
   const handleSubscribe = async (planType: PlanType) => {
     setSelectedPlan(planType);
+    setIsActivating(true);
     
+    try {
+      const plan = SUBSCRIPTION_PLANS[planType];
+      
+      console.log('Creating subscription without payment:', {
+        userId: user!.id,
+        planType,
+        planAmount: plan.amount
+      });
+      
+      // Calculate expiry date (30 days for monthly plans, 1 year for free)
+      const expiryDate = new Date();
+      if (planType === 'free') {
+        expiryDate.setDate(expiryDate.getDate() + 365);
+      } else {
+        expiryDate.setDate(expiryDate.getDate() + 30);
+      }
+      
+      // Check if there's an existing active subscription
+      const { data: existingSubscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('status', 'active')
+        .single();
+      
+      if (existingSubscription) {
+        console.log('Found existing subscription, updating to new plan');
+        // Update existing subscription
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .update({
+            plan_type: planType,
+            amount: plan.amount,
+            expires_at: expiryDate.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingSubscription.id)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error updating subscription:', error);
+          throw error;
+        }
+        
+        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
+        setCurrentSubscription(data);
+      } else {
+        console.log('No existing subscription, creating new one');
+        // Create subscription directly in database
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: user!.id,
+            plan_type: planType,
+            status: 'active',
+            amount: plan.amount,
+            expires_at: expiryDate.toISOString(),
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error creating subscription:', error);
+          throw error;
+        }
+        
+        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
+        setCurrentSubscription(data);
+      }
+      
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+      const errorMessage = error?.message || 'Failed to activate subscription';
+      toast.error(`Error: ${errorMessage}`);
+    } finally {
+      setIsActivating(false);
+      setSelectedPlan(null);
+    }
+
+    // Old Pi payment code (disabled)
+    /*
     // Free plan doesn't require Pi authentication or payment
     if (planType === 'free') {
       try {
@@ -128,6 +214,7 @@ const Subscription = () => {
     
     // Already authenticated, create payment directly
     await createSubscriptionPayment(planType);
+    */
   };
 
   // Mock payment handler for testing
@@ -517,8 +604,8 @@ const Subscription = () => {
                 <Button 
                   className="w-full" 
                   variant={isCurrentPlan('basic') ? 'secondary' : 'outline'}
-                  onClick={() => isTestMode ? handleMockPayment('basic') : handleSubscribe('basic')}
-                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('basic'))}
+                  onClick={() => handleSubscribe('basic')}
+                  disabled={isProcessing || isActivating || isCurrentPlan('basic')}
                 >
                   {((isProcessing || isActivating) && selectedPlan === 'basic') ? (
                     <>
@@ -574,13 +661,13 @@ const Subscription = () => {
               <CardFooter>
                 <Button 
                   className="w-full gradient-hero" 
-                  onClick={() => isTestMode ? handleMockPayment('grow') : handleSubscribe('grow')}
-                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('grow'))}
+                  onClick={() => handleSubscribe('grow')}
+                  disabled={isProcessing || isActivating || isCurrentPlan('grow')}
                 >
                   {((isProcessing || isActivating) && selectedPlan === 'grow') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {isTestMode ? 'Activating...' : 'Processing...'}
+                      Activating...
                     </>
                   ) : isCurrentPlan('grow') ? (
                     'Current Plan'
@@ -628,13 +715,13 @@ const Subscription = () => {
               <CardFooter>
                 <Button 
                   className="w-full" 
-                  onClick={() => isTestMode ? handleMockPayment('advance') : handleSubscribe('advance')}
-                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('advance'))}
+                  onClick={() => handleSubscribe('advance')}
+                  disabled={isProcessing || isActivating || isCurrentPlan('advance')}
                 >
                   {((isProcessing || isActivating) && selectedPlan === 'advance') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {isTestMode ? 'Activating...' : 'Processing...'}
+                      Activating...
                     </>
                   ) : isCurrentPlan('advance') ? (
                     'Current Plan'
@@ -682,13 +769,13 @@ const Subscription = () => {
               <CardFooter>
                 <Button 
                   className="w-full" 
-                  onClick={() => isTestMode ? handleMockPayment('plus') : handleSubscribe('plus')}
-                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('plus'))}
+                  onClick={() => handleSubscribe('plus')}
+                  disabled={isProcessing || isActivating || isCurrentPlan('plus')}
                 >
                   {((isProcessing || isActivating) && selectedPlan === 'plus') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {isTestMode ? 'Activating...' : 'Processing...'}
+                      Activating...
                     </>
                   ) : isCurrentPlan('plus') ? (
                     'Current Plan'
@@ -737,9 +824,9 @@ const Subscription = () => {
             </div>
             <div className="text-center mt-8">
               <p className="text-muted-foreground mb-4">Start with π20/month and scale as you grow</p>
-              <Button size="lg" className="gradient-hero" onClick={() => isTestMode ? handleMockPayment('basic') : handleSubscribe('basic')}>
+              <Button size="lg" className="gradient-hero" onClick={() => handleSubscribe('basic')}>
                 <Crown className="w-4 h-4 mr-2" />
-                {isTestMode ? 'Test Basic Now' : 'Upgrade to Basic Now'}
+                Upgrade to Basic Now
               </Button>
             </div>
           </div>

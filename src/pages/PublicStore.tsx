@@ -162,6 +162,67 @@ export default function PublicStore() {
   const handleSubmitOrder = async (orderForm: OrderForm) => {
     if (!store || cart.length === 0) return;
 
+    setSubmitting(true);
+
+    // Allow free orders without payment
+    try {
+      const orderItems = cart.map((item) => ({
+        product_id: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+        product_type: item.product.product_type,
+        digital_file_url: item.product.digital_file_url,
+      }));
+
+      // Check if any digital products
+      const hasDigitalProducts = cart.some(item => item.product.product_type === 'digital');
+      const downloadExpiresAt = hasDigitalProducts 
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
+        : null;
+      
+      await supabase.from('orders').insert({
+        store_id: store.id,
+        customer_name: orderForm.name.trim(),
+        customer_email: orderForm.email.trim(),
+        customer_phone: orderForm.phone.trim() || null,
+        shipping_address: orderForm.address.trim() || null,
+        notes: orderForm.notes.trim() || null,
+        items: orderItems,
+        total: cartTotal,
+        status: 'paid',
+        pi_payment_id: null,
+        pi_txid: null,
+        payout_status: 'pending',
+        download_expires_at: downloadExpiresAt,
+      });
+
+      toast({
+        title: 'Order placed successfully!',
+        description: hasDigitalProducts 
+          ? 'Check your email for download links.' 
+          : 'Thank you for your purchase!',
+      });
+      
+      setCart([]);
+      setCartOpen(false);
+      setPaymentModalOpen(false);
+      setSubmitting(false);
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      setSubmitting(false);
+      toast({
+        title: 'Order failed',
+        description: 'Failed to place order. Please try again.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+
+    return;
+
+    // Old Pi payment code (disabled)
+    /*
     if (!store.payout_wallet) {
       toast({
         title: 'Store not ready',
@@ -170,8 +231,6 @@ export default function PublicStore() {
       });
       throw new Error('No payout wallet configured');
     }
-
-    setSubmitting(true);
 
     return new Promise<void>((resolve, reject) => {
       createPiPayment(
@@ -287,6 +346,7 @@ export default function PublicStore() {
         }
       );
     });
+    */
   };
 
   if (loading) {
