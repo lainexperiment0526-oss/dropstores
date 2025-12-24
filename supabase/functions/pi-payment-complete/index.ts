@@ -289,16 +289,60 @@ serve(async (req: Request) => {
     }
 
     // For subscriptions, continue with existing flow
-    const { data: piUser, error: piUserError } = await supabase
+    const piUid = paymentData.user_uid;
+    if (!piUid) {
+      console.error('Missing pi_uid in payment data');
+      return new Response(
+        JSON.stringify({ error: 'Missing Pi user ID in payment' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Look up pi user
+    let piUser: any = null;
+    const { data: existingPiUser, error: piUserError } = await supabase
       .from('pi_users')
       .select('user_id')
-      .eq('pi_uid', paymentData.user_uid)
+      .eq('pi_uid', piUid)
       .single();
 
-    if (piUserError || !piUser) {
-      console.error('Pi user not found:', paymentData.user_uid, piUserError);
+    if (piUserError) {
+      // If pi_user doesn't exist, try to create it from metadata
+      console.log('Pi user not found, attempting to create:', piUid);
+      const metadata = paymentData.metadata || {};
+      const userId = metadata.userId as string;
+      
+      if (!userId) {
+        console.error('Cannot create pi_user: missing userId in metadata');
+        return new Response(
+          JSON.stringify({ error: 'User not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Creating pi_user mapping for pi_uid:', piUid);
+      const { data: newPiUser, error: createError } = await supabase
+        .from('pi_users')
+        .insert({ pi_uid: piUid, user_id: userId })
+        .select('user_id')
+        .single();
+
+      if (createError) {
+        console.error('Failed to create pi_user:', createError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to link Pi account', details: createError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      piUser = newPiUser;
+    } else {
+      piUser = existingPiUser;
+    }
+
+    if (!piUser) {
+      console.error('Failed to get or create pi_user');
       return new Response(
-        JSON.stringify({ error: 'User not found', details: 'Pi user not linked to account' }),
+        JSON.stringify({ error: 'User not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
