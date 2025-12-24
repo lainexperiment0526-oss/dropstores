@@ -119,8 +119,8 @@ serve(async (req) => {
       );
     }
 
-    // Get PI_API_KEY from environment
-    const PI_API_KEY = Deno.env.get('PI_API_KEY');
+    // Get PI_API_KEY from environment and trim whitespace
+    const PI_API_KEY = Deno.env.get('PI_API_KEY')?.trim();
     
     if (!PI_API_KEY) {
       console.error('PI_API_KEY not configured');
@@ -132,6 +132,7 @@ serve(async (req) => {
 
     console.log('Completing Pi payment:', paymentId, 'txid:', txid, 'planType:', planType);
     console.log('Using PI_API_KEY (first 10 chars):', PI_API_KEY.substring(0, 10) + '...');
+    console.log('PI_API_KEY length:', PI_API_KEY.length);
 
     // Complete the payment with Pi Platform API
     const completeResponse = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/complete`, {
