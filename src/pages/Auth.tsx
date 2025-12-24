@@ -82,7 +82,7 @@ export default function Auth() {
                       type="button"
                       variant="outline"
                       className="w-full mt-4"
-                      onClick={signInWithPi}
+                      onClick={() => signInWithPi()}
                       disabled={piLoading}
                     >
                       {piLoading ? (
