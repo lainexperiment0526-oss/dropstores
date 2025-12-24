@@ -79,7 +79,7 @@ export default function PublicStore() {
   const [productViewCount, setProductViewCount] = useState(0);
 
   useEffect(() => {
-    initPiSdk(true); // Sandbox mode enabled
+    initPiSdk(false); // Mainnet mode for production
     if (slug) {
       fetchStore();
     }

@@ -185,7 +185,7 @@ export default function Auth() {
                       onClick={() => setShowEmailForm(true)}
                     >
                       <Mail className="w-4 h-4 mr-2" />
-                      Sign in with Email (Dev)
+                      Sign in with Email
                     </Button>
                   )}
 

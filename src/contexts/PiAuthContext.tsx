@@ -42,7 +42,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('PiAuth: Initializing Pi SDK...');
     // Use sandbox mode if explicitly enabled, otherwise use mainnet
-    const isSandbox = true; // Force sandbox mode for testing
+    const isSandbox = false; // Mainnet mode for production
     
     console.log('PiAuth: Configuration:', {
       sandbox: isSandbox,
@@ -80,86 +80,12 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         setPiUser(result.user);
         setPiAccessToken(result.accessToken);
         
-        // Try to fetch wallet address automatically
-        if (result.user.wallet_address) {
-          setWalletAddress(result.user.wallet_address);
-        }
-        
-        // In dev/test mode, skip backend verification and just allow sign-in
-        if (import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true') {
-          console.warn('PiAuth: Dev mode - Creating Supabase session for Pi user');
-          
-          // Create a dummy Supabase user in dev mode so the system recognizes them as authenticated
-          // This allows dashboard to work without the backend edge function
-          try {
-            // Sign up a new user with Pi username as email if not already signed in
-            const piEmail = `pi-${result.user.username}@dropstore.test`;
-            const piPassword = result.accessToken.substring(0, 32); // Use part of access token as password
-            
-            // Try to sign in first
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-              email: piEmail,
-              password: piPassword,
-            });
-            
-            if (signInError && signInError.message.includes('Invalid login credentials')) {
-              // User doesn't exist, create them
-              console.log('PiAuth: Creating new Supabase user for dev mode');
-              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email: piEmail,
-                password: piPassword,
-                options: {
-                  data: {
-                    full_name: result.user.username,
-                  }
+                // Try to fetch wallet address automatically
+                if (result.user.wallet_address) {
+                  setWalletAddress(result.user.wallet_address);
                 }
-              });
-              
-              if (signUpError) {
-                console.error('PiAuth: Failed to create user:', signUpError);
-                toast.error('Failed to create session. Please try again.');
-                setIsLoading(false);
-                return;
-              }
-              
-              // Sign in with the newly created user
-              const { error: signInAfterSignUpError } = await supabase.auth.signInWithPassword({
-                email: piEmail,
-                password: piPassword,
-              });
-              
-              if (signInAfterSignUpError) {
-                console.error('PiAuth: Failed to sign in after signup:', signInAfterSignUpError);
-                toast.error('Failed to complete session. Please try again.');
-                setIsLoading(false);
-                return;
-              }
-            } else if (signInError) {
-              console.error('PiAuth: Sign in error:', signInError);
-              toast.error('Failed to create session. Please try again.');
-              setIsLoading(false);
-              return;
-            }
-            
-            console.log('PiAuth: Supabase session created successfully');
-            toast.success(`Welcome, ${result.user.username}! (Dev Mode)`);
-            
-            if (shouldNavigate) {
-              setTimeout(() => {
-                navigate('/dashboard');
-              }, 500);
-            }
-            setIsLoading(false);
-            return;
-          } catch (error) {
-            console.error('PiAuth: Unexpected error in dev mode:', error);
-            toast.error('Failed to create session. Please try again.');
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // In production, verify on backend
+        
+        // Verify the authentication on the backend and get Supabase session
         console.log('PiAuth: Calling backend pi-auth function...');
         const { data, error } = await supabase.functions.invoke('pi-auth', {
           body: { 
