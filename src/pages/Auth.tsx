@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Store, Mail, Lock, User, ArrowLeft, Loader2, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { supabase } from '@/integrations/supabase/client';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -31,7 +30,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const { user, login, signup } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const { isPiAvailable, signInWithPi, isLoading: piLoading } = usePiAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,11 +49,26 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
-      toast.success('Signed in successfully!');
-      navigate('/dashboard');
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Sign in failed',
+          description: error.message || 'Please check your credentials.',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Signed in successfully!',
+        });
+        navigate('/dashboard');
+      }
     } catch (error) {
-      toast.error('Sign in failed. Please check your credentials.');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Sign in failed. Please try again.',
+      });
       console.error('Sign in error:', error);
     } finally {
       setLoading(false);
@@ -65,13 +79,28 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signup(email, password);
-      toast.success('Account created! Please sign in.');
-      setIsSignUp(false);
-      setEmail('');
-      setPassword('');
+      const { error } = await signUp(email, password);
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Sign up failed',
+          description: error.message || 'Please try again.',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Account created! Please sign in.',
+        });
+        setIsSignUp(false);
+        setEmail('');
+        setPassword('');
+      }
     } catch (error) {
-      toast.error('Sign up failed. Please try again.');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Sign up failed. Please try again.',
+      });
       console.error('Sign up error:', error);
     } finally {
       setLoading(false);
