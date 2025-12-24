@@ -28,6 +28,8 @@ const Subscription = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
 
   // Fetch current subscription
   useEffect(() => {
@@ -128,6 +130,50 @@ const Subscription = () => {
     await createSubscriptionPayment(planType);
   };
 
+  // Mock payment handler for testing
+  const handleMockPayment = async (planType: PlanType) => {
+    setIsActivating(true);
+    setSelectedPlan(planType);
+    
+    try {
+      const plan = SUBSCRIPTION_PLANS[planType];
+      
+      // Calculate expiry date (30 days for monthly plans)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      
+      // Create subscription directly in database
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user!.id,
+          plan_type: planType,
+          status: 'active',
+          amount: plan.amount,
+          expires_at: expiryDate.toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast.success(`🎉 ${plan.name} activated! (Test Mode) Redirecting to dashboard...`);
+      
+      // Update current subscription state
+      setCurrentSubscription(data);
+      
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+    } catch (error) {
+      console.error('Error activating subscription:', error);
+      toast.error('Failed to activate subscription. Please try again.');
+    } finally {
+      setIsActivating(false);
+      setSelectedPlan(null);
+    }
+  };
+
   const isCurrentPlan = (planType: string) => {
     if (!currentSubscription) return false;
     return currentSubscription.plan_type === planType;
@@ -166,24 +212,45 @@ const Subscription = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/dashboard">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-xl font-display font-bold">Subscription Plans</h1>
-              <p className="text-sm text-muted-foreground">Pay with Pi • Powered by Droplink</p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" asChild>
+                <Link to="/dashboard">
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+              </Button>
+              <div>
+                <h1 className="text-xl font-display font-bold">Subscription Plans</h1>
+                <p className="text-sm text-muted-foreground">Pay with Pi • Powered by Droplink</p>
+              </div>
             </div>
+            {/* Test Mode Toggle */}
+            <Button
+              variant={isTestMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsTestMode(!isTestMode)}
+              className="shrink-0"
+            >
+              {isTestMode ? "🧪 Test Mode ON" : "Enable Test Mode"}
+            </Button>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
+          {/* Test Mode Alert */}
+          {isTestMode && (
+            <Alert className="mb-8 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-900 dark:text-blue-100">
+                <span className="font-semibold">🧪 Test Mode Enabled</span> - Subscriptions will be activated instantly without Pi payment. Use this to test the gift card feature and other functionality.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Pi Network Notice */}
-          {!isPiAvailable && (
+          {!isPiAvailable && !isTestMode && (
             <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -201,7 +268,7 @@ const Subscription = () => {
           )}
 
           {/* Pi Authentication Status */}
-          {isPiAvailable && !isPiAuthenticated && (
+          {isPiAvailable && !isPiAuthenticated && !isTestMode && (
             <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
               <Coins className="h-4 w-4 text-amber-600" />
               <AlertDescription className="flex items-center justify-between">
@@ -403,20 +470,20 @@ const Subscription = () => {
                 <Button 
                   className="w-full" 
                   variant={isCurrentPlan('basic') ? 'secondary' : 'outline'}
-                  onClick={() => handleSubscribe('basic')}
-                  disabled={isProcessing || !isPiAvailable || piLoading || isCurrentPlan('basic')}
+                  onClick={() => isTestMode ? handleMockPayment('basic') : handleSubscribe('basic')}
+                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('basic'))}
                 >
-                  {isProcessing && selectedPlan === 'basic' ? (
+                  {((isProcessing || isActivating) && selectedPlan === 'basic') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
+                      {isTestMode ? 'Activating...' : 'Processing...'}
                     </>
                   ) : isCurrentPlan('basic') ? (
                     'Current Plan'
                   ) : (
                     <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
+                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
+                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
                     </>
                   )}
                 </Button>
@@ -460,20 +527,20 @@ const Subscription = () => {
               <CardFooter>
                 <Button 
                   className="w-full gradient-hero" 
-                  onClick={() => handleSubscribe('grow')}
-                  disabled={isProcessing || !isPiAvailable || piLoading || isCurrentPlan('grow')}
+                  onClick={() => isTestMode ? handleMockPayment('grow') : handleSubscribe('grow')}
+                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('grow'))}
                 >
-                  {isProcessing && selectedPlan === 'grow' ? (
+                  {((isProcessing || isActivating) && selectedPlan === 'grow') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
+                      {isTestMode ? 'Activating...' : 'Processing...'}
                     </>
                   ) : isCurrentPlan('grow') ? (
                     'Current Plan'
                   ) : (
                     <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
+                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
+                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
                     </>
                   )}
                 </Button>
@@ -514,20 +581,20 @@ const Subscription = () => {
               <CardFooter>
                 <Button 
                   className="w-full" 
-                  onClick={() => handleSubscribe('advance')}
-                  disabled={isProcessing || !isPiAvailable || piLoading || isCurrentPlan('advance')}
+                  onClick={() => isTestMode ? handleMockPayment('advance') : handleSubscribe('advance')}
+                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('advance'))}
                 >
-                  {isProcessing && selectedPlan === 'advance' ? (
+                  {((isProcessing || isActivating) && selectedPlan === 'advance') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
+                      {isTestMode ? 'Activating...' : 'Processing...'}
                     </>
                   ) : isCurrentPlan('advance') ? (
                     'Current Plan'
                   ) : (
                     <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
+                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
+                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
                     </>
                   )}
                 </Button>
@@ -568,20 +635,20 @@ const Subscription = () => {
               <CardFooter>
                 <Button 
                   className="w-full" 
-                  onClick={() => handleSubscribe('plus')}
-                  disabled={isProcessing || !isPiAvailable || piLoading || isCurrentPlan('plus')}
+                  onClick={() => isTestMode ? handleMockPayment('plus') : handleSubscribe('plus')}
+                  disabled={(isProcessing || isActivating || (!isPiAvailable && !isTestMode) || piLoading || isCurrentPlan('plus'))}
                 >
-                  {isProcessing && selectedPlan === 'plus' ? (
+                  {((isProcessing || isActivating) && selectedPlan === 'plus') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
+                      {isTestMode ? 'Activating...' : 'Processing...'}
                     </>
                   ) : isCurrentPlan('plus') ? (
                     'Current Plan'
                   ) : (
                     <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
+                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
+                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
                     </>
                   )}
                 </Button>
@@ -623,9 +690,9 @@ const Subscription = () => {
             </div>
             <div className="text-center mt-8">
               <p className="text-muted-foreground mb-4">Start with π20/month and scale as you grow</p>
-              <Button size="lg" className="gradient-hero" onClick={() => handleSubscribe('basic')}>
+              <Button size="lg" className="gradient-hero" onClick={() => isTestMode ? handleMockPayment('basic') : handleSubscribe('basic')}>
                 <Crown className="w-4 h-4 mr-2" />
-                Upgrade to Basic Now
+                {isTestMode ? 'Test Basic Now' : 'Upgrade to Basic Now'}
               </Button>
             </div>
           </div>
