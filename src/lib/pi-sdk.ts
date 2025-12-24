@@ -2,6 +2,7 @@
 export interface PiUser {
   uid: string;
   username: string;
+  wallet_address?: string;
 }
 
 export interface PiAuthResult {
@@ -103,7 +104,8 @@ export const isPiAvailable = (): boolean => {
 
 // Pi Authentication
 export const authenticateWithPi = async (
-  onIncompletePaymentFound?: (payment: PiPaymentDTO) => void
+  onIncompletePaymentFound?: (payment: PiPaymentDTO) => void,
+  reqScopes?: string[]
 ): Promise<PiAuthResult | null> => {
   if (!isPiAvailable()) {
     console.error('Pi SDK not available');
@@ -111,7 +113,10 @@ export const authenticateWithPi = async (
   }
 
   try {
-    const scopes = ['username', 'payments', 'wallet_address'];
+    // Default scopes cover: username (auth), payments (payment), wallet_address (wallet info)
+    const scopes = reqScopes && reqScopes.length > 0
+      ? reqScopes
+      : ['username', 'payments', 'wallet_address'];
     const result = await window.Pi!.authenticate(
       scopes,
       onIncompletePaymentFound || (() => {})

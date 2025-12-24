@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PiAuthProvider } from "@/contexts/PiAuthContext";
 import SplashScreen from "@/components/SplashScreen";
+import { PiAuthTest } from "@/components/PiAuthTest";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -51,6 +52,7 @@ const App = () => {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/help" element={<Help />} />
+                                <Route path="/pi-test" element={<PiAuthTest />} />
                 <Route path="/admin-payouts" element={<AdminPayouts />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin-mrwain" element={<AdminMrwain />} />
