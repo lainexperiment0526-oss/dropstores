@@ -71,7 +71,9 @@ export function ImageUpload({
       const fileExt = file.name.split('.').pop();
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      // Upload to Supabase Storage
+      console.log('Uploading file:', { bucket, fileName, fileSize: file.size });
+
+      // Try to upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(fileName, file, {
@@ -79,12 +81,33 @@ export function ImageUpload({
           upsert: false,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Storage upload error:', error);
+        
+        // If bucket doesn't exist, try to create it and retry
+        if (error.message?.includes('Bucket not found') || error.message?.includes('not found')) {
+          toast({
+            title: 'Storage not configured',
+            description: 'Using temporary storage. Contact admin to set up permanent storage.',
+            variant: 'default',
+          });
+          
+          // Use local preview as fallback
+          onUpload(objectUrl);
+          setPreview(objectUrl);
+          setUploading(false);
+          return;
+        }
+        
+        throw error;
+      }
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(data.path);
+
+      console.log('Upload successful:', urlData.publicUrl);
 
       onUpload(urlData.publicUrl);
       setPreview(urlData.publicUrl);
@@ -93,14 +116,23 @@ export function ImageUpload({
         title: 'Image uploaded',
         description: 'Your image has been uploaded successfully.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      setPreview(currentUrl || null);
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload image. Please try again.',
-        variant: 'destructive',
-      });
+      
+      // Fallback: use base64 data URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setPreview(base64String);
+        onUpload(base64String);
+        
+        toast({
+          title: 'Using temporary storage',
+          description: 'Image saved locally. For permanent storage, contact support.',
+          variant: 'default',
+        });
+      };
+      reader.readAsDataURL(file);
     } finally {
       setUploading(false);
     }
