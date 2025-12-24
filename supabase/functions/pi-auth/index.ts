@@ -15,13 +15,14 @@ serve(async (req: Request) => {
 
   try {
     // @ts-ignore: Deno global
-    const PI_API_KEY = Deno.env.get('PI_API_KEY');
+    const PI_API_KEY = Deno.env.get('PI_API_KEY')?.trim();
     // @ts-ignore: Deno global
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-ignore: Deno global
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     console.log('Pi Auth: Starting authentication...');
+    console.log('Pi Auth: PI_API_KEY length:', PI_API_KEY?.length);
 
     if (!PI_API_KEY) {
       console.error('Pi Auth: PI_API_KEY not configured');
