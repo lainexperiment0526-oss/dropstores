@@ -96,6 +96,16 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error('PiAuth: Backend verification failed:', error);
+          // In dev/test mode, allow signing in without backend verification
+          if (import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true') {
+            console.warn('PiAuth: Allowing sign-in without backend verification (dev mode)');
+            toast.success(`Welcome, ${result.user.username}! (Dev Mode - No Backend Verification)`);
+            if (shouldNavigate) {
+              navigate('/dashboard');
+            }
+            setIsLoading(false);
+            return;
+          }
           toast.error('Authentication verification failed. Please try again.');
           return;
         }
