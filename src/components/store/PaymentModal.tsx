@@ -71,7 +71,7 @@ export function PaymentModal({
   const piAvailable = isPiAvailable();
 
   useEffect(() => {
-    initPiSdk(false);
+    initPiSdk(true); // Sandbox mode enabled
   }, []);
 
   // Check for digital products

@@ -97,7 +97,7 @@ export function PaymentModalEnhanced({
   const finalTotal = subtotal + platformFee + finalDeliveryFee;
 
   useEffect(() => {
-    initPiSdk(false);
+    initPiSdk(true); // Sandbox mode enabled
   }, []);
 
   // Fetch store delivery settings
@@ -128,7 +128,7 @@ export function PaymentModalEnhanced({
   }, [open, storeId]);
 
   useEffect(() => {
-    initPiSdk(false);
+    initPiSdk(true); // Sandbox mode enabled
   }, []);
 
   // Generate QR code for wallet address

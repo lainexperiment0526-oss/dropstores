@@ -138,36 +138,83 @@ const Subscription = () => {
     try {
       const plan = SUBSCRIPTION_PLANS[planType];
       
+      console.log('Mock payment - Creating subscription:', {
+        userId: user!.id,
+        planType,
+        planAmount: plan.amount
+      });
+      
       // Calculate expiry date (30 days for monthly plans)
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + 30);
       
-      // Create subscription directly in database
-      const { data, error } = await supabase
+      // First, check if there's an existing active subscription
+      const { data: existingSubscription } = await supabase
         .from('subscriptions')
-        .insert({
-          user_id: user!.id,
-          plan_type: planType,
-          status: 'active',
-          amount: plan.amount,
-          expires_at: expiryDate.toISOString(),
-        })
-        .select()
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('status', 'active')
         .single();
       
-      if (error) throw error;
-      
-      toast.success(`🎉 ${plan.name} activated! (Test Mode) Redirecting to dashboard...`);
-      
-      // Update current subscription state
-      setCurrentSubscription(data);
-      
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
-    } catch (error) {
-      console.error('Error activating subscription:', error);
-      toast.error('Failed to activate subscription. Please try again.');
+      if (existingSubscription) {
+        console.log('Found existing subscription, updating to new plan');
+        // Update existing subscription
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .update({
+            plan_type: planType,
+            amount: plan.amount,
+            expires_at: expiryDate.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingSubscription.id)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error updating subscription:', error);
+          throw error;
+        }
+        
+        toast.success(`🎉 ${plan.name} activated! (Test Mode) Redirecting to dashboard...`);
+        setCurrentSubscription(data);
+        
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      } else {
+        console.log('No existing subscription, creating new one');
+        // Create subscription directly in database
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: user!.id,
+            plan_type: planType,
+            status: 'active',
+            amount: plan.amount,
+            expires_at: expiryDate.toISOString(),
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error creating subscription:', error);
+          throw error;
+        }
+        
+        toast.success(`🎉 ${plan.name} activated! (Test Mode) Redirecting to dashboard...`);
+        
+        // Update current subscription state
+        setCurrentSubscription(data);
+        
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      }
+    } catch (error: any) {
+      console.error('Mock payment error:', error);
+      const errorMessage = error?.message || 'Failed to activate subscription';
+      toast.error(`Error: ${errorMessage}. Check console for details.`);
     } finally {
       setIsActivating(false);
       setSelectedPlan(null);
