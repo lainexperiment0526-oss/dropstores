@@ -1,4 +1,3 @@
-/// <reference types="../deno.d.ts" />
 // @ts-ignore: Deno types
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @ts-ignore: Deno types
