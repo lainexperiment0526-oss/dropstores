@@ -881,6 +881,62 @@ export default function StoreManagement() {
             )}
           </TabsContent>
 
+          {/* Payouts Tab */}
+          <TabsContent value="payouts">
+            <MerchantPayouts 
+              storeId={store?.id || ''} 
+              payoutWallet={store?.payout_wallet || ''}
+            />
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Analytics</CardTitle>
+                <CardDescription>
+                  Track your store performance and sales metrics.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <AnalyticsCards data={analyticsData} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Order Status Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <OrderStatusCards pending={pendingOrders} completed={completedOrders} />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Quick Stats</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex justify-between items-center pb-3 border-b border-border">
+                        <span className="text-muted-foreground">Total Revenue</span>
+                        <span className="text-2xl font-bold text-primary">{totalRevenue.toFixed(2)} π</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-3 border-b border-border">
+                        <span className="text-muted-foreground">Total Orders</span>
+                        <span className="text-2xl font-bold">{orders.length}</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-3 border-b border-border">
+                        <span className="text-muted-foreground">Total Products</span>
+                        <span className="text-2xl font-bold">{products.length}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Average Order Value</span>
+                        <span className="text-2xl font-bold">{(orders.length > 0 ? totalRevenue / orders.length : 0).toFixed(2)} π</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Settings Tab */}
           <TabsContent value="settings">
             <Card>
