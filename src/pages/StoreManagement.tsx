@@ -14,6 +14,10 @@ import { StoreTypeInstructions } from '@/components/store/StoreTypeSelector';
 import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/AnalyticsCards';
 import { ImageUpload } from '@/components/store/ImageUpload';
 import { MerchantPayouts } from '@/components/store/MerchantPayouts';
+import { StoreThemeCustomizer } from '@/components/store/StoreThemeCustomizer';
+import { StoreBannerManager } from '@/components/store/StoreBannerManager';
+import { StoreNavigationManager } from '@/components/store/StoreNavigationManager';
+import { ProductReviewsManager } from '@/components/store/ProductReviewsManager';
 import { StoreQRCode } from '@/components/store/StoreQRCode';
 import {
   Store,
@@ -36,6 +40,7 @@ import {
   Upload,
   Image as ImageIcon,
   Banknote,
+  Palette,
 } from 'lucide-react';
 import {
   Dialog,
@@ -504,7 +509,7 @@ export default function StoreManagement() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 w-full sm:w-auto overflow-x-auto">
+          <TabsList className="mb-6 w-full overflow-x-auto flex-wrap h-auto gap-1">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
               <span className="hidden sm:inline">Products</span>
@@ -512,6 +517,10 @@ export default function StoreManagement() {
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Orders</span>
+            </TabsTrigger>
+            <TabsTrigger value="design" className="flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              <span className="hidden sm:inline">Design</span>
             </TabsTrigger>
             <TabsTrigger value="payouts" className="flex items-center gap-2">
               <Banknote className="w-4 h-4" />
@@ -879,6 +888,18 @@ export default function StoreManagement() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* Design Tab */}
+          <TabsContent value="design" className="space-y-6">
+            <StoreThemeCustomizer
+              storeId={store.id}
+              theme={store as any}
+              onUpdate={(updated) => setStore({ ...store, ...updated })}
+            />
+            <StoreBannerManager storeId={store.id} />
+            <StoreNavigationManager storeId={store.id} />
+            <ProductReviewsManager storeId={store.id} />
           </TabsContent>
 
           {/* Payouts Tab */}
