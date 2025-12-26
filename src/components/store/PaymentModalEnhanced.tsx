@@ -97,7 +97,7 @@ export function PaymentModalEnhanced({
   const finalTotal = subtotal + platformFee + finalDeliveryFee;
 
   useEffect(() => {
-    initPiSdk(false);
+    initPiSdk(false); // Mainnet mode for production
   }, []);
 
   // Fetch store delivery settings
@@ -128,7 +128,7 @@ export function PaymentModalEnhanced({
   }, [open, storeId]);
 
   useEffect(() => {
-    initPiSdk(false);
+    initPiSdk(false); // Mainnet mode for production
   }, []);
 
   // Generate QR code for wallet address

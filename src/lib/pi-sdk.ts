@@ -104,7 +104,8 @@ export const isPiAvailable = (): boolean => {
 
 // Pi Authentication
 export const authenticateWithPi = async (
-  onIncompletePaymentFound?: (payment: PiPaymentDTO) => void
+  onIncompletePaymentFound?: (payment: PiPaymentDTO) => void,
+  reqScopes?: string[]
 ): Promise<PiAuthResult | null> => {
   if (!isPiAvailable()) {
     console.error('Pi SDK not available');
@@ -112,18 +113,20 @@ export const authenticateWithPi = async (
   }
 
   try {
-    const scopes = ['username', 'payments', 'wallet_address'];
-    const incompletePaymentHandler = onIncompletePaymentFound || ((payment: PiPaymentDTO) => {
-      console.warn('Incomplete payment detected:', payment);
-    });
-    
-    const result = await window.Pi!.authenticate(scopes, incompletePaymentHandler);
-    
+    // Default scopes cover: username (auth), payments (payment), wallet_address (wallet info)
+    const scopes = reqScopes && reqScopes.length > 0
+      ? reqScopes
+      : ['username', 'payments', 'wallet_address'];
+    const result = await window.Pi!.authenticate(
+      scopes,
+      onIncompletePaymentFound || ((payment: PiPaymentDTO) => {
+        console.warn('Incomplete payment detected:', payment);
+      })
+    );
     if (!result || !result.user || !result.user.uid || !result.user.username) {
       console.error('Invalid authentication result:', result);
       return null;
     }
-    
     console.log('Pi authentication successful:', result.user.username);
     return result;
   } catch (error) {

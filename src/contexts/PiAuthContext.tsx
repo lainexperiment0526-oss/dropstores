@@ -17,11 +17,14 @@ interface PiAuthContextType {
   user: User | null;
   piUser: PiUser | null;
   piAccessToken: string | null;
+    walletAddress: string | null;
   isPiAuthenticated: boolean;
   isPiAvailable: boolean;
   isLoading: boolean;
   signInWithPi: (shouldNavigate?: boolean) => Promise<void>;
   linkPiAccount: () => Promise<void>;
+  fetchWalletAddress: () => Promise<void>;
+  signInWithPiScopes: (scopes: string[], shouldNavigate?: boolean) => Promise<void>;
 }
 
 const PiAuthContext = createContext<PiAuthContextType | undefined>(undefined);
@@ -30,6 +33,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [piUser, setPiUser] = useState<PiUser | null>(null);
   const [piAccessToken, setPiAccessToken] = useState<string | null>(null);
+    const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [piAvailable, setPiAvailable] = useState(false);
   const navigate = useNavigate();
@@ -38,7 +42,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('PiAuth: Initializing Pi SDK...');
     // Use sandbox mode if explicitly enabled, otherwise use mainnet
-    const isSandbox = import.meta.env.VITE_PI_SANDBOX_MODE === 'true';
+    const isSandbox = false; // Mainnet mode for production
     
     console.log('PiAuth: Configuration:', {
       sandbox: isSandbox,
@@ -71,7 +75,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('PiAuth: Starting Pi authentication...');
       const result: PiAuthResult | null = await authenticateWithPi(handleIncompletePayment);
-      
+
       if (!result) {
         console.log('PiAuth: No result from Pi authentication');
         toast.error('Pi authentication was cancelled or failed.');
@@ -86,10 +90,14 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      console.log('PiAuth: Pi SDK auth successful, user:', result.user.username);
+      // Set Pi user and access token
       setPiUser(result.user);
       setPiAccessToken(result.accessToken);
-      
+      // Try to fetch wallet address automatically
+      if (result.user.wallet_address) {
+        setWalletAddress(result.user.wallet_address);
+      }
+
       // Verify the authentication on the backend and get Supabase session
       console.log('PiAuth: Calling backend pi-auth function...');
       const { data, error } = await supabase.functions.invoke('pi-auth', {
@@ -128,7 +136,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         }
         
         console.log('PiAuth: Session set successfully!');
-        
         // Store Pi user data in database
         if (user?.id) {
           const { error: storeError } = await supabase
@@ -142,7 +149,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
             }, {
               onConflict: 'pi_uid'
             });
-          
           if (storeError) {
             console.warn('PiAuth: Failed to store Pi user data:', storeError);
             // Don't fail auth if storage fails, just log it
@@ -150,9 +156,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
             console.log('PiAuth: Pi user data stored successfully');
           }
         }
-        
         toast.success(`Welcome, ${result.user.username}!`);
-        
         // Only navigate if requested
         if (shouldNavigate) {
           // Small delay to ensure session is propagated
@@ -172,6 +176,95 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       setPiUser(null);
       setPiAccessToken(null);
       toast.error('Failed to authenticate with Pi Network. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Sign in with custom scopes (e.g., ['username','payments','wallet_address'])
+  const signInWithPiScopes = async (scopes: string[], shouldNavigate: boolean = true) => {
+    if (!piAvailable) {
+      toast.error('Pi Network is not available. Please open this app in Pi Browser.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result: PiAuthResult | null = await authenticateWithPi(handleIncompletePayment, scopes);
+      if (result) {
+        setPiUser(result.user);
+        setPiAccessToken(result.accessToken);
+        if (result.user.wallet_address) setWalletAddress(result.user.wallet_address);
+
+        const { data, error } = await supabase.functions.invoke('pi-auth', {
+          body: { accessToken: result.accessToken, piUser: result.user }
+        });
+        if (error) {
+          console.error('PiAuth: Backend verification failed:', error);
+          toast.error('Authentication verification failed.');
+          return;
+        }
+        if (data && data.session) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+          if (sessionError) {
+            console.error('PiAuth: Failed to set session:', sessionError);
+            toast.error('Failed to complete sign in.');
+            return;
+          }
+          toast.success(`Welcome, ${result.user.username}!`);
+          if (shouldNavigate) setTimeout(() => navigate('/dashboard'), 100);
+        } else {
+          toast.error('Authentication failed. Please try again.');
+        }
+      } else {
+        toast.error('Pi authentication was cancelled or failed.');
+      }
+    } catch (error) {
+      console.error('PiAuth: Pi authentication error:', error);
+      toast.error('Failed to authenticate with Pi Network.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch wallet address from Pi Platform API
+  const fetchWalletAddress = async () => {
+    if (!piAccessToken) {
+      toast.error('Please authenticate first');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://api.minepi.com/v2/me', {
+        headers: {
+          'Authorization': `Bearer ${piAccessToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch wallet address');
+      }
+
+      const userData = await response.json();
+      if (userData.wallet_address) {
+        setWalletAddress(userData.wallet_address);
+        
+        // Update piUser with wallet address
+        if (piUser) {
+          setPiUser({ ...piUser, wallet_address: userData.wallet_address });
+        }
+        
+        toast.success('Wallet address retrieved!');
+      } else {
+        toast.warning('No wallet address found for this account');
+      }
+    } catch (error) {
+      console.error('Failed to fetch wallet:', error);
+      toast.error('Failed to fetch wallet address');
     } finally {
       setIsLoading(false);
     }
@@ -243,11 +336,14 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         user,
         piUser, 
         piAccessToken, 
+          walletAddress,
         isPiAuthenticated: !!piUser,
         isPiAvailable: piAvailable,
         isLoading,
         signInWithPi,
-        linkPiAccount
+        linkPiAccount,
+        fetchWalletAddress,
+        signInWithPiScopes
       }}
     >
       {children}

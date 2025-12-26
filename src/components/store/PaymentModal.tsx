@@ -71,7 +71,7 @@ export function PaymentModal({
   const piAvailable = isPiAvailable();
 
   useEffect(() => {
-    initPiSdk(false);
+    initPiSdk(false); // Mainnet mode for production
   }, []);
 
   // Check for digital products
@@ -96,17 +96,8 @@ export function PaymentModal({
   const handleContinueToPayment = () => {
     if (!orderForm.name.trim() || !orderForm.email.trim()) return;
     
-    if (!piAvailable) {
-      // If Pi is not available, show a message
-      setStep('pi-auth');
-      return;
-    }
-    
-    if (!piAuthenticated) {
-      setStep('pi-auth');
-    } else {
-      setStep('confirm');
-    }
+    // Skip Pi auth and go directly to confirm (free orders)
+    setStep('confirm');
   };
 
   const handleSubmit = async () => {

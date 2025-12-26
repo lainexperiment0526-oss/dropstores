@@ -6,22 +6,28 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Content-Type': 'application/json',
 };
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    });
   }
 
   try {
     // @ts-ignore: Deno global
-    const PI_API_KEY = Deno.env.get('PI_API_KEY');
+    const PI_API_KEY = Deno.env.get('PI_API_KEY')?.trim();
     // @ts-ignore: Deno global
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     // @ts-ignore: Deno global
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     console.log('Pi Auth: Starting authentication...');
+    console.log('Pi Auth: PI_API_KEY length:', PI_API_KEY?.length);
 
     if (!PI_API_KEY) {
       console.error('Pi Auth: PI_API_KEY not configured');

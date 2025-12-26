@@ -645,6 +645,69 @@ export type Database = {
           },
         ]
       }
+      product_reviews: {
+        Row: {
+          content: string | null
+          created_at: string
+          customer_email: string
+          customer_name: string
+          helpful_count: number | null
+          id: string
+          is_approved: boolean | null
+          is_verified_purchase: boolean | null
+          product_id: string
+          rating: number
+          store_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          helpful_count?: number | null
+          id?: string
+          is_approved?: boolean | null
+          is_verified_purchase?: boolean | null
+          product_id: string
+          rating: number
+          store_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          helpful_count?: number | null
+          id?: string
+          is_approved?: boolean | null
+          is_verified_purchase?: boolean | null
+          product_id?: string
+          rating?: number
+          store_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_variants: {
         Row: {
           barcode: string | null
@@ -735,11 +798,20 @@ export type Database = {
           images: string[] | null
           inventory_count: number | null
           is_active: boolean | null
+          is_featured: boolean | null
           name: string
           price: number
           product_type: string | null
+          requires_shipping: boolean | null
+          seo_description: string | null
+          seo_title: string | null
+          sort_order: number | null
           store_id: string
+          tags: string[] | null
           updated_at: string
+          vendor: string | null
+          weight: number | null
+          weight_unit: string | null
         }
         Insert: {
           category?: string | null
@@ -753,11 +825,20 @@ export type Database = {
           images?: string[] | null
           inventory_count?: number | null
           is_active?: boolean | null
+          is_featured?: boolean | null
           name: string
           price?: number
           product_type?: string | null
+          requires_shipping?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          sort_order?: number | null
           store_id: string
+          tags?: string[] | null
           updated_at?: string
+          vendor?: string | null
+          weight?: number | null
+          weight_unit?: string | null
         }
         Update: {
           category?: string | null
@@ -771,11 +852,20 @@ export type Database = {
           images?: string[] | null
           inventory_count?: number | null
           is_active?: boolean | null
+          is_featured?: boolean | null
           name?: string
           price?: number
           product_type?: string | null
+          requires_shipping?: boolean | null
+          seo_description?: string | null
+          seo_title?: string | null
+          sort_order?: number | null
           store_id?: string
+          tags?: string[] | null
           updated_at?: string
+          vendor?: string | null
+          weight?: number | null
+          weight_unit?: string | null
         }
         Relationships: [
           {
@@ -967,6 +1057,56 @@ export type Database = {
           },
         ]
       }
+      store_banners: {
+        Row: {
+          button_text: string | null
+          created_at: string
+          id: string
+          image_url: string
+          is_active: boolean | null
+          link: string | null
+          position: number | null
+          store_id: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          button_text?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          link?: string | null
+          position?: number | null
+          store_id: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          button_text?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          link?: string | null
+          position?: number | null
+          store_id?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_banners_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_customers: {
         Row: {
           accepts_marketing: boolean | null
@@ -1032,65 +1172,209 @@ export type Database = {
           },
         ]
       }
+      store_navigation: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean | null
+          link: string
+          parent_id: string | null
+          position: number | null
+          store_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean | null
+          link: string
+          parent_id?: string | null
+          position?: number | null
+          store_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean | null
+          link?: string
+          parent_id?: string | null
+          position?: number | null
+          store_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_navigation_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "store_navigation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_navigation_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
+          about_page: string | null
           address: string | null
+          announcement_link: string | null
+          announcement_text: string | null
           banner_url: string | null
           contact_email: string | null
+          contact_page: string | null
           contact_phone: string | null
           created_at: string
+          currency: string | null
           description: string | null
+          enable_compare: boolean | null
+          enable_wishlist: boolean | null
+          featured_collection_id: string | null
+          font_body: string | null
+          font_heading: string | null
+          footer_style: string | null
+          header_style: string | null
+          hero_button_link: string | null
+          hero_button_text: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
           id: string
           is_published: boolean | null
+          layout_style: string | null
           logo_url: string | null
           name: string
           owner_id: string
           payout_wallet: string | null
           primary_color: string | null
+          privacy_policy: string | null
+          products_per_page: number | null
+          refund_policy: string | null
           secondary_color: string | null
+          shipping_policy: string | null
+          show_announcement_bar: boolean | null
+          show_featured_collection: boolean | null
+          show_product_reviews: boolean | null
+          show_sold_count: boolean | null
+          show_stock_count: boolean | null
           slug: string
+          social_facebook: string | null
+          social_instagram: string | null
+          social_tiktok: string | null
+          social_twitter: string | null
           store_type: string | null
           template_id: string | null
+          terms_of_service: string | null
           updated_at: string
         }
         Insert: {
+          about_page?: string | null
           address?: string | null
+          announcement_link?: string | null
+          announcement_text?: string | null
           banner_url?: string | null
           contact_email?: string | null
+          contact_page?: string | null
           contact_phone?: string | null
           created_at?: string
+          currency?: string | null
           description?: string | null
+          enable_compare?: boolean | null
+          enable_wishlist?: boolean | null
+          featured_collection_id?: string | null
+          font_body?: string | null
+          font_heading?: string | null
+          footer_style?: string | null
+          header_style?: string | null
+          hero_button_link?: string | null
+          hero_button_text?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           is_published?: boolean | null
+          layout_style?: string | null
           logo_url?: string | null
           name: string
           owner_id: string
           payout_wallet?: string | null
           primary_color?: string | null
+          privacy_policy?: string | null
+          products_per_page?: number | null
+          refund_policy?: string | null
           secondary_color?: string | null
+          shipping_policy?: string | null
+          show_announcement_bar?: boolean | null
+          show_featured_collection?: boolean | null
+          show_product_reviews?: boolean | null
+          show_sold_count?: boolean | null
+          show_stock_count?: boolean | null
           slug: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
           store_type?: string | null
           template_id?: string | null
+          terms_of_service?: string | null
           updated_at?: string
         }
         Update: {
+          about_page?: string | null
           address?: string | null
+          announcement_link?: string | null
+          announcement_text?: string | null
           banner_url?: string | null
           contact_email?: string | null
+          contact_page?: string | null
           contact_phone?: string | null
           created_at?: string
+          currency?: string | null
           description?: string | null
+          enable_compare?: boolean | null
+          enable_wishlist?: boolean | null
+          featured_collection_id?: string | null
+          font_body?: string | null
+          font_heading?: string | null
+          footer_style?: string | null
+          header_style?: string | null
+          hero_button_link?: string | null
+          hero_button_text?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           is_published?: boolean | null
+          layout_style?: string | null
           logo_url?: string | null
           name?: string
           owner_id?: string
           payout_wallet?: string | null
           primary_color?: string | null
+          privacy_policy?: string | null
+          products_per_page?: number | null
+          refund_policy?: string | null
           secondary_color?: string | null
+          shipping_policy?: string | null
+          show_announcement_bar?: boolean | null
+          show_featured_collection?: boolean | null
+          show_product_reviews?: boolean | null
+          show_sold_count?: boolean | null
+          show_stock_count?: boolean | null
           slug?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
           store_type?: string | null
           template_id?: string | null
+          terms_of_service?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1141,6 +1425,45 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "subscriptions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wishlists: {
+        Row: {
+          created_at: string
+          customer_email: string
+          id: string
+          product_id: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          id?: string
+          product_id: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          id?: string
+          product_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlists_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wishlists_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"

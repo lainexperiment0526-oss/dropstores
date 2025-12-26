@@ -1,3 +1,4 @@
+// @ts-ignore: Deno types
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -5,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,8 +22,8 @@ serve(async (req) => {
       );
     }
 
-    // Get PI_API_KEY from environment
-    const PI_API_KEY = Deno.env.get('PI_API_KEY');
+    // Get PI_API_KEY from environment and trim any whitespace
+    const PI_API_KEY = Deno.env.get('PI_API_KEY')?.trim();
     
     if (!PI_API_KEY) {
       console.error('PI_API_KEY not configured');
@@ -34,6 +35,7 @@ serve(async (req) => {
 
     console.log('Approving Pi payment:', paymentId);
     console.log('Using PI_API_KEY (first 10 chars):', PI_API_KEY.substring(0, 10) + '...');
+    console.log('PI_API_KEY length:', PI_API_KEY.length);
 
     // Approve the payment with Pi Platform API (Mainnet)
     const approveResponse = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {

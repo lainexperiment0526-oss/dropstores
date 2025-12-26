@@ -26,8 +26,11 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
   const [loading, setLoading] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const { user } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const { isPiAvailable, signInWithPi, isLoading: piLoading } = usePiAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -41,6 +44,68 @@ export default function Auth() {
   useEffect(() => {
     setIsSignUp(searchParams.get('mode') === 'signup');
   }, [searchParams]);
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Sign in failed',
+          description: error.message || 'Please check your credentials.',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Signed in successfully!',
+        });
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Sign in failed. Please try again.',
+      });
+      console.error('Sign in error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await signUp(email, password);
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Sign up failed',
+          description: error.message || 'Please try again.',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Account created! Please sign in.',
+        });
+        setIsSignUp(false);
+        setEmail('');
+        setPassword('');
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Sign up failed. Please try again.',
+      });
+      console.error('Sign up error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -74,46 +139,130 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Pi Network Login Only */}
-              {isPiAvailable && (
+              {!showEmailForm ? (
                 <>
-                  <div className="mt-4">
+                  {/* Pi Network Login */}
+                  {isPiAvailable && (
+                    <>
+                      <div className="mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full mt-4"
+                          onClick={() => signInWithPi()}
+                          disabled={piLoading}
+                        >
+                          {piLoading ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : null}
+                          Continue with Pi Network
+                        </Button>
+                      </div>
+                      {/* Terms and Privacy Modal Link Below Button */}
+                      <div className="mt-4 text-center">
+                        <span className="text-xs text-muted-foreground">
+                          By continuing, you agree to our
+                        </span>{' '}
+                        <TermsPrivacyModal />
+                      </div>
+                      <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-border" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-card px-2 text-muted-foreground">Or</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Email Login Option (Dev/Test) */}
+                  {(import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true') && (
                     <Button
                       type="button"
-                      variant="outline"
-                      className="w-full mt-4"
-                      onClick={signInWithPi}
-                      disabled={piLoading}
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => setShowEmailForm(true)}
                     >
-                      {piLoading ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : null}
-                      Continue with Pi Network
+                      <Mail className="w-4 h-4 mr-2" />
+                      Sign in with Email
                     </Button>
-                  </div>
-                  {/* Terms and Privacy Modal Link Below Button */}
-                  <div className="mt-4 text-center">
-                    <span className="text-xs text-muted-foreground">
-                      By continuing, you agree to our
-                    </span>{' '}
-                    <TermsPrivacyModal />
-                  </div>
+                  )}
+
+                  {!isPiAvailable && (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground mb-4">
+                        Please open this app in Pi Browser to continue with Pi Network authentication.
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.open('https://minepi.com', '_blank')}
+                      >
+                        Learn about Pi Network
+                      </Button>
+                    </div>
+                  )}
                 </>
-              )}
-              
-              {!isPiAvailable && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    Please open this app in Pi Browser to continue with Pi Network authentication.
-                  </p>
+              ) : (
+                /* Email Form */
+                <form onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn} className="space-y-4">
+                  {isSignUp && (
+                    <div>
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        type="text"
+                        placeholder="John Doe"
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
                   <Button
-                    variant="outline"
+                    type="submit"
                     className="w-full"
-                    onClick={() => window.open('https://minepi.com', '_blank')}
+                    disabled={loading || !email || !password}
                   >
-                    Learn about Pi Network
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    {isSignUp ? 'Create Account' : 'Sign In'}
                   </Button>
-                </div>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowEmailForm(false)}
+                  >
+                    Back
+                  </Button>
+                </form>
               )}
             </CardContent>
           </Card>

@@ -58,7 +58,8 @@ export function usePiPayment() {
         storeId: storeId || null,
         userId: user.id,
         planName: plan.name,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        subscription_type: 'subscription'
       }
     };
 
