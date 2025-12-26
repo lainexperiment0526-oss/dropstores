@@ -209,14 +209,26 @@ export function PaymentModal({
             </div>
             
             {!piAvailable && (
-              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
-                  <AlertCircle className="w-5 h-5" />
-                  <span className="text-sm font-medium">Pi Browser Required</span>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      💡 For Best Experience: Always use Pi Browser
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Open this payment link in the <strong>Pi Browser</strong> app for secure transactions. Copy the payment link below if you need to switch to Pi Browser.
+                    </p>
+                    <a 
+                      href="https://pinet.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-200"
+                    >
+                      Download Pi Browser from pinet.com
+                    </a>
+                  </div>
                 </div>
-                <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
-                  Download Pi Browser from minepi.com to make Pi payments
-                </p>
               </div>
             )}
             

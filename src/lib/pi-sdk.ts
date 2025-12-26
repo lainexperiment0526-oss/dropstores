@@ -483,3 +483,19 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
 
 export type PlanType = keyof typeof SUBSCRIPTION_PLANS;
 export type StoreType = keyof typeof STORE_TYPES;
+
+// Platform Fee Configuration
+export const PLATFORM_FEE_PERCENT = 0.05; // 5%
+
+export const calculatePlatformFee = (amount: number): number => {
+  return amount * PLATFORM_FEE_PERCENT;
+};
+
+export const calculateNetAmount = (amount: number): number => {
+  return amount - calculatePlatformFee(amount);
+};
+
+export const calculateTotalWithFee = (baseAmount: number): number => {
+  // When merchant sets a price, calculate what customer pays to cover platform fee
+  return baseAmount / (1 - PLATFORM_FEE_PERCENT);
+};
