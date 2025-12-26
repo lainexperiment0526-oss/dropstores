@@ -28,6 +28,7 @@ const Subscription = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [isActivating, setIsActivating] = useState(false);
 
   // Fetch current subscription
   useEffect(() => {
@@ -62,10 +63,13 @@ const Subscription = () => {
     if (status === 'completed') {
       toast.success('Subscription activated! Redirecting to dashboard...');
       setTimeout(() => {
+        setIsActivating(false);
+        setSelectedPlan(null);
+        resetPayment();
         navigate('/dashboard');
       }, 2000);
     }
-  }, [status, navigate]);
+  }, [status, navigate, resetPayment]);
 
   if (authLoading) {
     return (
@@ -82,6 +86,7 @@ const Subscription = () => {
 
   const handleSubscribe = async (planType: PlanType) => {
     setSelectedPlan(planType);
+    setIsActivating(true);
     
     // Free plan doesn't require Pi authentication or payment
     if (planType === 'free') {
@@ -100,12 +105,16 @@ const Subscription = () => {
         if (error) throw error;
         
         toast.success('🎉 Free plan activated! Redirecting to dashboard...');
+        setIsActivating(false);
         setTimeout(() => {
+          setSelectedPlan(null);
           navigate('/dashboard');
         }, 2000);
       } catch (error) {
         console.error('Error activating free plan:', error);
         toast.error('Failed to activate free plan. Please try again.');
+        setIsActivating(false);
+        setSelectedPlan(null);
       }
       return;
     }
@@ -113,6 +122,7 @@ const Subscription = () => {
     // For paid plans, check if Pi is available first
     if (!isPiAvailable) {
       toast.error('Pi Network is not available. Please open this app in Pi Browser.');
+      setIsActivating(false);
       setSelectedPlan(null);
       return;
     }
@@ -120,11 +130,13 @@ const Subscription = () => {
     // For paid plans, require Pi authentication before payment
     if (!isPiAuthenticated) {
       toast.info('Please authenticate with Pi Network first');
+      setIsActivating(false);
       setSelectedPlan(null);
       return;
     }
     
     // Already authenticated, create payment directly
+    setIsActivating(false);
     await createSubscriptionPayment(planType);
   };
 

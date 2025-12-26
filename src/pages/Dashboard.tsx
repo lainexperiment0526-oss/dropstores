@@ -210,8 +210,37 @@ function Dashboard() {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
-          {/* Subscription Banner for non-subscribers */}
-          {!isActive && (
+          {/* Subscription Status Banner */}
+          {subscriptionLoading ? (
+            <Card className="mb-8 bg-muted">
+              <CardContent className="py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </CardContent>
+            </Card>
+          ) : isActive ? (
+            <Card className="mb-8 border-green-500 bg-green-50 dark:bg-green-950/20">
+              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <Crown className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-green-900 dark:text-green-100">Subscription Active</h3>
+                    <p className="text-sm text-green-700 dark:text-green-200">
+                      {subscription?.plan_type && `Plan: ${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}`}
+                      {daysRemaining > 0 && ` • ${daysRemaining} days remaining`}
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full sm:w-auto border-green-500 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20" asChild>
+                  <Link to="/subscription">
+                    <Crown className="w-4 h-4 mr-2" />
+                    Upgrade Plan
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
             <Card className="mb-8 border-primary/50 bg-primary/5">
               <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
                 <div className="flex items-center gap-4">

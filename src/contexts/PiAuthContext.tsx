@@ -128,6 +128,29 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         }
         
         console.log('PiAuth: Session set successfully!');
+        
+        // Store Pi user data in database
+        if (user?.id) {
+          const { error: storeError } = await supabase
+            .from('pi_users')
+            .upsert({
+              user_id: user.id,
+              pi_uid: result.user.uid,
+              pi_username: result.user.username,
+              wallet_address: result.user.wallet_address || null,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'pi_uid'
+            });
+          
+          if (storeError) {
+            console.warn('PiAuth: Failed to store Pi user data:', storeError);
+            // Don't fail auth if storage fails, just log it
+          } else {
+            console.log('PiAuth: Pi user data stored successfully');
+          }
+        }
+        
         toast.success(`Welcome, ${result.user.username}!`);
         
         // Only navigate if requested

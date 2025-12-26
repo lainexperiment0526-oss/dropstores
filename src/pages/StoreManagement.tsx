@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,6 +95,7 @@ interface Order {
 export default function StoreManagement() {
   const { storeId } = useParams<{ storeId: string }>();
   const { user, loading: authLoading } = useAuth();
+  const { isActive, canAddProduct } = useSubscription();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -298,6 +300,28 @@ export default function StoreManagement() {
         description: 'Please fill in product name and price.',
         variant: 'destructive',
       });
+      return;
+    }
+
+    // Check if user has subscription for new products (not editing)
+    if (!editingProduct && !isActive) {
+      toast({
+        title: 'Subscription required',
+        description: 'You need an active subscription to add products. Subscribe to unlock this feature.',
+        variant: 'destructive',
+      });
+      navigate('/subscription');
+      return;
+    }
+
+    // Check if user can add more products
+    if (!editingProduct && !canAddProduct(products.length)) {
+      toast({
+        title: 'Product limit reached',
+        description: 'You have reached the product limit for your plan. Upgrade to add more products.',
+        variant: 'destructive',
+      });
+      navigate('/subscription');
       return;
     }
 

@@ -183,20 +183,6 @@ export function usePiAdNetwork() {
       return { success: false };
     }
   }, [rewardedEnabled, canShowAd]);
-          rewarded: result.reward,
-        };
-      }
-
-      toast.error('Failed to show ad. Please try again.');
-      return { success: false };
-    } catch (error) {
-      console.error('Failed to show rewarded ad:', error);
-      toast.error('Something went wrong. Please try again.');
-      return { success: false };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [rewardedEnabled, canShowAd]);
 
   const resetSession = useCallback(() => {
     setAdSession({ adsShownCount: 0, lastAdShownAt: null });
