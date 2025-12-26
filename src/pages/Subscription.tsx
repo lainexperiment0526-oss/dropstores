@@ -92,139 +92,95 @@ const Subscription = () => {
     try {
       const plan = SUBSCRIPTION_PLANS[planType];
       
-      console.log('Creating subscription without payment:', {
+      console.log('Processing subscription:', {
         userId: user!.id,
         planType,
-        planAmount: plan.amount
+        planAmount: plan.amount,
+        isPiAvailable,
+        isPiAuthenticated
       });
       
-      // Calculate expiry date (30 days for monthly plans, 1 year for free)
-      const expiryDate = new Date();
+      // Free plan doesn't require Pi payment
       if (planType === 'free') {
-        expiryDate.setDate(expiryDate.getDate() + 365);
-      } else {
-        expiryDate.setDate(expiryDate.getDate() + 30);
-      }
-      
-      // Check if there's an existing active subscription
-      const { data: existingSubscription } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('status', 'active')
-        .single();
-      
-      if (existingSubscription) {
-        console.log('Found existing subscription, updating to new plan');
-        // Update existing subscription
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .update({
-            plan_type: planType,
-            amount: plan.amount,
-            expires_at: expiryDate.toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingSubscription.id)
-          .select()
-          .single();
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 365); // 1 year for free
         
-        if (error) {
-          console.error('Error updating subscription:', error);
-          throw error;
+        // Check for existing subscription
+        const { data: existingSubscription } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user!.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (existingSubscription) {
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .update({
+              plan_type: planType,
+              amount: 0,
+              expires_at: expiryDate.toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingSubscription.id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          toast.success(`🎉 Free plan activated!`);
+          setCurrentSubscription(data);
+        } else {
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: user!.id,
+              plan_type: planType,
+              status: 'active',
+              amount: 0,
+              expires_at: expiryDate.toISOString(),
+            })
+            .select()
+            .single();
+          
+          if (error) throw error;
+          toast.success(`🎉 Free plan activated!`);
+          setCurrentSubscription(data);
         }
         
-        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
-        setCurrentSubscription(data);
-      } else {
-        console.log('No existing subscription, creating new one');
-        // Create subscription directly in database
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: user!.id,
-            plan_type: planType,
-            status: 'active',
-            amount: plan.amount,
-            expires_at: expiryDate.toISOString(),
-          })
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Error creating subscription:', error);
-          throw error;
-        }
-        
-        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
-        setCurrentSubscription(data);
+        setTimeout(() => navigate('/dashboard'), 2000);
+        return;
       }
       
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      // For paid plans, require Pi authentication
+      if (!isPiAvailable) {
+        toast.error('Pi Network is not available. Please open this app in Pi Browser.');
+        setIsActivating(false);
+        setSelectedPlan(null);
+        return;
+      }
+
+      if (!isPiAuthenticated) {
+        toast.info('Please authenticate with Pi Network first to subscribe');
+        // Trigger Pi auth
+        await signInWithPi(false);
+        setIsActivating(false);
+        setSelectedPlan(null);
+        return;
+      }
+      
+      // Create Pi payment for paid plans
+      console.log('Creating Pi payment for plan:', planType);
+      setIsActivating(false);
+      await createSubscriptionPayment(planType);
+      
     } catch (error: any) {
       console.error('Subscription error:', error);
-      const errorMessage = error?.message || 'Failed to activate subscription';
+      const errorMessage = error?.message || 'Failed to process subscription';
       toast.error(`Error: ${errorMessage}`);
     } finally {
       setIsActivating(false);
       setSelectedPlan(null);
     }
-
-    // Old Pi payment code (disabled)
-    /*
-    // Free plan doesn't require Pi authentication or payment
-    if (planType === 'free') {
-      try {
-        // Activate free plan directly without requiring Pi auth
-        const { error } = await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: user!.id,
-            plan_type: 'free',
-            status: 'active',
-            amount: 0,
-            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-          });
-        
-        if (error) throw error;
-        
-        toast.success('🎉 Free plan activated! Redirecting to dashboard...');
-        setIsActivating(false);
-        setTimeout(() => {
-          setSelectedPlan(null);
-          navigate('/dashboard');
-        }, 2000);
-      } catch (error) {
-        console.error('Error activating free plan:', error);
-        toast.error('Failed to activate free plan. Please try again.');
-        setIsActivating(false);
-        setSelectedPlan(null);
-      }
-      return;
-    }
-    
-    // For paid plans, check if Pi is available first
-    if (!isPiAvailable) {
-      toast.error('Pi Network is not available. Please open this app in Pi Browser.');
-      setIsActivating(false);
-      setSelectedPlan(null);
-      return;
-    }
-
-    // For paid plans, require Pi authentication before payment
-    if (!isPiAuthenticated) {
-      toast.info('Please authenticate with Pi Network first');
-      setIsActivating(false);
-      setSelectedPlan(null);
-      return;
-    }
-    
-    // Already authenticated, create payment directly
-    setIsActivating(false);
-    await createSubscriptionPayment(planType);
-    */
   };
 
   // Mock payment handler for testing
