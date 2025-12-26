@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePiAuth } from '@/contexts/PiAuthContext';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,7 @@ export default function Auth() {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [ecosystemOpen, setEcosystemOpen] = useState(false);
 
   const { user, signIn, signUp } = useAuth();
   const { isPiAvailable, signInWithPi, isLoading: piLoading } = usePiAuth();
@@ -165,6 +167,17 @@ export default function Auth() {
                         </span>{' '}
                         <TermsPrivacyModal />
                       </div>
+                      <div className="mt-4">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full"
+                          onClick={() => setEcosystemOpen(true)}
+                        >
+                          Learn the Droplink Ecosystem
+                        </Button>
+                      </div>
+
                       <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
                           <span className="w-full border-t border-border" />
@@ -314,6 +327,79 @@ export default function Auth() {
         <div className="absolute top-20 right-20 w-64 h-64 bg-primary-foreground/10 rounded-full blur-3xl" />
         <div className="absolute bottom-20 left-20 w-48 h-48 bg-primary-foreground/10 rounded-full blur-3xl" />
       </div>
+      
+      {/* Ecosystem Modal */}
+      <Dialog open={ecosystemOpen} onOpenChange={setEcosystemOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>The Droplink Ecosystem for Business & Creators</DialogTitle>
+            <DialogDescription>
+              Build, sell, and get paid across fully connected Pi apps.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 text-sm leading-relaxed">
+            <section className="space-y-2">
+              <h3 className="font-semibold">🔗 Droplink</h3>
+              <p>
+                Droplink connects your DropStore storefront to the masses, driving traffic, visibility,
+                and real buyers to your products through one powerful link.
+              </p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="font-semibold">🛒 DropStore</h3>
+              <p>Your complete storefront, designed to display and sell:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Physical products</li>
+                <li>Digital products</li>
+                <li>Online services</li>
+              </ul>
+              <p>All in one Pi-powered marketplace.</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="font-semibold">💳 DropPay</h3>
+              <p>Handles payments and payouts, allowing you to:</p>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Accept Pi payments for your products</li>
+                <li>Create checkout links for everything</li>
+                <li>Embed Pi payments on your website or widgets</li>
+                <li>Automatically receive earnings from your DropStore</li>
+                <li>Manage merchant payouts seamlessly</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="font-semibold">🔁 One Connected Ecosystem</h3>
+              <p>These three Pi apps are fully connected, creating a complete business flow:</p>
+              <p className="font-mono bg-muted px-2 py-1 rounded w-fit">Exposure → Selling → Payment → Payout</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="font-semibold">✅ Recommended Usage</h3>
+              <ul className="list-disc pl-6 space-y-1">
+                <li>Creators & Influencers → Use Droplink to grow reach</li>
+                <li>Sellers & Merchants → Use DropStore to showcase and sell</li>
+                <li>Businesses → Use DropPay for secure Pi payments & earnings</li>
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="font-semibold">💡 Flexible for Your Needs</h3>
+              <p>Use one, two, or all three — depending on your business or creator goals.</p>
+            </section>
+          </div>
+
+          <DialogFooter className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Build. Sell. Get Paid. All in Pi.</span>
+            <div className="flex gap-2">
+              <Button onClick={() => setEcosystemOpen(false)} variant="outline">Learn More</Button>
+              <Button onClick={() => { setEcosystemOpen(false); navigate('/dashboard'); }}>Get Started</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

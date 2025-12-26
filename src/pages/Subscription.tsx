@@ -28,7 +28,6 @@ const Subscription = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
-  const [isTestMode, setIsTestMode] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
 
   // Fetch current subscription
@@ -324,33 +323,15 @@ const Subscription = () => {
                 <p className="text-sm text-muted-foreground">Pay with Pi • Powered by Droplink</p>
               </div>
             </div>
-            {/* Test Mode Toggle */}
-            <Button
-              variant={isTestMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsTestMode(!isTestMode)}
-              className="shrink-0"
-            >
-              {isTestMode ? "🧪 Test Mode ON" : "Enable Test Mode"}
-            </Button>
+            {/* Test Mode removed */}
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
-          {/* Test Mode Alert */}
-          {isTestMode && (
-            <Alert className="mb-8 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-900 dark:text-blue-100">
-                <span className="font-semibold">🧪 Test Mode Enabled</span> - Subscriptions will be activated instantly without Pi payment. Use this to test the gift card feature and other functionality.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Pi Network Notice */}
-          {!isPiAvailable && !isTestMode && (
+          {!isPiAvailable && (
             <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -368,7 +349,7 @@ const Subscription = () => {
           )}
 
           {/* Pi Authentication Status */}
-          {isPiAvailable && !isPiAuthenticated && !isTestMode && (
+          {isPiAvailable && !isPiAuthenticated && (
             <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
               <Coins className="h-4 w-4 text-amber-600" />
               <AlertDescription className="flex items-center justify-between">
@@ -408,96 +389,18 @@ const Subscription = () => {
             </Alert>
           )}
 
-          {/* Current Subscription Banner */}
-          {currentSubscription && (
-            <Alert className="mb-8 border-primary bg-primary/5">
-              <Crown className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-foreground">
-                <span className="font-semibold">Current Plan: {SUBSCRIPTION_PLANS[currentSubscription.plan_type as PlanType]?.name || currentSubscription.plan_type}</span>
-                <span className="text-muted-foreground ml-2">
-                  • Expires: {formatExpiryDate(currentSubscription.expires_at)}
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              <Coins className="w-4 h-4" />
-              <span>Pay with Pi Cryptocurrency</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              Choose Your Plan
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Unlock premium features and grow your business on Pi Network Mainnet
-            </p>
-          </div>
-
-          {/* Upgrade Benefits - Show for free users */}
-          {currentSubscription?.plan_type === 'free' && (
-            <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-              <Rocket className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-foreground">
-                <span className="font-semibold text-amber-900 dark:text-amber-100">🚀 Upgrade to unlock:</span>
-                <span className="text-amber-800 dark:text-amber-200 ml-2">
-                  Multiple stores • Unlimited products • Premium templates • Priority support • Custom domain • Advanced analytics • Remove ads
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Welcome Discount Banner */}
-          <div className="bg-gradient-to-r from-green-500/10 via-primary/10 to-green-500/10 rounded-lg p-4 mb-4 text-center border border-green-500/20">
-            <p className="text-sm font-medium">
-              🎁 <span className="text-green-600 dark:text-green-400 font-semibold">Welcome Discount Applied!</span> Save up to 5π on your first subscription
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Basic: -1π • Grow: -2π • Advance: -3π • Plus: -5π
-            </p>
-          </div>
-
-          {/* Limited Time Offer */}
-          <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-lg p-4 mb-8 text-center">
-            <p className="text-sm font-medium">
-              🎉 <span className="text-primary font-semibold">Special Launch Offer:</span> Get 20% off on annual plans! Use code: <span className="font-mono bg-primary/20 px-2 py-1 rounded">LAUNCH2025</span>
-            </p>
-          </div>
-
-          {/* Store Types Info */}
-          <div className="mb-12">
-            <h3 className="text-xl font-display font-semibold text-center mb-6">All Plans Support Three Store Types</h3>
-            <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              {Object.values(STORE_TYPES).map((storeType) => (
-                <div key={storeType.id} className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    {getStoreIcon(storeType.id)}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{storeType.name}</p>
-                    <p className="text-xs text-muted-foreground">{storeType.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Plans Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {/* Free Plan */}
-            <Card className={`relative border-2 transition-colors ${isCurrentPlan('free') ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge variant="outline" className="bg-card">Limited</Badge>
+          {/* Subscription Plans Grid */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          {/* Free Plan */}
+          <Card className={`relative ${isCurrentPlan('free') ? 'border-primary bg-primary/5' : ''}`}>
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                {getPlanIcon('free')}
+                <CardTitle>{SUBSCRIPTION_PLANS.free.name}</CardTitle>
               </div>
-              <CardHeader>
-                <div className="flex items-center gap-2 mb-2">
-                  {getPlanIcon('free')}
-                  <CardTitle>{SUBSCRIPTION_PLANS.free.name}</CardTitle>
-                </div>
-                <CardDescription>{SUBSCRIPTION_PLANS.free.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
+              <CardDescription>{SUBSCRIPTION_PLANS.free.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
                 <div className="mb-6">
                   <span className="text-4xl font-display font-bold">Free</span>
                   <span className="text-muted-foreground ml-2">/ forever</span>
@@ -576,14 +479,14 @@ const Subscription = () => {
                   {((isProcessing || isActivating) && selectedPlan === 'basic') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {isTestMode ? 'Activating...' : 'Processing...'}
+                      Processing...
                     </>
                   ) : isCurrentPlan('basic') ? (
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>
@@ -639,8 +542,8 @@ const Subscription = () => {
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>
@@ -693,8 +596,8 @@ const Subscription = () => {
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>
@@ -747,8 +650,8 @@ const Subscription = () => {
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>
