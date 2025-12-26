@@ -353,21 +353,18 @@ const Subscription = () => {
         <div className="max-w-6xl mx-auto">
           {/* Pi Network Notice */}
           {!isPiAvailable && (
-            <Alert className="mb-8 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <AlertDescription className="text-blue-900 dark:text-blue-100">
-                <p className="font-semibold mb-1">💡 For Best Experience: Always use Pi Browser</p>
-                <p className="text-sm">
-                  Open this payment link in the Pi Browser app for secure transactions. 
-                  <a 
-                    href="https://pinet.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 dark:text-blue-400 ml-1 underline hover:text-blue-800"
-                  >
-                    Download Pi Browser from pinet.com
-                  </a>
-                </p>
+            <Alert className="mb-8">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                To subscribe with Pi, please open this app in the Pi Browser. 
+                <a 
+                  href="https://minepi.com/download" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary ml-1 underline"
+                >
+                  Download Pi Browser
+                </a>
               </AlertDescription>
             </Alert>
           )}
