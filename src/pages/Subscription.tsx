@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,46 +30,68 @@ const Subscription = () => {
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [isActivating, setIsActivating] = useState(false);
 
-  // Fetch current subscription
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .order('expires_at', { ascending: false })
-          .limit(1)
-          .single();
+  // Fetch current subscription (reusable for refresh after payment)
+  const fetchActiveSubscription = useCallback(async () => {
+    if (!user) return null;
 
-        if (data && !error) {
-          setCurrentSubscription(data);
-        }
-      } catch (err) {
-        console.log('No active subscription found');
-      } finally {
-        setLoadingSubscription(false);
+    setLoadingSubscription(true);
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('expires_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setCurrentSubscription(data);
+        return data;
       }
-    };
 
-    fetchSubscription();
+      return null;
+    } catch (err) {
+      console.log('No active subscription found');
+      return null;
+    } finally {
+      setLoadingSubscription(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchActiveSubscription();
+  }, [fetchActiveSubscription]);
 
   // Redirect to dashboard when payment completes
   useEffect(() => {
     if (status === 'completed') {
       toast.success('Subscription activated! Redirecting to dashboard...');
-      setTimeout(() => {
+
+      const handleCompletion = async () => {
+        // Retry a few times to allow backend to finish writing
+        let subscription = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          subscription = await fetchActiveSubscription();
+          if (subscription) break;
+          await new Promise((res) => setTimeout(res, 800));
+        }
+
+        if (!subscription) {
+          toast.error('Payment succeeded but subscription is missing. Please contact support.');
+        }
+
         setIsActivating(false);
         setSelectedPlan(null);
         resetPayment();
         navigate('/dashboard');
-      }, 2000);
+      };
+
+      handleCompletion();
     }
-  }, [status, navigate, resetPayment]);
+  }, [status, navigate, resetPayment, fetchActiveSubscription]);
 
   if (authLoading) {
     return (
@@ -169,7 +191,6 @@ const Subscription = () => {
       
       // Create Pi payment for paid plans
       console.log('Creating Pi payment for plan:', planType);
-      setIsActivating(false);
       await createSubscriptionPayment(planType);
       
     } catch (error: any) {

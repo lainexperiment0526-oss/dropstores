@@ -11,6 +11,7 @@ import { Store, ArrowLeft, Loader2, Sparkles, Check, Lock, Crown } from 'lucide-
 import { useToast } from '@/hooks/use-toast';
 import { StoreTypeSelector, StoreTypeInstructions } from '@/components/store/StoreTypeSelector';
 import { useSubscription } from '@/hooks/useSubscription';
+import { STORE_TYPES } from '@/lib/pi-sdk';
 
 const templates = [
   {
@@ -60,6 +61,15 @@ export default function CreateStore() {
 
   const [logoPreview, setLogoPreview] = useState<string | undefined>(undefined);
   const [bannerPreview, setBannerPreview] = useState<string | undefined>(undefined);
+
+  const allowedStoreTypes = planLimits?.allowedStoreTypes || Object.keys(STORE_TYPES);
+
+  // Keep selected store type within plan allowance
+  useEffect(() => {
+    if (!allowedStoreTypes.includes(formData.storeType)) {
+      setFormData((prev) => ({ ...prev, storeType: allowedStoreTypes[0] }));
+    }
+  }, [allowedStoreTypes, formData.storeType]);
 
   // Check authentication and subscription
   useEffect(() => {
@@ -112,6 +122,19 @@ export default function CreateStore() {
       name,
       slug: generateSlug(name),
     });
+  };
+
+  const handleStoreTypeChange = (nextType: string) => {
+    if (planLimits && !planLimits.allowedStoreTypes.includes(nextType)) {
+      toast({
+        title: 'Upgrade required',
+        description: 'Your current plan does not support this store type. Upgrade to unlock it.',
+        variant: 'destructive',
+      });
+      navigate('/subscription');
+      return;
+    }
+    setFormData((prev) => ({ ...prev, storeType: nextType }));
   };
 
   const handleSubmit = async () => {

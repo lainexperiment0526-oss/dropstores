@@ -33,7 +33,7 @@ export default function Auth() {
   const [ecosystemOpen, setEcosystemOpen] = useState(false);
 
   const { user, signIn, signUp } = useAuth();
-  const { isPiAvailable, signInWithPi, isLoading: piLoading } = usePiAuth();
+  const { isPiAvailable, signInWithPiScopes, isLoading: piLoading } = usePiAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -151,7 +151,7 @@ export default function Auth() {
                           type="button"
                           variant="outline"
                           className="w-full mt-4"
-                          onClick={() => signInWithPi()}
+                          onClick={() => signInWithPiScopes(['username', 'payments', 'wallet_address'])}
                           disabled={piLoading}
                         >
                           {piLoading ? (
