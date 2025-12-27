@@ -1138,45 +1138,54 @@ Email when stock low:
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 pt-24 pb-12">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Book className="w-10 h-10 text-sky-500" />
-              <h1 className="text-4xl md:text-5xl font-bold">Help Center</h1>
-            </div>
-            <p className="text-muted-foreground text-lg mb-6">
-              Complete tutorials and guides to master DropStore
-            </p>
+      {/* Hero Section with Gradient */}
+      <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-sky-50 to-background dark:from-blue-950/20 dark:via-sky-950/10 dark:to-background">
+        <div className="absolute inset-0 bg-grid-slate-900/[0.04] dark:bg-grid-slate-400/[0.05] bg-[size:32px_32px]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-sky-500/5 to-purple-500/5" />
+        
+        <div className="relative container mx-auto px-4 pt-24 pb-12">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center justify-center gap-3 mb-4 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500/10 to-sky-500/10 border border-blue-500/20">
+                <Book className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-sky-600 dark:from-blue-400 dark:to-sky-400 bg-clip-text text-transparent">
+                  Help Center
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-lg mb-6 max-w-2xl mx-auto">
+                Complete tutorials, guides, and resources to help you build and grow your Pi-powered store
+              </p>
 
             {/* Search */}
             <div className="max-w-2xl mx-auto mb-8">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 <Input
                   type="text"
                   placeholder="Search tutorials, guides, and FAQs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-12 text-lg"
+                  className="pl-12 h-14 text-lg border-2 focus:border-blue-500 transition-colors shadow-lg"
                 />
               </div>
             </div>
 
             {/* Quick Guides */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
               {quickGuides.map((guide, index) => {
                 const Icon = guide.icon;
                 return (
                   <a
                     key={index}
                     href={guide.link}
-                    className="flex flex-col items-center gap-2 p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
+                    className="group flex flex-col items-center gap-3 p-5 rounded-xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200 dark:border-slate-800 hover:border-blue-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
                   >
-                    <Icon className="w-6 h-6 text-sky-500" />
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-sky-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
                     <div className="text-center">
-                      <p className="font-semibold text-sm">{guide.title}</p>
+                      <p className="font-semibold text-sm mb-1">{guide.title}</p>
                       <p className="text-xs text-muted-foreground">{guide.description}</p>
                     </div>
                   </a>
@@ -1185,19 +1194,19 @@ Email when stock low:
             </div>
 
             {/* AI Support CTA */}
-            <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
-              <CardContent className="p-6">
+            <Card className="bg-gradient-to-r from-blue-500/10 via-sky-500/10 to-purple-500/10 border-blue-500/30 shadow-xl">
+              <CardContent className="p-8">
                 <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-white" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                      <Sparkles className="w-7 h-7 text-white" />
                     </div>
                     <div className="text-left">
-                      <h3 className="font-semibold text-lg">Need instant help?</h3>
-                      <p className="text-sm text-muted-foreground">Chat with our AI assistant 24/7</p>
+                      <h3 className="font-bold text-xl mb-1">Need instant help?</h3>
+                      <p className="text-sm text-muted-foreground">Chat with our AI assistant - available 24/7 to answer any question</p>
                     </div>
                   </div>
-                  <Button asChild>
+                  <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                     <Link to="/support">
                       Chat Now
                       <ArrowRight className="w-4 h-4 ml-2" />
@@ -1207,43 +1216,62 @@ Email when stock low:
               </CardContent>
             </Card>
           </div>
+        </div>
+      </div>
+    </div>
+    {/* Main Content */}
+      <div className="flex-1 container mx-auto px-4 py-12">
+        <div className="max-w-7xl mx-auto">
 
           {/* Content Tabs */}
           <Tabs defaultValue="tutorials" className="space-y-8">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-              <TabsTrigger value="tutorials" className="gap-2">
-                <FileText className="w-4 h-4" />
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-14 p-1">
+              <TabsTrigger value="tutorials" className="gap-2 text-base">
+                <FileText className="w-5 h-5" />
                 Tutorials
               </TabsTrigger>
-              <TabsTrigger value="faqs" className="gap-2">
-                <HelpCircle className="w-4 h-4" />
+              <TabsTrigger value="faqs" className="gap-2 text-base">
+                <HelpCircle className="w-5 h-5" />
                 FAQs
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="tutorials" className="space-y-8">
+            <TabsContent value="tutorials" className="space-y-12">
               {filteredTutorials.map((category) => {
                 const Icon = category.icon;
                 return (
-                  <div key={category.id} id={category.id}>
-                    <div className="flex items-center gap-2 mb-6">
-                      <Icon className={`w-6 h-6 ${category.color}`} />
-                      <h2 className="text-2xl font-bold">{category.title}</h2>
-                      <Badge variant="secondary">{category.articles.length}</Badge>
+                  <div key={category.id} id={category.id} className="scroll-mt-24">
+                    <div className="flex items-center gap-3 mb-8 pb-3 border-b-2 border-blue-500/20">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-sky-500 flex items-center justify-center">
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                      <h2 className="text-3xl font-bold">{category.title}</h2>
+                      <Badge variant="secondary" className="ml-auto text-sm px-3 py-1">
+                        {category.articles.length} {category.articles.length === 1 ? 'article' : 'articles'}
+                      </Badge>
                     </div>
 
                     <div className="grid gap-6">
                       {category.articles.map((article, index) => (
-                        <Card key={index}>
-                          <CardHeader>
+                        <Card key={index} className="border-2 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 group">
+                          <CardHeader className="pb-4">
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
-                                <CardTitle className="text-xl mb-2">{article.title}</CardTitle>
-                                <CardDescription>{article.description}</CardDescription>
-                                <div className="flex flex-wrap gap-2 mt-3">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <CardTitle className="text-2xl group-hover:text-blue-600 transition-colors">
+                                    {article.title}
+                                  </CardTitle>
+                                  {index === 0 && (
+                                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
+                                      Popular
+                                    </Badge>
+                                  )}
+                                </div>
+                                <CardDescription className="text-base">{article.description}</CardDescription>
+                                <div className="flex flex-wrap gap-2 mt-4">
                                   {article.tags.map((tag, tagIndex) => (
-                                    <Badge key={tagIndex} variant="outline" className="text-xs">
-                                      {tag}
+                                    <Badge key={tagIndex} variant="outline" className="text-xs px-3 py-1">
+                                      #{tag}
                                     </Badge>
                                   ))}
                                 </div>
@@ -1251,7 +1279,7 @@ Email when stock low:
                             </div>
                           </CardHeader>
                           <CardContent>
-                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed prose-ul:my-2 prose-li:my-1">
                               <div className="whitespace-pre-wrap text-sm leading-relaxed">
                                 {article.content}
                               </div>
@@ -1265,37 +1293,48 @@ Email when stock low:
               })}
 
               {filteredTutorials.length === 0 && (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Search className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No results found</h3>
-                    <p className="text-muted-foreground text-center">
-                      Try different keywords or browse all tutorials
+                <Card className="border-2 border-dashed">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <div className="w-20 h-20 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
+                      <Search className="w-10 h-10 text-blue-500" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">No results found</h3>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      We couldn't find any tutorials matching "{searchQuery}". Try different keywords or browse all tutorials.
                     </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-6" 
+                      onClick={() => setSearchQuery('')}
+                    >
+                      Clear Search
+                    </Button>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
 
             <TabsContent value="faqs">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <HelpCircle className="w-5 h-5" />
+              <Card className="border-2">
+                <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/20 dark:to-sky-950/20">
+                  <CardTitle className="flex items-center gap-3 text-2xl">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-sky-500 flex items-center justify-center">
+                      <HelpCircle className="w-6 h-6 text-white" />
+                    </div>
                     Frequently Asked Questions
                   </CardTitle>
-                  <CardDescription>
-                    Quick answers to common questions about DropStore
+                  <CardDescription className="text-base mt-2">
+                    Quick answers to common questions about DropStore features and functionality
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <Accordion type="single" collapsible className="w-full">
                     {faqs.map((faq, index) => (
-                      <AccordionItem key={index} value={`faq-${index}`}>
-                        <AccordionTrigger className="text-left">
+                      <AccordionItem key={index} value={`faq-${index}`} className="border-b-2">
+                        <AccordionTrigger className="text-left text-base font-semibold hover:text-blue-600 transition-colors py-5">
                           {faq.question}
                         </AccordionTrigger>
-                        <AccordionContent className="text-muted-foreground">
+                        <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-5">
                           {faq.answer}
                         </AccordionContent>
                       </AccordionItem>
@@ -1305,8 +1344,83 @@ Email when stock low:
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Additional Resources Section */}
+          <div className="mt-16 pt-12 border-t-2">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold mb-3">Need More Help?</h2>
+              <p className="text-muted-foreground text-lg">
+                Explore additional resources and get personalized support
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Community */}
+              <Card className="border-2 hover:border-blue-500 hover:shadow-xl transition-all group">
+                <CardHeader>
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Users className="w-7 h-7 text-white" />
+                  </div>
+                  <CardTitle className="text-xl">Join Community</CardTitle>
+                  <CardDescription className="text-base">
+                    Connect with other store owners, share tips, and get advice from experienced sellers
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to="/community">
+                      Visit Community
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Video Tutorials */}
+              <Card className="border-2 hover:border-blue-500 hover:shadow-xl transition-all group">
+                <CardHeader>
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Video className="w-7 h-7 text-white" />
+                  </div>
+                  <CardTitle className="text-xl">Video Tutorials</CardTitle>
+                  <CardDescription className="text-base">
+                    Watch step-by-step video guides covering everything from setup to advanced features
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href="https://youtube.com/@dropstore" target="_blank" rel="noopener noreferrer">
+                      Watch Videos
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Contact Support */}
+              <Card className="border-2 hover:border-blue-500 hover:shadow-xl transition-all group">
+                <CardHeader>
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-7 h-7 text-white" />
+                  </div>
+                  <CardTitle className="text-xl">Contact Support</CardTitle>
+                  <CardDescription className="text-base">
+                    Get personalized help from our support team via live chat or email
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700" asChild>
+                    <Link to="/support">
+                      Get Support
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
 
       <Footer />
     </div>
