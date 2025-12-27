@@ -24,6 +24,7 @@ import AdminMrwain from "./pages/AdminMrwain";
 import ExternalRedirect from "./pages/ExternalRedirect";
 import Support from "./pages/Support";
 import Help from "./pages/Help";
+import AboutPiSupplier from "./pages/AboutPiSupplier";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => {
                 <Route path="/privacy" element={<ExternalRedirect to="https://droplink.space/privacy" />} />
                 <Route path="/terms" element={<ExternalRedirect to="https://droplink.space/terms" />} />
                 <Route path="/about" element={<ExternalRedirect to="https://www.droplink.space/about" />} />
+                              <Route path="/AboutPiSupplier" element={<AboutPiSupplier />} />
                 <Route path="/careers" element={<ExternalRedirect to="https://www.droplink.space/careers" />} />
                 <Route path="/community" element={<ExternalRedirect to="https://www.droplink.space/community-guidelines" />} />
                 <Route path="/developers" element={<ExternalRedirect to="https://www.droplink.space/developers" />} />
