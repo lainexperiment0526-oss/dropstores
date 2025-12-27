@@ -32,7 +32,7 @@ export function CTA() {
               className="text-lg px-8 bg-primary-foreground text-primary hover:bg-primary-foreground/90" 
               asChild
             >
-              <Link to="/auth?mode=signup">
+              <Link to="/auth">
                 Create Your Store
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>

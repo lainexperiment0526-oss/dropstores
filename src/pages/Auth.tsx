@@ -188,29 +188,7 @@ export default function Auth() {
                           Pi Supplier Partner Program
                         </Button>
                       </div>
-
-                      <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t border-border" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-card px-2 text-muted-foreground">Or</span>
-                        </div>
-                      </div>
                     </>
-                  )}
-
-                  {/* Email Login Option (Dev/Test) */}
-                  {(import.meta.env.DEV || import.meta.env.VITE_DEV_MODE === 'true') && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="w-full"
-                      onClick={() => setShowEmailForm(true)}
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Sign in with Email
-                    </Button>
                   )}
 
                   {!isPiAvailable && (

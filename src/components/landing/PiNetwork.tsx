@@ -150,7 +150,7 @@ export function PiNetwork() {
                 className="bg-sky-500 hover:bg-sky-600 text-white text-lg px-8 py-6 h-auto"
                 asChild
               >
-                <Link to="/auth?mode=signup">
+                <Link to="/auth">
                   Start Accepting Pi Payments Today
                 </Link>
               </Button>

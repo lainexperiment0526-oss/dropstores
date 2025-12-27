@@ -103,7 +103,7 @@ export function StoreTypes() {
                 asChild 
                 className="w-full bg-sky-500 hover:bg-sky-600 text-white group-hover:shadow-lg transition-all duration-300"
               >
-                <Link to="/auth?mode=signup">
+                <Link to="/auth">
                   Get Started
                 </Link>
               </Button>

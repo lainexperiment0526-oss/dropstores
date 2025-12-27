@@ -72,7 +72,7 @@ export function Navbar() {
               <Link to="/auth">Sign In</Link>
             </Button>
             <Button className="gradient-hero shadow-glow hover:opacity-90 transition-opacity" asChild>
-              <Link to="/auth?mode=signup">Start Free</Link>
+              <Link to="/auth">Start Free</Link>
             </Button>
           </div>
 
