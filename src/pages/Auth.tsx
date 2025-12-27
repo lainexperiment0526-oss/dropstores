@@ -177,6 +177,17 @@ export default function Auth() {
                           Learn the Droplink Ecosystem
                         </Button>
                       </div>
+                      <div className="mt-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full text-primary hover:text-primary"
+                          onClick={() => navigate('/AboutPiSupplier')}
+                        >
+                          <Coins className="w-4 h-4 mr-2" />
+                          Pi Supplier Partner Program
+                        </Button>
+                      </div>
 
                       <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
