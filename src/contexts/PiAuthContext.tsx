@@ -73,7 +73,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     try {
-      console.log('PiAuth: Starting Pi authentication with scopes: username, payments, wallet_address');
+      console.log('PiAuth: Starting Pi authentication with default scopes');
       const result: PiAuthResult | null = await authenticateWithPi(handleIncompletePayment);
 
       if (!result) {
@@ -103,6 +103,11 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       // Set wallet address if provided
       if (result.user.wallet_address) {
         setWalletAddress(result.user.wallet_address);
+        console.log('PiAuth: Wallet address retrieved from authentication:', result.user.wallet_address);
+      } else {
+        console.log('PiAuth: Wallet address not in authentication response, will fetch separately');
+        // Try to fetch wallet address immediately
+        setTimeout(() => fetchWalletAddress(result.accessToken), 500);
       }
 
       // Verify the authentication on the backend and get Supabase session
@@ -245,25 +250,34 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Fetch wallet address from Pi Platform API
-  const fetchWalletAddress = async () => {
-    if (!piAccessToken) {
+  const fetchWalletAddress = async (token?: string) => {
+    const accessToken = token || piAccessToken;
+    
+    if (!accessToken) {
+      console.warn('PiAuth: No access token available for wallet address fetch');
       toast.error('Please authenticate first');
       return;
     }
 
     setIsLoading(true);
     try {
+      console.log('PiAuth: Fetching wallet address from Pi Platform API...');
       const response = await fetch('https://api.minepi.com/v2/me', {
         headers: {
-          'Authorization': `Bearer ${piAccessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch wallet address');
+        const errorData = await response.text();
+        console.error('PiAuth: API error response:', response.status, errorData);
+        throw new Error(`Failed to fetch wallet address: ${response.status}`);
       }
 
       const userData = await response.json();
+      console.log('PiAuth: API response:', { uid: userData.uid, username: userData.username, has_wallet: !!userData.wallet_address });
+      
       if (userData.wallet_address) {
         setWalletAddress(userData.wallet_address);
         
@@ -272,13 +286,16 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
           setPiUser({ ...piUser, wallet_address: userData.wallet_address });
         }
         
+        console.log('✓ PiAuth: Wallet address retrieved:', userData.wallet_address);
         toast.success('Wallet address retrieved!');
       } else {
+        console.warn('PiAuth: No wallet address found for this account');
         toast.warning('No wallet address found for this account');
       }
     } catch (error) {
-      console.error('Failed to fetch wallet:', error);
-      toast.error('Failed to fetch wallet address');
+      console.error('✗ PiAuth: Failed to fetch wallet:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to fetch wallet address: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

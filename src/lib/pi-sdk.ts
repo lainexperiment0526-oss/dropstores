@@ -81,25 +81,57 @@ declare global {
 
 // Initialize Pi SDK
 export const initPiSdk = (sandbox: boolean = false) => {
-  if (typeof window !== 'undefined' && window.Pi) {
-    const config = {
-      version: '2.0',
-      sandbox: sandbox
-    };
-    window.Pi.init(config);
-    console.log('Pi SDK initialized:', {
-      mode: sandbox ? 'sandbox' : 'mainnet',
-      piNetwork: import.meta.env.VITE_PI_NETWORK || 'mainnet',
-      hasApiKey: !!import.meta.env.VITE_PI_API_KEY
-    });
-  } else {
-    console.warn('Pi SDK not available - ensure app is opened in Pi Browser');
+  if (typeof window === 'undefined') {
+    console.warn('Window object not available');
+    return;
   }
+
+  // Wait for Pi SDK to be loaded (max 5 seconds)
+  let attempts = 0;
+  const maxAttempts = 50;
+  
+  const initializeWhenReady = () => {
+    if (window.Pi) {
+      const config = {
+        version: '2.0',
+        sandbox: sandbox
+      };
+      
+      try {
+        window.Pi.init(config);
+        console.log('✓ Pi SDK initialized successfully:', {
+          mode: sandbox ? 'sandbox' : 'mainnet',
+          piNetwork: import.meta.env.VITE_PI_NETWORK || 'mainnet',
+          hasApiKey: !!import.meta.env.VITE_PI_API_KEY,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('✗ Failed to initialize Pi SDK:', error);
+      }
+    } else if (attempts < maxAttempts) {
+      attempts++;
+      setTimeout(initializeWhenReady, 100);
+    } else {
+      console.warn('Pi SDK not available after waiting - ensure app is opened in Pi Browser');
+    }
+  };
+  
+  // Start initialization
+  initializeWhenReady();
 };
 
 // Check if Pi SDK is available
 export const isPiAvailable = (): boolean => {
-  return typeof window !== 'undefined' && !!window.Pi;
+  if (typeof window === 'undefined') {
+    console.debug('Window not available');
+    return false;
+  }
+  
+  const available = !!window.Pi;
+  if (!available) {
+    console.debug('Pi SDK not available. Ensure app is opened in Pi Browser.');
+  }
+  return available;
 };
 
 // Pi Authentication - Always request username, payments, and wallet_address scopes
@@ -108,8 +140,15 @@ export const authenticateWithPi = async (
   reqScopes?: string[]
 ): Promise<PiAuthResult | null> => {
   if (!isPiAvailable()) {
-    console.error('Pi SDK not available');
-    return null;
+    const error = 'Pi SDK not available - ensure app is opened in Pi Browser';
+    console.error('✗', error);
+    throw new Error(error);
+  }
+
+  if (!window.Pi || !window.Pi.authenticate) {
+    const error = 'window.Pi.authenticate is not available';
+    console.error('✗', error);
+    throw new Error(error);
   }
 
   try {
@@ -126,29 +165,49 @@ export const authenticateWithPi = async (
       });
     }
     
-    console.log('Calling window.Pi.authenticate() with reqScopes:', scopes);
+    console.log('Starting Pi authentication with scopes:', scopes);
     
-    const result = await window.Pi!.authenticate(
+    const result = await window.Pi.authenticate(
       scopes,
       onIncompletePaymentFound || ((payment: PiPaymentDTO) => {
         console.warn('Incomplete payment detected:', payment);
       })
     );
     
-    if (!result || !result.user || !result.user.uid || !result.user.username) {
-      console.error('Invalid authentication result:', result);
+    // Validate result
+    if (!result) {
+      console.error('✗ Pi authentication returned null result');
+      return null;
+    }
+
+    if (!result.user) {
+      console.error('✗ Pi authentication result missing user object:', result);
+      return null;
+    }
+
+    const { user, accessToken } = result;
+
+    // Validate required user fields
+    if (!user.uid || !user.username) {
+      console.error('✗ Pi authentication result missing required user fields:', {
+        uid: user.uid || 'MISSING',
+        username: user.username || 'MISSING'
+      });
       return null;
     }
     
-    console.log('Pi authentication successful:', {
-      username: result.user.username,
-      uid: result.user.uid,
-      wallet_address: result.user.wallet_address || 'not provided'
+    // Log successful authentication
+    console.log('✓ Pi authentication successful:', {
+      username: user.username,
+      uid: user.uid,
+      wallet_address: user.wallet_address || 'will be fetched separately',
+      hasAccessToken: !!accessToken
     });
     
     return result;
   } catch (error) {
-    console.error('Pi authentication failed:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('✗ Pi authentication failed:', errorMessage);
     throw error;
   }
 };
