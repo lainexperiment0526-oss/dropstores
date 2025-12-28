@@ -14,6 +14,12 @@ interface PaymentState {
   paymentId: string | null;
   status: 'idle' | 'pending' | 'approved' | 'completed' | 'cancelled' | 'error';
   error: string | null;
+  subscriptionData: {
+    id: string;
+    planType: string;
+    expiresAt: string;
+    status: string;
+  } | null;
 }
 
 export function usePiPayment() {
@@ -22,7 +28,8 @@ export function usePiPayment() {
     isProcessing: false,
     paymentId: null,
     status: 'idle',
-    error: null
+    error: null,
+    subscriptionData: null
   });
 
   const createSubscriptionPayment = useCallback(async (
@@ -47,7 +54,8 @@ export function usePiPayment() {
       isProcessing: true,
       paymentId: null,
       status: 'pending',
-      error: null
+      error: null,
+      subscriptionData: null
     });
 
     const paymentData: PiPaymentData = {
@@ -107,8 +115,8 @@ export function usePiPayment() {
           console.log('Payment ready for completion:', paymentId, 'txid:', txid);
           
           try {
-            // Call backend to complete the payment
-            console.log('Calling pi-payment-complete...');
+            // Call backend to complete the payment and activate subscription
+            console.log('Calling pi-payment-complete with:', { paymentId, txid, planType, storeId });
             const { data, error } = await supabase.functions.invoke('pi-payment-complete', {
               body: { paymentId, txid, planType, storeId }
             });
@@ -125,13 +133,19 @@ export function usePiPayment() {
               return;
             }
 
-            console.log('Payment completed:', data);
+            console.log('Payment completed successfully:', data);
+            
+            // Store subscription data from response
+            const subscriptionInfo = data?.subscription || null;
+            
             setPaymentState(prev => ({ 
               ...prev, 
               isProcessing: false,
-              status: 'completed' 
+              status: 'completed',
+              subscriptionData: subscriptionInfo
             }));
-            toast.success('🎉 Subscription activated successfully!');
+            
+            toast.success(`🎉 ${plan.name} plan activated successfully!`);
           } catch (err) {
             console.error('Completion error:', err);
             toast.error('Failed to complete payment. Please contact support.');
@@ -160,7 +174,8 @@ export function usePiPayment() {
             isProcessing: false,
             paymentId: null,
             status: 'error',
-            error: error.message
+            error: error.message,
+            subscriptionData: null
           });
           toast.error(`Payment error: ${error.message}`);
         }
@@ -171,7 +186,8 @@ export function usePiPayment() {
         isProcessing: false,
         paymentId: null,
         status: 'error',
-        error: 'Failed to initiate payment'
+        error: 'Failed to initiate payment',
+        subscriptionData: null
       });
       toast.error('Failed to initiate payment. Please try again.');
     }
@@ -194,7 +210,8 @@ export function usePiPayment() {
       isProcessing: true,
       paymentId: null,
       status: 'pending',
-      error: null
+      error: null,
+      subscriptionData: null
     });
 
     const paymentData: PiPaymentData = {
@@ -242,13 +259,13 @@ export function usePiPayment() {
         },
 
         onError: (error: Error) => {
-          setPaymentState({ isProcessing: false, paymentId: null, status: 'error', error: error.message });
+          setPaymentState({ isProcessing: false, paymentId: null, status: 'error', error: error.message, subscriptionData: null });
           toast.error(`Payment error: ${error.message}`);
         }
       });
     } catch (err) {
       console.error('Failed to create product payment:', err);
-      setPaymentState({ isProcessing: false, paymentId: null, status: 'error', error: 'Failed to initiate payment' });
+      setPaymentState({ isProcessing: false, paymentId: null, status: 'error', error: 'Failed to initiate payment', subscriptionData: null });
     }
   }, [user]);
 
@@ -257,7 +274,8 @@ export function usePiPayment() {
       isProcessing: false,
       paymentId: null,
       status: 'idle',
-      error: null
+      error: null,
+      subscriptionData: null
     });
   }, []);
 
