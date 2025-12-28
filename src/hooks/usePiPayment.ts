@@ -16,6 +16,11 @@ interface PaymentState {
   error: string | null;
 }
 
+interface SubscriptionPaymentOptions {
+  piUsername?: string;
+  walletAddress?: string;
+}
+
 export function usePiPayment() {
   const { user } = useAuth();
   const [paymentState, setPaymentState] = useState<PaymentState>({
@@ -27,14 +32,16 @@ export function usePiPayment() {
 
   const createSubscriptionPayment = useCallback(async (
     planType: PlanType,
-    storeId?: string
+    storeId?: string,
+    options: SubscriptionPaymentOptions = {}
   ) => {
     if (!user) {
       toast.error('Please sign in first');
       return;
     }
 
-    const plan = SUBSCRIPTION_PLANS[planType];
+    const planTypeNormalized = planType.toLowerCase() as PlanType;
+    const plan = SUBSCRIPTION_PLANS[planTypeNormalized];
     
     if (!plan || plan.amount === 0) {
       toast.error('Invalid plan selected');
@@ -54,12 +61,14 @@ export function usePiPayment() {
       amount: plan.amount,
       memo: `Drop Store ${plan.name} Subscription`,
       metadata: {
-        planType,
+        planType: planTypeNormalized,
         storeId: storeId || null,
         userId: user.id,
         planName: plan.name,
         timestamp: new Date().toISOString(),
-        subscription_type: 'subscription'
+        subscription_type: 'subscription',
+        piUsername: options.piUsername || null,
+        walletAddress: options.walletAddress || null
       }
     };
 
@@ -110,7 +119,7 @@ export function usePiPayment() {
             // Call backend to complete the payment
             console.log('Calling pi-payment-complete...');
             const { data, error } = await supabase.functions.invoke('pi-payment-complete', {
-              body: { paymentId, txid, planType, storeId }
+              body: { paymentId, txid, planType: planTypeNormalized, storeId }
             });
 
             if (error) {

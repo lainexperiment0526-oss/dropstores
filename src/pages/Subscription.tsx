@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +23,15 @@ interface CurrentSubscription {
 const Subscription = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { isPiAvailable, isPiAuthenticated, signInWithPi, isLoading: piLoading } = usePiAuth();
+  const { 
+    isPiAvailable, 
+    isPiAuthenticated, 
+    signInWithPi, 
+    signInWithPiScopes,
+    isLoading: piLoading,
+    piUser,
+    walletAddress
+  } = usePiAuth();
   const { isProcessing, status, createSubscriptionPayment, resetPayment } = usePiPayment();
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
