@@ -62,7 +62,8 @@ export function Footer() {
           <div>
             <h4 className="font-display font-semibold text-foreground mb-4">Company</h4>
             <ul className="space-y-3">
-              <li><a href="/about" className="text-muted-foreground hover:text-foreground transition-colors text-sm">About Us</a></li>
+              <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors text-sm">About Us</Link></li>
+              <li><Link to="/AboutPiSupplier" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Pi Supplier Program</Link></li>
               <li><a href="/careers" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Careers</a></li>
               <li><a href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Privacy Policy</a></li>
               <li><a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Terms of Service</a></li>

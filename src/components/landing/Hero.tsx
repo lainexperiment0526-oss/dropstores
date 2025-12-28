@@ -38,7 +38,7 @@ export function Hero() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.3s' }}>
             <Button size="lg" className="gradient-hero shadow-glow hover:opacity-90 transition-opacity text-lg px-8" asChild>
-              <Link to="/auth?mode=signup">
+              <Link to="/auth">
                 Start Building Free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>

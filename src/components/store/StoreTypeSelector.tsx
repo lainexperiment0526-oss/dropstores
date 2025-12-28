@@ -4,6 +4,7 @@ import { STORE_TYPES } from '@/lib/pi-sdk';
 interface StoreTypeSelectorProps {
   value: string;
   onChange: (value: string) => void;
+  allowedStoreTypes?: string[];
 }
 
 const icons = {
@@ -12,18 +13,20 @@ const icons = {
   digital: Download,
 };
 
-export function StoreTypeSelector({ value, onChange }: StoreTypeSelectorProps) {
+export function StoreTypeSelector({ value, onChange, allowedStoreTypes }: StoreTypeSelectorProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {Object.values(STORE_TYPES).map((type) => {
         const Icon = icons[type.id as keyof typeof icons];
         const isSelected = value === type.id;
+        const isAllowed = !allowedStoreTypes || allowedStoreTypes.includes(type.id);
         
         return (
           <button
             key={type.id}
             type="button"
-            onClick={() => onChange(type.id)}
+            onClick={() => isAllowed && onChange(type.id)}
+            disabled={!isAllowed}
             className={`relative p-4 rounded-xl border-2 text-left transition-all ${
               isSelected
                 ? 'border-primary bg-secondary'
@@ -39,6 +42,9 @@ export function StoreTypeSelector({ value, onChange }: StoreTypeSelectorProps) {
               <h4 className="font-semibold text-foreground">{type.name}</h4>
             </div>
             <p className="text-sm text-muted-foreground">{type.description}</p>
+            {!isAllowed && (
+              <div className="mt-3 text-xs text-destructive font-medium">Upgrade plan to use this store type</div>
+            )}
             {isSelected && (
               <div className="absolute top-2 right-2 w-6 h-6 gradient-hero rounded-full flex items-center justify-center">
                 <Check className="w-4 h-4 text-primary-foreground" />

@@ -279,9 +279,22 @@ export function ProductFormEnhanced({ storeId, product, onSave, onClose }: Produ
                     placeholder="0.00"
                     required
                   />
-                  <p className="text-xs text-muted-foreground">
-                    💡 Platform fee of 1π added per product at checkout
-                  </p>
+                  {price && parseFloat(price) > 0 && (
+                    <div className="text-xs space-y-1 p-2 bg-muted rounded">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Your price:</span>
+                        <span className="font-medium">{parseFloat(price).toFixed(2)} π</span>
+                      </div>
+                      <div className="flex justify-between text-amber-600">
+                        <span>Platform fee (5%):</span>
+                        <span className="font-medium">-{(parseFloat(price) * 0.05).toFixed(2)} π</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-1">
+                        <span className="font-semibold">You receive:</span>
+                        <span className="font-bold text-green-600">{(parseFloat(price) * 0.95).toFixed(2)} π</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

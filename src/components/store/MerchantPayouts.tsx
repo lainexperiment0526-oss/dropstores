@@ -103,6 +103,7 @@ export function MerchantPayouts({ storeId, payoutWallet }: MerchantPayoutsProps)
     .filter(s => s.payout_status === 'pending')
     .reduce((sum, s) => sum + Number(s.net_amount), 0);
 
+  const totalGrossSales = sales.reduce((sum, s) => sum + Number(s.amount), 0);
   const totalEarnings = sales.reduce((sum, s) => sum + Number(s.net_amount), 0);
   const totalPlatformFees = sales.reduce((sum, s) => sum + Number(s.platform_fee), 0);
   const pendingPayouts = payouts
@@ -210,30 +211,51 @@ export function MerchantPayouts({ storeId, payoutWallet }: MerchantPayoutsProps)
       </Alert>
 
       {/* Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Available Balance</CardDescription>
-            <CardTitle className="text-2xl text-green-600">{availableBalance.toFixed(2)} π</CardTitle>
+            <CardDescription>Gross Sales</CardDescription>
+            <CardTitle className="text-2xl">{totalGrossSales.toFixed(2)} π</CardTitle>
           </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Earnings</CardDescription>
-            <CardTitle className="text-2xl">{totalEarnings.toFixed(2)} π</CardTitle>
-          </CardHeader>
+          <CardContent className="text-xs text-muted-foreground pt-0">
+            Total customer payments
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Platform Fees (5%)</CardDescription>
-            <CardTitle className="text-2xl text-muted-foreground">{totalPlatformFees.toFixed(2)} π</CardTitle>
+            <CardTitle className="text-2xl text-amber-600">{totalPlatformFees.toFixed(2)} π</CardTitle>
           </CardHeader>
+          <CardContent className="text-xs text-muted-foreground pt-0">
+            Deducted from sales
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Earned (Net)</CardDescription>
+            <CardTitle className="text-2xl text-green-600">{totalEarnings.toFixed(2)} π</CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs text-muted-foreground pt-0">
+            After platform fees
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Available Balance</CardDescription>
+            <CardTitle className="text-2xl text-primary">{availableBalance.toFixed(2)} π</CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs text-muted-foreground pt-0">
+            Ready to withdraw
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Pending Payouts</CardDescription>
             <CardTitle className="text-2xl text-blue-600">{pendingPayouts.toFixed(2)} π</CardTitle>
           </CardHeader>
+          <CardContent className="text-xs text-muted-foreground pt-0">
+            Being processed
+          </CardContent>
         </Card>
       </div>
 
@@ -359,7 +381,7 @@ export function MerchantPayouts({ storeId, payoutWallet }: MerchantPayoutsProps)
       <Card>
         <CardHeader>
           <CardTitle>Sales History</CardTitle>
-          <CardDescription>Your sales and earnings breakdown</CardDescription>
+          <CardDescription>Detailed breakdown of sales with platform fees</CardDescription>
         </CardHeader>
         <CardContent>
           {sales.length === 0 ? (
@@ -370,20 +392,40 @@ export function MerchantPayouts({ storeId, payoutWallet }: MerchantPayoutsProps)
           ) : (
             <div className="space-y-3">
               {sales.slice(0, 10).map((sale) => (
-                <div key={sale.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <div className="font-medium">{Number(sale.amount).toFixed(2)} π total</div>
-                    <div className="text-sm text-muted-foreground">
-                      {new Date(sale.created_at).toLocaleDateString()}
+                <div key={sale.id} className="p-4 border rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="font-medium">Sale #{sale.id.slice(0, 8)}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(sale.created_at).toLocaleDateString()} at {new Date(sale.created_at).toLocaleTimeString()}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {getStatusBadge(sale.payout_status)}
                     </div>
                   </div>
-                  <div className="text-right space-y-1">
-                    <div className="font-medium text-green-600">+{Number(sale.net_amount).toFixed(2)} π</div>
-                    <div className="text-xs text-muted-foreground">
-                      Fee: {Number(sale.platform_fee).toFixed(2)} π
+                  
+                  {/* Breakdown */}
+                  <div className="bg-muted/50 rounded p-3 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Sale amount:</span>
+                      <span className="font-medium">{Number(sale.amount).toFixed(2)} π</span>
                     </div>
-                    {getStatusBadge(sale.payout_status)}
+                    <div className="flex justify-between text-amber-600">
+                      <span>Platform fee (5%):</span>
+                      <span className="font-medium">-{Number(sale.platform_fee).toFixed(2)} π</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 mt-1">
+                      <span className="font-semibold">You earned:</span>
+                      <span className="font-bold text-green-600">{Number(sale.net_amount).toFixed(2)} π</span>
+                    </div>
                   </div>
+
+                  {sale.pi_txid && (
+                    <div className="text-xs font-mono text-muted-foreground">
+                      TX: {sale.pi_txid}
+                    </div>
+                  )}
                 </div>
               ))}
               {sales.length > 10 && (

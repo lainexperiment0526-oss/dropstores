@@ -176,7 +176,7 @@ export function DroplinkIntegration() {
               className="bg-sky-500 hover:bg-sky-600 text-white"
               asChild
             >
-              <Link to="/auth?mode=signup">
+              <Link to="/auth">
                 Create Your Store
               </Link>
             </Button>

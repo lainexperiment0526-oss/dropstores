@@ -7,6 +7,7 @@ import { DroplinkIntegration } from '@/components/landing/DroplinkIntegration';
 import { Templates } from '@/components/landing/Templates';
 import { Testimonials } from '@/components/landing/Testimonials';
 import { PlansShowcase } from '@/components/landing/PlansShowcase';
+import { PiSupplierShowcase } from '@/components/landing/PiSupplierShowcase';
 import { FAQ } from '@/components/landing/FAQ';
 import { CTA } from '@/components/landing/CTA';
 import { Footer } from '@/components/landing/Footer';
@@ -21,6 +22,7 @@ const Index = () => {
         <PiNetwork />
         <StoreTypes />
         <Features />
+        <PiSupplierShowcase />
         <DroplinkIntegration />
         <Templates />
         <PlansShowcase />

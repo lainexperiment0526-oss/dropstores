@@ -132,7 +132,7 @@ export function Templates() {
                     className="flex-1"
                     asChild
                   >
-                    <Link to={`/auth?mode=signup&template=${template.id}`}>
+                    <Link to={`/auth?template=${template.id}`}>
                       Use Template
                       <ArrowRight className="w-4 h-4 ml-1" />
                     </Link>

@@ -36,49 +36,70 @@ const Subscription = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
-  const [isTestMode, setIsTestMode] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
 
-  // Fetch current subscription
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .order('expires_at', { ascending: false })
-          .limit(1)
-          .single();
+  // Fetch current subscription (reusable for refresh after payment)
+  const fetchActiveSubscription = useCallback(async () => {
+    if (!user) return null;
 
-        if (data && !error) {
-          setCurrentSubscription(data);
-        }
-      } catch (err) {
-        console.log('No active subscription found');
-      } finally {
-        setLoadingSubscription(false);
+    setLoadingSubscription(true);
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('expires_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setCurrentSubscription(data);
+        return data;
       }
-    };
 
-    fetchSubscription();
+      return null;
+    } catch (err) {
+      console.log('No active subscription found');
+      return null;
+    } finally {
+      setLoadingSubscription(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchActiveSubscription();
+  }, [fetchActiveSubscription]);
 
   // Redirect to dashboard when payment completes
   useEffect(() => {
     if (status === 'completed') {
       toast.success('Subscription activated! Redirecting to dashboard...');
-      setTimeout(() => {
+
+      const handleCompletion = async () => {
+        // Retry a few times to allow backend to finish writing
+        let subscription = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          subscription = await fetchActiveSubscription();
+          if (subscription) break;
+          await new Promise((res) => setTimeout(res, 800));
+        }
+
+        if (!subscription) {
+          toast.error('Payment succeeded but subscription is missing. Please contact support.');
+        }
+
         setIsActivating(false);
         setSelectedPlan(null);
         resetPayment();
         navigate('/dashboard');
-      }, 2000);
+      };
+
+      handleCompletion();
     }
-  }, [status, navigate, resetPayment]);
+  }, [status, navigate, resetPayment, fetchActiveSubscription]);
 
   if (authLoading) {
     return (
@@ -100,139 +121,94 @@ const Subscription = () => {
     try {
       const plan = SUBSCRIPTION_PLANS[planType];
       
-      console.log('Creating subscription without payment:', {
+      console.log('Processing subscription:', {
         userId: user!.id,
         planType,
-        planAmount: plan.amount
+        planAmount: plan.amount,
+        isPiAvailable,
+        isPiAuthenticated
       });
       
-      // Calculate expiry date (30 days for monthly plans, 1 year for free)
-      const expiryDate = new Date();
+      // Free plan doesn't require Pi payment
       if (planType === 'free') {
-        expiryDate.setDate(expiryDate.getDate() + 365);
-      } else {
-        expiryDate.setDate(expiryDate.getDate() + 30);
-      }
-      
-      // Check if there's an existing active subscription
-      const { data: existingSubscription } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('status', 'active')
-        .single();
-      
-      if (existingSubscription) {
-        console.log('Found existing subscription, updating to new plan');
-        // Update existing subscription
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .update({
-            plan_type: planType,
-            amount: plan.amount,
-            expires_at: expiryDate.toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingSubscription.id)
-          .select()
-          .single();
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 365); // 1 year for free
         
-        if (error) {
-          console.error('Error updating subscription:', error);
-          throw error;
+        // Check for existing subscription
+        const { data: existingSubscription } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user!.id)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (existingSubscription) {
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .update({
+              plan_type: planType,
+              amount: 0,
+              expires_at: expiryDate.toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingSubscription.id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          toast.success(`🎉 Free plan activated!`);
+          setCurrentSubscription(data);
+        } else {
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: user!.id,
+              plan_type: planType,
+              status: 'active',
+              amount: 0,
+              expires_at: expiryDate.toISOString(),
+            })
+            .select()
+            .single();
+          
+          if (error) throw error;
+          toast.success(`🎉 Free plan activated!`);
+          setCurrentSubscription(data);
         }
         
-        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
-        setCurrentSubscription(data);
-      } else {
-        console.log('No existing subscription, creating new one');
-        // Create subscription directly in database
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: user!.id,
-            plan_type: planType,
-            status: 'active',
-            amount: plan.amount,
-            expires_at: expiryDate.toISOString(),
-          })
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Error creating subscription:', error);
-          throw error;
-        }
-        
-        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
-        setCurrentSubscription(data);
+        setTimeout(() => navigate('/dashboard'), 2000);
+        return;
       }
       
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      // For paid plans, require Pi authentication
+      if (!isPiAvailable) {
+        toast.error('Pi Network is not available. Please open this app in Pi Browser.');
+        setIsActivating(false);
+        setSelectedPlan(null);
+        return;
+      }
+
+      if (!isPiAuthenticated) {
+        toast.info('Please authenticate with Pi Network first to subscribe');
+        // Trigger Pi auth
+        await signInWithPi(false);
+        setIsActivating(false);
+        setSelectedPlan(null);
+        return;
+      }
+      
+      // Create Pi payment for paid plans
+      console.log('Creating Pi payment for plan:', planType);
+      await createSubscriptionPayment(planType);
+      
     } catch (error: any) {
       console.error('Subscription error:', error);
-      const errorMessage = error?.message || 'Failed to activate subscription';
+      const errorMessage = error?.message || 'Failed to process subscription';
       toast.error(`Error: ${errorMessage}`);
     } finally {
       setIsActivating(false);
       setSelectedPlan(null);
     }
-
-    // Old Pi payment code (disabled)
-    /*
-    // Free plan doesn't require Pi authentication or payment
-    if (planType === 'free') {
-      try {
-        // Activate free plan directly without requiring Pi auth
-        const { error } = await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: user!.id,
-            plan_type: 'free',
-            status: 'active',
-            amount: 0,
-            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-          });
-        
-        if (error) throw error;
-        
-        toast.success('🎉 Free plan activated! Redirecting to dashboard...');
-        setIsActivating(false);
-        setTimeout(() => {
-          setSelectedPlan(null);
-          navigate('/dashboard');
-        }, 2000);
-      } catch (error) {
-        console.error('Error activating free plan:', error);
-        toast.error('Failed to activate free plan. Please try again.');
-        setIsActivating(false);
-        setSelectedPlan(null);
-      }
-      return;
-    }
-    
-    // For paid plans, check if Pi is available first
-    if (!isPiAvailable) {
-      toast.error('Pi Network is not available. Please open this app in Pi Browser.');
-      setIsActivating(false);
-      setSelectedPlan(null);
-      return;
-    }
-
-    // For paid plans, require Pi authentication before payment
-    if (!isPiAuthenticated) {
-      toast.info('Please authenticate with Pi Network first');
-      setIsActivating(false);
-      setSelectedPlan(null);
-      return;
-    }
-    
-    // Already authenticated, create payment directly
-    setIsActivating(false);
-    await createSubscriptionPayment(planType);
-    */
   };
 
   // Mock payment handler for testing
@@ -376,33 +352,15 @@ const Subscription = () => {
                 <p className="text-sm text-muted-foreground">Pay with Pi • Powered by Droplink</p>
               </div>
             </div>
-            {/* Test Mode Toggle */}
-            <Button
-              variant={isTestMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsTestMode(!isTestMode)}
-              className="shrink-0"
-            >
-              {isTestMode ? "🧪 Test Mode ON" : "Enable Test Mode"}
-            </Button>
+            {/* Test Mode removed */}
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
-          {/* Test Mode Alert */}
-          {isTestMode && (
-            <Alert className="mb-8 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-900 dark:text-blue-100">
-                <span className="font-semibold">🧪 Test Mode Enabled</span> - Subscriptions will be activated instantly without Pi payment. Use this to test the gift card feature and other functionality.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Pi Network Notice */}
-          {!isPiAvailable && !isTestMode && (
+          {!isPiAvailable && (
             <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -420,7 +378,7 @@ const Subscription = () => {
           )}
 
           {/* Pi Authentication Status */}
-          {isPiAvailable && !isPiAuthenticated && !isTestMode && (
+          {isPiAvailable && !isPiAuthenticated && (
             <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
               <Coins className="h-4 w-4 text-amber-600" />
               <AlertDescription className="flex items-center justify-between">
@@ -460,96 +418,18 @@ const Subscription = () => {
             </Alert>
           )}
 
-          {/* Current Subscription Banner */}
-          {currentSubscription && (
-            <Alert className="mb-8 border-primary bg-primary/5">
-              <Crown className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-foreground">
-                <span className="font-semibold">Current Plan: {SUBSCRIPTION_PLANS[currentSubscription.plan_type as PlanType]?.name || currentSubscription.plan_type}</span>
-                <span className="text-muted-foreground ml-2">
-                  • Expires: {formatExpiryDate(currentSubscription.expires_at)}
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-              <Coins className="w-4 h-4" />
-              <span>Pay with Pi Cryptocurrency</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              Choose Your Plan
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Unlock premium features and grow your business on Pi Network Mainnet
-            </p>
-          </div>
-
-          {/* Upgrade Benefits - Show for free users */}
-          {currentSubscription?.plan_type === 'free' && (
-            <Alert className="mb-8 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-              <Rocket className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-foreground">
-                <span className="font-semibold text-amber-900 dark:text-amber-100">🚀 Upgrade to unlock:</span>
-                <span className="text-amber-800 dark:text-amber-200 ml-2">
-                  Multiple stores • Unlimited products • Premium templates • Priority support • Custom domain • Advanced analytics • Remove ads
-                </span>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Welcome Discount Banner */}
-          <div className="bg-gradient-to-r from-green-500/10 via-primary/10 to-green-500/10 rounded-lg p-4 mb-4 text-center border border-green-500/20">
-            <p className="text-sm font-medium">
-              🎁 <span className="text-green-600 dark:text-green-400 font-semibold">Welcome Discount Applied!</span> Save up to 5π on your first subscription
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Basic: -1π • Grow: -2π • Advance: -3π • Plus: -5π
-            </p>
-          </div>
-
-          {/* Limited Time Offer */}
-          <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 rounded-lg p-4 mb-8 text-center">
-            <p className="text-sm font-medium">
-              🎉 <span className="text-primary font-semibold">Special Launch Offer:</span> Get 20% off on annual plans! Use code: <span className="font-mono bg-primary/20 px-2 py-1 rounded">LAUNCH2025</span>
-            </p>
-          </div>
-
-          {/* Store Types Info */}
-          <div className="mb-12">
-            <h3 className="text-xl font-display font-semibold text-center mb-6">All Plans Support Three Store Types</h3>
-            <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              {Object.values(STORE_TYPES).map((storeType) => (
-                <div key={storeType.id} className="flex items-center gap-3 p-4 rounded-lg bg-card border border-border">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    {getStoreIcon(storeType.id)}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{storeType.name}</p>
-                    <p className="text-xs text-muted-foreground">{storeType.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Plans Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {/* Free Plan */}
-            <Card className={`relative border-2 transition-colors ${isCurrentPlan('free') ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge variant="outline" className="bg-card">Limited</Badge>
+          {/* Subscription Plans Grid */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+          {/* Free Plan */}
+          <Card className={`relative ${isCurrentPlan('free') ? 'border-primary bg-primary/5' : ''}`}>
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-2">
+                {getPlanIcon('free')}
+                <CardTitle>{SUBSCRIPTION_PLANS.free.name}</CardTitle>
               </div>
-              <CardHeader>
-                <div className="flex items-center gap-2 mb-2">
-                  {getPlanIcon('free')}
-                  <CardTitle>{SUBSCRIPTION_PLANS.free.name}</CardTitle>
-                </div>
-                <CardDescription>{SUBSCRIPTION_PLANS.free.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
+              <CardDescription>{SUBSCRIPTION_PLANS.free.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
                 <div className="mb-6">
                   <span className="text-4xl font-display font-bold">Free</span>
                   <span className="text-muted-foreground ml-2">/ forever</span>
@@ -628,14 +508,14 @@ const Subscription = () => {
                   {((isProcessing || isActivating) && selectedPlan === 'basic') ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {isTestMode ? 'Activating...' : 'Processing...'}
+                      Processing...
                     </>
                   ) : isCurrentPlan('basic') ? (
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>
@@ -691,8 +571,8 @@ const Subscription = () => {
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>
@@ -745,8 +625,8 @@ const Subscription = () => {
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>
@@ -799,8 +679,8 @@ const Subscription = () => {
                     'Current Plan'
                   ) : (
                     <>
-                      {isTestMode ? '🧪' : <Coins className="w-4 h-4 mr-2" />}
-                      {isTestMode ? 'Test Subscribe' : 'Subscribe'}
+                      <Coins className="w-4 h-4 mr-2" />
+                      Subscribe
                     </>
                   )}
                 </Button>

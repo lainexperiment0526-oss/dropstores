@@ -63,7 +63,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     toast.info('You have an incomplete payment. Please complete it to continue.');
   }, []);
 
-  // Sign in with Pi Network
+  // Sign in with Pi Network - Always requests username, payments, wallet_address scopes
   const signInWithPi = async (shouldNavigate: boolean = true) => {
     if (!piAvailable) {
       toast.error('Pi Network is not available. Please open this app in Pi Browser.');
@@ -73,7 +73,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     try {
-      console.log('PiAuth: Starting Pi authentication...');
+      console.log('PiAuth: Starting Pi authentication with scopes: username, payments, wallet_address');
       const result: PiAuthResult | null = await authenticateWithPi(handleIncompletePayment);
 
       if (!result) {
@@ -90,10 +90,17 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      console.log('PiAuth: Received Pi user data:', {
+        username: result.user.username,
+        uid: result.user.uid,
+        wallet_address: result.user.wallet_address || 'not provided'
+      });
+
       // Set Pi user and access token
       setPiUser(result.user);
       setPiAccessToken(result.accessToken);
-      // Try to fetch wallet address automatically
+      
+      // Set wallet address if provided
       if (result.user.wallet_address) {
         setWalletAddress(result.user.wallet_address);
       }
@@ -117,6 +124,11 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('PiAuth: Backend response:', data);
+      
+      // Update wallet address from backend response if available
+      if (data?.walletAddress) {
+        setWalletAddress(data.walletAddress);
+      }
 
       // If backend returns a Supabase session, set it
       if (data && data.session) {
@@ -136,30 +148,32 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         }
         
         console.log('PiAuth: Session set successfully!');
-        // Store Pi user data in database
-        if (user?.id) {
+        
+        // Store/update Pi user data in database
+        const sessionUserId = data.session.user?.id || data.userId;
+        if (sessionUserId) {
           const { error: storeError } = await supabase
             .from('pi_users')
             .upsert({
-              user_id: user.id,
+              user_id: sessionUserId,
               pi_uid: result.user.uid,
               pi_username: result.user.username,
-              wallet_address: result.user.wallet_address || null,
+              wallet_address: result.user.wallet_address || data.walletAddress || null,
               updated_at: new Date().toISOString(),
             }, {
               onConflict: 'pi_uid'
             });
           if (storeError) {
             console.warn('PiAuth: Failed to store Pi user data:', storeError);
-            // Don't fail auth if storage fails, just log it
           } else {
             console.log('PiAuth: Pi user data stored successfully');
           }
         }
+        
         toast.success(`Welcome, ${result.user.username}!`);
+        
         // Only navigate if requested
         if (shouldNavigate) {
-          // Small delay to ensure session is propagated
           setTimeout(() => {
             navigate('/dashboard');
           }, 100);
