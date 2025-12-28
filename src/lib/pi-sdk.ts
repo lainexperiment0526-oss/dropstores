@@ -102,7 +102,7 @@ export const isPiAvailable = (): boolean => {
   return typeof window !== 'undefined' && !!window.Pi;
 };
 
-// Pi Authentication
+// Pi Authentication - Always request username, payments, and wallet_address scopes
 export const authenticateWithPi = async (
   onIncompletePaymentFound?: (payment: PiPaymentDTO) => void,
   reqScopes?: string[]
@@ -113,21 +113,39 @@ export const authenticateWithPi = async (
   }
 
   try {
-    // Default scopes cover: username (auth), payments (payment), wallet_address (wallet info)
-    const scopes = reqScopes && reqScopes.length > 0
-      ? reqScopes
-      : ['username', 'payments', 'wallet_address'];
+    // ALWAYS request all required scopes: username, payments, wallet_address
+    // This ensures we get the user's Pi username and wallet address every time
+    const scopes = ['username', 'payments', 'wallet_address'];
+    
+    // Add any additional requested scopes
+    if (reqScopes && reqScopes.length > 0) {
+      reqScopes.forEach(scope => {
+        if (!scopes.includes(scope)) {
+          scopes.push(scope);
+        }
+      });
+    }
+    
+    console.log('Calling window.Pi.authenticate() with reqScopes:', scopes);
+    
     const result = await window.Pi!.authenticate(
       scopes,
       onIncompletePaymentFound || ((payment: PiPaymentDTO) => {
         console.warn('Incomplete payment detected:', payment);
       })
     );
+    
     if (!result || !result.user || !result.user.uid || !result.user.username) {
       console.error('Invalid authentication result:', result);
       return null;
     }
-    console.log('Pi authentication successful:', result.user.username);
+    
+    console.log('Pi authentication successful:', {
+      username: result.user.username,
+      uid: result.user.uid,
+      wallet_address: result.user.wallet_address || 'not provided'
+    });
+    
     return result;
   } catch (error) {
     console.error('Pi authentication failed:', error);
