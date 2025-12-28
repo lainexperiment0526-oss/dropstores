@@ -74,7 +74,17 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       console.log('PiAuth: Starting Pi authentication with default scopes');
-      const result: PiAuthResult | null = await authenticateWithPi(handleIncompletePayment);
+      let result: PiAuthResult | null = null;
+
+      try {
+        result = await authenticateWithPi(handleIncompletePayment);
+      } catch (authError) {
+        console.error('PiAuth: Authentication threw error:', authError);
+        const errorMessage = authError instanceof Error ? authError.message : 'Pi authentication failed';
+        toast.error(errorMessage);
+        setIsLoading(false);
+        return;
+      }
 
       if (!result) {
         console.log('PiAuth: No result from Pi authentication');
@@ -191,10 +201,11 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     } catch (error) {
-      console.error('PiAuth: Pi authentication error:', error);
+      console.error('✗ PiAuth: Unexpected error:', error);
       setPiUser(null);
       setPiAccessToken(null);
-      toast.error('Failed to authenticate with Pi Network. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      toast.error(`Failed to authenticate: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -209,41 +220,89 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     try {
-      const result: PiAuthResult | null = await authenticateWithPi(handleIncompletePayment, scopes);
-      if (result) {
-        setPiUser(result.user);
-        setPiAccessToken(result.accessToken);
-        if (result.user.wallet_address) setWalletAddress(result.user.wallet_address);
+      console.log('PiAuth: Starting sign in with scopes:', scopes);
+      let result: PiAuthResult | null = null;
+      
+      try {
+        result = await authenticateWithPi(handleIncompletePayment, scopes);
+      } catch (authError) {
+        console.error('PiAuth: Authentication threw error:', authError);
+        const errorMessage = authError instanceof Error ? authError.message : 'Pi authentication failed';
+        toast.error(errorMessage);
+        setIsLoading(false);
+        return;
+      }
 
-        const { data, error } = await supabase.functions.invoke('pi-auth', {
-          body: { accessToken: result.accessToken, piUser: result.user }
+      if (!result) {
+        console.log('PiAuth: No result from Pi authentication');
+        toast.error('Pi authentication was cancelled or failed.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('PiAuth: Got authentication result:', {
+        username: result.user.username,
+        uid: result.user.uid
+      });
+
+      setPiUser(result.user);
+      setPiAccessToken(result.accessToken);
+      if (result.user.wallet_address) setWalletAddress(result.user.wallet_address);
+
+      console.log('PiAuth: Calling backend pi-auth function...');
+      const { data, error } = await supabase.functions.invoke('pi-auth', {
+        body: { 
+          accessToken: result.accessToken, 
+          piUser: result.user 
+        }
+      });
+
+      if (error) {
+        console.error('PiAuth: Backend verification failed:', error);
+        setPiUser(null);
+        setPiAccessToken(null);
+        toast.error('Authentication verification failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('PiAuth: Backend response:', data);
+
+      if (data?.session) {
+        console.log('PiAuth: Setting session...');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
         });
-        if (error) {
-          console.error('PiAuth: Backend verification failed:', error);
-          toast.error('Authentication verification failed.');
+
+        if (sessionError) {
+          console.error('PiAuth: Failed to set session:', sessionError);
+          setPiUser(null);
+          setPiAccessToken(null);
+          toast.error('Failed to complete sign in. Please try again.');
+          setIsLoading(false);
           return;
         }
-        if (data && data.session) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-          });
-          if (sessionError) {
-            console.error('PiAuth: Failed to set session:', sessionError);
-            toast.error('Failed to complete sign in.');
-            return;
-          }
-          toast.success(`Welcome, ${result.user.username}!`);
-          if (shouldNavigate) setTimeout(() => navigate('/dashboard'), 100);
-        } else {
-          toast.error('Authentication failed. Please try again.');
+
+        console.log('✓ PiAuth: Session set and user authenticated:', result.user.username);
+        toast.success(`Welcome, ${result.user.username}!`);
+        
+        if (shouldNavigate) {
+          setTimeout(() => navigate('/dashboard'), 100);
         }
       } else {
-        toast.error('Pi authentication was cancelled or failed.');
+        console.error('PiAuth: No session in backend response');
+        setPiUser(null);
+        setPiAccessToken(null);
+        toast.error('Authentication failed. Please try again.');
+        setIsLoading(false);
       }
     } catch (error) {
-      console.error('PiAuth: Pi authentication error:', error);
-      toast.error('Failed to authenticate with Pi Network.');
+      console.error('✗ PiAuth: Unexpected error:', error);
+      setPiUser(null);
+      setPiAccessToken(null);
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      toast.error(`Failed to authenticate: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
