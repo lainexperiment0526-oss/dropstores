@@ -80,44 +80,50 @@ declare global {
 }
 
 // Initialize Pi SDK
-export const initPiSdk = (sandbox: boolean = false) => {
-  if (typeof window === 'undefined') {
-    console.warn('Window object not available');
-    return;
-  }
-
-  // Wait for Pi SDK to be loaded (max 5 seconds)
-  let attempts = 0;
-  const maxAttempts = 50;
-  
-  const initializeWhenReady = () => {
-    if (window.Pi) {
-      const config = {
-        version: '2.0',
-        sandbox: sandbox
-      };
-      
-      try {
-        window.Pi.init(config);
-        console.log('✓ Pi SDK initialized successfully:', {
-          mode: sandbox ? 'sandbox' : 'mainnet',
-          piNetwork: import.meta.env.VITE_PI_NETWORK || 'mainnet',
-          hasApiKey: !!import.meta.env.VITE_PI_API_KEY,
-          timestamp: new Date().toISOString()
-        });
-      } catch (error) {
-        console.error('✗ Failed to initialize Pi SDK:', error);
-      }
-    } else if (attempts < maxAttempts) {
-      attempts++;
-      setTimeout(initializeWhenReady, 100);
-    } else {
-      console.warn('Pi SDK not available after waiting - ensure app is opened in Pi Browser');
+export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      console.warn('Window object not available');
+      resolve(false);
+      return;
     }
-  };
-  
-  // Start initialization
-  initializeWhenReady();
+
+    // Wait for Pi SDK to be loaded (max 5 seconds)
+    let attempts = 0;
+    const maxAttempts = 50;
+    
+    const initializeWhenReady = () => {
+      if (window.Pi) {
+        const config = {
+          version: '2.0',
+          sandbox: sandbox
+        };
+        
+        try {
+          window.Pi.init(config);
+          console.log('✓ Pi SDK initialized successfully:', {
+            mode: sandbox ? 'sandbox' : 'mainnet',
+            piNetwork: import.meta.env.VITE_PI_NETWORK || 'mainnet',
+            hasApiKey: !!import.meta.env.VITE_PI_API_KEY,
+            timestamp: new Date().toISOString()
+          });
+          resolve(true);
+        } catch (error) {
+          console.error('✗ Failed to initialize Pi SDK:', error);
+          resolve(false);
+        }
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(initializeWhenReady, 100);
+      } else {
+        console.warn('Pi SDK not available after waiting - ensure app is opened in Pi Browser');
+        resolve(false);
+      }
+    };
+    
+    // Start initialization
+    initializeWhenReady();
+  });
 };
 
 // Check if Pi SDK is available

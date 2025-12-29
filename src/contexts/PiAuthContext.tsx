@@ -50,11 +50,16 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       apiUrl: import.meta.env.VITE_API_URL
     });
     
-    initPiSdk(isSandbox);
-    const available = isPiAvailable();
-    setPiAvailable(available);
-    
-    console.log('PiAuth: Pi SDK availability:', available);
+    initPiSdk(isSandbox).then((initialized) => {
+      if (initialized) {
+        const available = isPiAvailable();
+        setPiAvailable(available);
+        console.log('PiAuth: Pi SDK availability:', available);
+      } else {
+        setPiAvailable(false);
+        console.log('PiAuth: Pi SDK initialization failed');
+      }
+    });
   }, []);
 
   // Handle incomplete payments found during authentication
@@ -213,18 +218,35 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with custom scopes (e.g., ['username','payments','wallet_address'])
   const signInWithPiScopes = async (scopes: string[], shouldNavigate: boolean = true) => {
+    console.log('=== Pi Auth Flow Started ===');
+    console.log('piAvailable:', piAvailable);
+    console.log('window.Pi:', typeof window !== 'undefined' && window.Pi ? 'available' : 'not available');
+    
     if (!piAvailable) {
-      toast.error('Pi Network is not available. Please open this app in Pi Browser.');
+      const message = 'Pi Network is not available. Please open this app in Pi Browser.';
+      console.error(message);
+      toast.error(message);
+      return;
+    }
+
+    // Double check Pi SDK is available
+    if (typeof window === 'undefined' || !window.Pi) {
+      const message = 'Pi SDK not loaded. Please refresh the page or open in Pi Browser.';
+      console.error(message);
+      toast.error(message);
       return;
     }
 
     setIsLoading(true);
     try {
       console.log('PiAuth: Starting sign in with scopes:', scopes);
+      console.log('PiAuth: Calling authenticateWithPi...');
+      
       let result: PiAuthResult | null = null;
       
       try {
         result = await authenticateWithPi(handleIncompletePayment, scopes);
+        console.log('PiAuth: authenticateWithPi returned:', result ? 'success' : 'null');
       } catch (authError) {
         console.error('PiAuth: Authentication threw error:', authError);
         const errorMessage = authError instanceof Error ? authError.message : 'Pi authentication failed';
@@ -234,15 +256,23 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!result) {
-        console.log('PiAuth: No result from Pi authentication');
+        console.log('PiAuth: No result from Pi authentication (user may have cancelled)');
         toast.error('Pi authentication was cancelled or failed.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!result.user || !result.user.uid || !result.user.username) {
+        console.error('PiAuth: Invalid user data:', result.user);
+        toast.error('Invalid user data received. Please try again.');
         setIsLoading(false);
         return;
       }
 
       console.log('PiAuth: Got authentication result:', {
         username: result.user.username,
-        uid: result.user.uid
+        uid: result.user.uid,
+        wallet: result.user.wallet_address ? 'yes' : 'no'
       });
 
       setPiUser(result.user);
@@ -304,6 +334,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       toast.error(`Failed to authenticate: ${errorMessage}`);
     } finally {
+      console.log('=== Pi Auth Flow Ended ===');
       setIsLoading(false);
     }
   };
