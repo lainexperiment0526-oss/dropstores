@@ -22,9 +22,9 @@ serve(async (req: Request) => {
     // @ts-ignore: Deno global
     const PI_API_KEY = Deno.env.get('PI_API_KEY')?.trim();
     // @ts-ignore: Deno global
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('MY_SUPABASE_URL');
     // @ts-ignore: Deno global
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY');
     
     console.log('Pi Auth: Starting authentication...');
     console.log('Pi Auth: PI_API_KEY length:', PI_API_KEY?.length);
