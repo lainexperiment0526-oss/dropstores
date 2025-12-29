@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playSound, sounds } from '@/utils/sounds';
-import { Progress } from "@/components/ui/progress";
 
 export interface SplashScreenProps {
   onComplete: () => void;
@@ -192,7 +191,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               {enableChristmasTheme && '🎁 '}{Math.round(progress)}%{enableChristmasTheme && ' 🎁'}
             </motion.p>
             
-            {/* Progress Bar */}
+            {/* Progress Bar (Radix-free to avoid hook issues) */}
             <motion.div 
               className="mt-2 w-64 md:w-80"
               initial={{ opacity: 0, width: "60%" }}
@@ -200,10 +199,12 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               transition={{ delay: 0.7, duration: 0.6 }}
             >
               <div className={enableChristmasTheme ? "relative" : ""}>
-                <Progress 
-                  value={progress} 
-                  className={`h-2 overflow-hidden ${enableChristmasTheme ? 'bg-white/30' : 'bg-white/20'}`}
-                />
+                <div className={`h-2 w-full rounded-full ${enableChristmasTheme ? 'bg-white/30' : 'bg-white/20'}`}>
+                  <div
+                    className={`h-full rounded-full ${enableChristmasTheme ? 'bg-white' : 'bg-white/80'}`}
+                    style={{ width: `${Math.min(progress, 100)}%` }}
+                  />
+                </div>
                 {enableChristmasTheme && (
                   <motion.div
                     className="absolute -top-1 text-xl"
