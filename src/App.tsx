@@ -23,9 +23,14 @@ import Pricing from "./pages/Pricing";
 import AdminPayouts from "./pages/AdminPayouts";
 import AdminMrwain from "./pages/AdminMrwain";
 import ExternalRedirect from "./pages/ExternalRedirect";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Business from "./pages/Business";
+import Prohibited from "./pages/Prohibited";
 import Support from "./pages/Support";
 import Help from "./pages/Help";
 import AboutPiSupplier from "./pages/AboutPiSupplier";
+import GDPR from "./pages/GDPR";
 
 const queryClient = new QueryClient();
 
@@ -57,13 +62,16 @@ const App = () => {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/help" element={<Help />} />
+                <Route path="/gdpr" element={<GDPR />} />
                                 <Route path="/pi-test" element={<PiAuthTest />} />
                 <Route path="/admin-payouts" element={<AdminPayouts />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin-mrwain" element={<AdminMrwain />} />
-                {/* Privacy Policy and Terms of Service external redirects */}
-                <Route path="/privacy" element={<ExternalRedirect to="https://droplink.space/privacy" />} />
-                <Route path="/terms" element={<ExternalRedirect to="https://droplink.space/terms" />} />
+                {/* Privacy Policy and Terms of Service local pages */}
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/business" element={<Business />} />
+                <Route path="/prohibited" element={<Prohibited />} />
                 <Route path="/about" element={<ExternalRedirect to="https://www.droplink.space/about" />} />
                               <Route path="/AboutPiSupplier" element={<AboutPiSupplier />} />
                 <Route path="/careers" element={<ExternalRedirect to="https://www.droplink.space/careers" />} />

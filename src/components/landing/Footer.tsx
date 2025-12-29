@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Store, Twitter, Instagram, Linkedin, Github } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function Footer() {
   return (
@@ -65,8 +67,11 @@ export function Footer() {
               <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors text-sm">About Us</Link></li>
               <li><Link to="/AboutPiSupplier" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Pi Supplier Program</Link></li>
               <li><a href="/careers" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Careers</a></li>
-              <li><a href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Privacy Policy</a></li>
-              <li><a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Terms of Service</a></li>
+              <li><Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Terms of Service</Link></li>
+              <li><Link to="/business" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Business Guidelines</Link></li>
+              <li><Link to="/prohibited" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Prohibited Activities</Link></li>
+              <li><Link to="/gdpr" className="text-muted-foreground hover:text-foreground transition-colors text-sm">GDPR</Link></li>
             </ul>
           </div>
         </div>
@@ -78,6 +83,37 @@ export function Footer() {
           <p className="text-muted-foreground text-xs mt-2">
             Built on Pi Network Mainnet • Accept Pi Payments
           </p>
+          <div className="mt-4 flex items-center justify-center">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="link" size="sm">Software License</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Software License</DialogTitle>
+                </DialogHeader>
+                <div className="prose prose-sm dark:prose-invert max-h-[60vh] overflow-y-auto text-left">
+                  <p><strong>Copyright (C) 2025 MRWAIN ORGANIZATION</strong></p>
+                  <p>
+                    Permission is hereby granted by the application software developer ("Software Developer"), free of charge, to any person obtaining a copy of this application, software and associated documentation files (the "Software"), which was developed by the Software Developer for use on Pi Network, whereby the purpose of this license is to permit the development of derivative works based on the Software, including the right to use, copy, modify, merge, publish, distribute, sub-license, and/or sell copies of such derivative works and any Software components incorporated therein, and to permit persons to whom such derivative works are furnished to do so, in each case, solely to develop, use and market applications for the official Pi Network.
+                  </p>
+                  <p>
+                    For purposes of this license, Pi Network shall mean any application, software, or other present or future platform developed, owned or managed by Pi Community Company, and its parents, affiliates or subsidiaries, for which the Software was developed, or on which the Software continues to operate. However, you are prohibited from using any portion of the Software or any derivative works thereof in any manner (a) which infringes on any Pi Network intellectual property rights, (b) to hack any of Pi Network’s systems or processes or (c) to develop any product or service which is competitive with the Pi Network.
+                  </p>
+                  <p>
+                    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+                  </p>
+                  <p>
+                    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, PUBLISHERS, OR COPYRIGHT HOLDERS OF THIS SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO BUSINESS INTERRUPTION, LOSS OF USE, DATA OR PROFITS) HOWEVER CAUSED AND UNDER ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE) ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                  </p>
+                  <p>
+                    Pi, Pi Network and the Pi logo are trademarks of the Pi Community Company.
+                  </p>
+                  <p><strong>Copyright (C) 2025 MRWAIN ORGANIZATION</strong></p>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
     </footer>
