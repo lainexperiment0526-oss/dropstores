@@ -83,7 +83,69 @@ export function Footer() {
           <p className="text-muted-foreground text-xs mt-2">
             Built on Pi Network Mainnet • Accept Pi Payments
           </p>
-          <div className="mt-4 flex items-center justify-center">
+          <div className="mt-4 flex items-center justify-center gap-4">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="link" size="sm">Droplink Ecosystem</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Droplink Ecosystem for Business and Creators</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto">
+                  <div className="rounded-lg border bg-muted/60 p-4 text-sm text-muted-foreground">
+                    Build, sell, and get paid across fully connected Pi apps. Choose one, two, or all three to match your goals.
+                  </div>
+                  <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                      <p className="text-xs font-semibold text-primary mb-1">Awareness</p>
+                      <h4 className="font-semibold text-foreground mb-2">Droplink</h4>
+                      <p className="text-sm text-muted-foreground">Drive traffic, visibility, and buyers to your DropStore with one powerful link.</p>
+                    </div>
+                    <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                      <p className="text-xs font-semibold text-primary mb-1">Storefront</p>
+                      <h4 className="font-semibold text-foreground mb-2">DropStore</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>Physical products</li>
+                        <li>Digital products</li>
+                        <li>Online services</li>
+                        <li>All in one Pi-powered marketplace</li>
+                      </ul>
+                    </div>
+                    <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                      <p className="text-xs font-semibold text-primary mb-1">Payments</p>
+                      <h4 className="font-semibold text-foreground mb-2">DropPay</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>Accept Pi payments</li>
+                        <li>Create checkout links</li>
+                        <li>Embed Pi payments on sites/widgets</li>
+                        <li>Automated earnings and payouts</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="mt-6 rounded-lg border bg-muted/40 p-4">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wide">Flow</p>
+                    <p className="text-sm text-foreground font-medium mt-1">Exposure → Selling → Payment → Payout</p>
+                    <p className="text-sm text-muted-foreground mt-2">Each app connects to the next, so you can scale from audience to revenue without switching stacks.</p>
+                  </div>
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                      <h5 className="text-sm font-semibold text-foreground">Creators & Influencers</h5>
+                      <p className="text-sm text-muted-foreground mt-1">Use Droplink to grow reach and send buyers straight to your DropStore.</p>
+                    </div>
+                    <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                      <h5 className="text-sm font-semibold text-foreground">Sellers & Merchants</h5>
+                      <p className="text-sm text-muted-foreground mt-1">Showcase and sell in DropStore with seamless Pi checkout powered by DropPay.</p>
+                    </div>
+                    <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                      <h5 className="text-sm font-semibold text-foreground">Businesses</h5>
+                      <p className="text-sm text-muted-foreground mt-1">Leverage DropPay for secure Pi payments, recurring earnings, and managed payouts.</p>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="link" size="sm">Software License</Button>
@@ -92,24 +154,44 @@ export function Footer() {
                 <DialogHeader>
                   <DialogTitle>Software License</DialogTitle>
                 </DialogHeader>
-                <div className="prose prose-sm dark:prose-invert max-h-[60vh] overflow-y-auto text-left">
-                  <p><strong>Copyright (C) 2025 MRWAIN ORGANIZATION</strong></p>
+                <div className="max-h-[60vh] overflow-y-auto space-y-4 text-sm text-muted-foreground">
+                  <div className="rounded-lg border bg-muted/60 p-4 text-foreground font-semibold">
+                    Copyright (C) 2025 MRWAIN ORGANIZATION
+                  </div>
                   <p>
                     Permission is hereby granted by the application software developer ("Software Developer"), free of charge, to any person obtaining a copy of this application, software and associated documentation files (the "Software"), which was developed by the Software Developer for use on Pi Network, whereby the purpose of this license is to permit the development of derivative works based on the Software, including the right to use, copy, modify, merge, publish, distribute, sub-license, and/or sell copies of such derivative works and any Software components incorporated therein, and to permit persons to whom such derivative works are furnished to do so, in each case, solely to develop, use and market applications for the official Pi Network.
                   </p>
+                  <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Permitted Use</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>Use, copy, modify, merge, publish, distribute, sub-license, and/or sell derivative works.</li>
+                      <li>Include this notice in all copies or substantial portions of the Software.</li>
+                      <li>Purpose: build and market applications for the official Pi Network.</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border bg-card/80 p-4 shadow-sm">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Restrictions</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>Do not infringe on Pi Network intellectual property.</li>
+                      <li>No hacking of Pi Network systems or processes.</li>
+                      <li>Do not develop products or services competitive with Pi Network.</li>
+                    </ul>
+                  </div>
                   <p>
-                    For purposes of this license, Pi Network shall mean any application, software, or other present or future platform developed, owned or managed by Pi Community Company, and its parents, affiliates or subsidiaries, for which the Software was developed, or on which the Software continues to operate. However, you are prohibited from using any portion of the Software or any derivative works thereof in any manner (a) which infringes on any Pi Network intellectual property rights, (b) to hack any of Pi Network’s systems or processes or (c) to develop any product or service which is competitive with the Pi Network.
+                    For purposes of this license, Pi Network shall mean any application, software, or other present or future platform developed, owned or managed by Pi Community Company, and its parents, affiliates or subsidiaries, for which the Software was developed, or on which the Software continues to operate.
                   </p>
-                  <p>
-                    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-                  </p>
-                  <p>
-                    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, PUBLISHERS, OR COPYRIGHT HOLDERS OF THIS SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO BUSINESS INTERRUPTION, LOSS OF USE, DATA OR PROFITS) HOWEVER CAUSED AND UNDER ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE) ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-                  </p>
-                  <p>
+                  <div className="rounded-lg border bg-muted/60 p-4 text-foreground">
+                    <p className="font-semibold">AS IS WARRANTY</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, PUBLISHERS, OR COPYRIGHT HOLDERS OF THIS SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO BUSINESS INTERRUPTION, LOSS OF USE, DATA OR PROFITS) HOWEVER CAUSED AND UNDER ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE) ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+                    </p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
                     Pi, Pi Network and the Pi logo are trademarks of the Pi Community Company.
                   </p>
-                  <p><strong>Copyright (C) 2025 MRWAIN ORGANIZATION</strong></p>
+                  <div className="rounded-lg border bg-muted/60 p-4 text-foreground font-semibold">
+                    Copyright (C) 2025 MRWAIN ORGANIZATION
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
