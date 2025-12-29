@@ -147,7 +147,7 @@ if ($failCount -gt 0) {
     $failed | ForEach-Object { Write-Host "   - $_" -ForegroundColor Red }
     Write-Host ""
     Write-Host "💡 Troubleshooting:" -ForegroundColor Yellow
-    Write-Host "   1. Check logs: npx supabase functions logs <function-name> --project-ref $projectRef" -ForegroundColor Gray
+    Write-Host "   1. Check logs: npx supabase functions logs [function-name] --project-ref $projectRef" -ForegroundColor Gray
     Write-Host "   2. Verify you're logged in: npx supabase login" -ForegroundColor Gray
     Write-Host "   3. Check function code for syntax errors" -ForegroundColor Gray
     exit 1
@@ -158,6 +158,6 @@ Write-Host "🎉 All edge functions deployed successfully!" -ForegroundColor Gre
 Write-Host ""
 Write-Host "📋 Next steps:" -ForegroundColor Cyan
 Write-Host "   1. Test functions at: https://supabase.com/dashboard/project/$projectRef/functions" -ForegroundColor Gray
-Write-Host "   2. Check logs: npx supabase functions logs <function-name> --project-ref $projectRef" -ForegroundColor Gray
+Write-Host "   2. Check logs: npx supabase functions logs [function-name] --project-ref $projectRef" -ForegroundColor Gray
 Write-Host "   3. Test Pi payment flow in your app" -ForegroundColor Gray
 Write-Host ""

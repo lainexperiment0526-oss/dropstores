@@ -14,8 +14,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Read Supabase credentials. Some environments disallow secrets starting with "SUPABASE_",
+// so support fallbacks like MY_SUPABASE_URL / MY_SUPABASE_SERVICE_ROLE_KEY.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('MY_SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY');
 
 // Pi Mainnet Horizon API endpoint
 const PI_HORIZON_URL = 'https://api.mainnet.minepi.com';
@@ -190,6 +192,15 @@ serve(async (req: Request) => {
     const paymentData = await paymentResponse.json();
     console.log('Payment data:', paymentData);
 
+    // Validate Supabase env configuration
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Supabase env not configured: SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase env not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Create Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -221,6 +232,29 @@ serve(async (req: Request) => {
         console.log('On-chain verification passed!');
       } else {
         console.warn('No merchant wallet configured, skipping on-chain verification');
+      }
+
+      // Ensure the store exists before creating the order (FK safety)
+      const { data: storeExists, error: storeLookupError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('id', metadata.store_id)
+        .maybeSingle();
+
+      if (storeLookupError) {
+        console.error('Store lookup failed:', storeLookupError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to verify store', details: storeLookupError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!storeExists) {
+        console.error('Store not found for order insert:', metadata.store_id);
+        return new Response(
+          JSON.stringify({ error: 'Invalid store_id in payment metadata', store_id: metadata.store_id }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       // Create order in database
