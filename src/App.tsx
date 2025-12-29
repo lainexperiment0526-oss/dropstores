@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import CreateStore from "./pages/CreateStore";
 import StoreManagement from "./pages/StoreManagement";
 import PublicStore from "./pages/PublicStore";
+import StoreDirectory from "./pages/StoreDirectory";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
@@ -47,6 +48,7 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/stores" element={<StoreDirectory />} />
                 <Route path="/create-store" element={<CreateStore />} />
                 <Route path="/store/:storeId" element={<StoreManagement />} />
                 <Route path="/shop/:slug" element={<PublicStore />} />

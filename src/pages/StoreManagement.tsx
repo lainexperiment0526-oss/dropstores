@@ -882,6 +882,21 @@ export default function StoreManagement() {
                           <p className="text-sm text-muted-foreground">
                             {order.customer_email}
                           </p>
+                          {order.customer_phone && (
+                            <p className="text-sm text-muted-foreground">
+                              {order.customer_phone}
+                            </p>
+                          )}
+                          {order.shipping_address && (
+                            <p className="text-sm text-muted-foreground">
+                              {order.shipping_address}
+                            </p>
+                          )}
+                          {order.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Note: {order.notes}
+                            </p>
+                          )}
                           <p className="text-sm text-muted-foreground">
                             {new Date(order.created_at).toLocaleDateString()}
                           </p>

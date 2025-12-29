@@ -1,6 +1,12 @@
 // @ts-ignore: Deno types
+// Deno environment: suppress TS complaints in editor
+// deno-lint-ignore-file no-explicit-any
+// @ts-ignore: Deno global declarations for editor tooling
+declare const Deno: any;
+
+// @ts-ignore: Deno std import (resolved at runtime)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// @ts-ignore: Deno types
+// @ts-ignore: Supabase client for Deno runtime
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -288,6 +294,15 @@ serve(async (req: Request) => {
     }
 
     // For subscriptions, continue with existing flow
+    const allowedPlanTypes = ['free', 'basic', 'grow', 'advance', 'plus', 'monthly', 'yearly'];
+    if (!planType || !allowedPlanTypes.includes(planType)) {
+      console.error('Invalid or missing plan type:', planType);
+      return new Response(
+        JSON.stringify({ error: 'Invalid plan type', details: `planType must be one of ${allowedPlanTypes.join(', ')}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const piUid = paymentData.user_uid;
     if (!piUid) {
       console.error('Missing pi_uid in payment data');
@@ -360,20 +375,41 @@ serve(async (req: Request) => {
       expires_at: expiresAt.toISOString()
     });
 
-    // Check for existing active subscription and update/deactivate
-    const { data: existingSub } = await supabase
+    // Check for existing active subscription and update/deactivate with safe fallback
+    const { data: existingSub, error: existingSubError } = await supabase
       .from('subscriptions')
       .select('id')
       .eq('user_id', piUser.user_id)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
+
+    if (existingSubError && existingSubError.code !== 'PGRST116') {
+      console.error('Error checking existing subscription:', existingSubError);
+    }
 
     if (existingSub) {
-      await supabase
+      const updatedAt = now.toISOString();
+      const { error: deactivateError } = await supabase
         .from('subscriptions')
-        .update({ status: 'superseded', updated_at: now.toISOString() })
+        .update({ status: 'superseded', updated_at: updatedAt })
         .eq('id', existingSub.id);
-      console.log('Deactivated old subscription:', existingSub.id);
+
+      if (deactivateError) {
+        // Fallback to a constraint-safe status if the check constraint is outdated
+        console.error('Failed to mark old subscription as superseded, falling back to expired:', deactivateError);
+        const { error: fallbackError } = await supabase
+          .from('subscriptions')
+          .update({ status: 'expired', updated_at: updatedAt })
+          .eq('id', existingSub.id);
+
+        if (fallbackError) {
+          console.error('Failed to mark old subscription as expired:', fallbackError);
+        } else {
+          console.log('Old subscription marked expired (fallback):', existingSub.id);
+        }
+      } else {
+        console.log('Deactivated old subscription:', existingSub.id);
+      }
     }
 
     // Create new subscription record

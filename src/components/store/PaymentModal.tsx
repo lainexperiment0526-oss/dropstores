@@ -65,6 +65,7 @@ export function PaymentModal({
     address: '',
     notes: '',
   });
+  const [formError, setFormError] = useState<string | null>(null);
   const [piAuthenticated, setPiAuthenticated] = useState(false);
   const [piAuthLoading, setPiAuthLoading] = useState(false);
   const [digitalDelivery, setDigitalDelivery] = useState<DigitalDeliveryInfo | null>(null);
@@ -94,14 +95,38 @@ export function PaymentModal({
   };
 
   const handleContinueToPayment = () => {
-    if (!orderForm.name.trim() || !orderForm.email.trim()) return;
+    if (!orderForm.name.trim() || !orderForm.email.trim()) {
+      setFormError('Name and email are required.');
+      return;
+    }
+
+    if (hasPhysicalProducts) {
+      if (!orderForm.phone.trim() || !orderForm.address.trim()) {
+        setFormError('Phone and shipping address are required for delivery.');
+        return;
+      }
+    }
+
+    setFormError(null);
     
     // Skip Pi auth and go directly to confirm (free orders)
     setStep('confirm');
   };
 
   const handleSubmit = async () => {
-    if (!orderForm.name.trim() || !orderForm.email.trim()) return;
+    if (!orderForm.name.trim() || !orderForm.email.trim()) {
+      setFormError('Name and email are required.');
+      return;
+    }
+
+    if (hasPhysicalProducts) {
+      if (!orderForm.phone.trim() || !orderForm.address.trim()) {
+        setFormError('Phone and shipping address are required for delivery.');
+        return;
+      }
+    }
+
+    setFormError(null);
     setStep('processing');
     try {
       await onSubmit(orderForm);
@@ -129,6 +154,7 @@ export function PaymentModal({
   const resetAndClose = () => {
     setStep('details');
     setOrderForm({ name: '', email: '', phone: '', address: '', notes: '' });
+    setFormError(null);
     setPiAuthenticated(false);
     setDigitalDelivery(null);
     onOpenChange(false);
@@ -143,6 +169,12 @@ export function PaymentModal({
             {step === 'success' ? 'Payment Complete' : 'Checkout'}
           </DialogTitle>
         </DialogHeader>
+
+        {formError && (
+          <div className="mb-3 px-3 py-2 rounded-md bg-red-50 text-red-700 text-sm border border-red-200">
+            {formError}
+          </div>
+        )}
 
         {step === 'success' ? (
           <div className="py-8 text-center">
