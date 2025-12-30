@@ -80,6 +80,11 @@ export function PaymentModal({
   const hasPhysicalProducts = cart.some(item => item.product.product_type !== 'digital');
 
   const handlePiAuth = async () => {
+    if (!piAvailable) {
+      setFormError('Pi Browser is required for Pi authentication.');
+      return;
+    }
+
     setPiAuthLoading(true);
     try {
       const result = await authenticateWithPi(() => {});
@@ -108,9 +113,18 @@ export function PaymentModal({
     }
 
     setFormError(null);
-    
-    // Skip Pi auth and go directly to confirm (free orders)
-    setStep('confirm');
+
+    if (!piAvailable) {
+      setFormError('Pi Network is not available. Open this store in Pi Browser to continue.');
+      return;
+    }
+
+    if (piAuthenticated) {
+      setStep('confirm');
+      return;
+    }
+
+    setStep('pi-auth');
   };
 
   const handleSubmit = async () => {
@@ -127,6 +141,13 @@ export function PaymentModal({
     }
 
     setFormError(null);
+
+    if (!piAuthenticated) {
+      setFormError('Please authenticate with Pi before completing payment.');
+      setStep('pi-auth');
+      return;
+    }
+
     setStep('processing');
     try {
       await onSubmit(orderForm);

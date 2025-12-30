@@ -174,6 +174,11 @@ export function PaymentModalEnhanced({
   };
 
   const handlePiAuth = async () => {
+    if (!piAvailable) {
+      toast.error('Pi Browser is required for Pi payments.');
+      return;
+    }
+
     setPiAuthLoading(true);
     try {
       const result = await authenticateWithPi(() => {});
@@ -231,6 +236,20 @@ export function PaymentModalEnhanced({
     
     setStep('processing');
     try {
+      if (orderForm.paymentMethod === 'pi_payment') {
+        if (!piAvailable) {
+          toast.error('Pi Browser is required for Pi payments.');
+          setStep('payment-method');
+          return;
+        }
+
+        if (!piAuthenticated) {
+          toast.error('Please authenticate with Pi before paying.');
+          setStep('pi-auth');
+          return;
+        }
+      }
+
       await onSubmit(orderForm, orderForm.paymentMethod);
       setStep('success');
     } catch (error) {
