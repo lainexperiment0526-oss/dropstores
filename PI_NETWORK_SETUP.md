@@ -6,8 +6,8 @@
 
 #### Root `.env`
 ```env
-PI_API_KEY="h1y9zxfm7infu7ysppf7mene5bab9y8gm1f09jsludamf48vler4n6vsiqrdmruy"
-VITE_PI_API_KEY="h1y9zxfm7infu7ysppf7mene5bab9y8gm1f09jsludamf48vler4n6vsiqrdmruy"
+PI_API_KEY="c7ee5itt8zfxgaio8uk9pciyomouospv3rnybrhmbbemh0whc0kkdd6x12ldjucc"
+VITE_PI_API_KEY="c7ee5itt8zfxgaio8uk9pciyomouospv3rnybrhmbbemh0whc0kkdd6x12ldjucc"
 VITE_PI_VALIDATION_KEY="a0111d77037c4bf013d6f4e3fd6cdc17357b996c7f4340887a642c65603ad6d50a392a3c9e57e3aa80b85934e1e92d87750d229229323dde96dd4761ddc555e1"
 VITE_PI_MAINNET_MODE="true"
 VITE_PI_NETWORK="mainnet"
@@ -251,7 +251,7 @@ supabase functions deploy pi-auth --no-verify-jwt
    ```bash
    supabase login
    supabase link --project-ref kvqfnmdkxaclsnyuzkyp
-   supabase secrets set PI_API_KEY=h1y9zxfm7infu7ysppf7mene5bab9y8gm1f09jsludamf48vler4n6vsiqrdmruy
+   supabase secrets set PI_API_KEY=c7ee5itt8zfxgaio8uk9pciyomouospv3rnybrhmbbemh0whc0kkdd6x12ldjucc
    supabase functions deploy --no-verify-jwt
    ```
 

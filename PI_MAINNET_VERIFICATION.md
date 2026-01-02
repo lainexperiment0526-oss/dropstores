@@ -12,7 +12,7 @@
 
 ```env
 # Pi Network Configuration
-PI_API_KEY="h1y9zxfm7infu7ysppf7mene5bab9y8gm1f09jsludamf48vler4n6vsiqrdmruy"
+PI_API_KEY="c7ee5itt8zfxgaio8uk9pciyomouospv3rnybrhmbbemh0whc0kkdd6x12ldjucc"
 DOMAIN_VALIDATION_KEY="a0111d77037c4bf013d6f4e3fd6cdc17357b996c7f4340887a642c65603ad6d50a392a3c9e57e3aa80b85934e1e92d87750d229229323dde96dd4761ddc555e1"
 
 # Pi Network Mainnet Settings

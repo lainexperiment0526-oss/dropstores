@@ -15,7 +15,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_SIqZm1fCy5acyRwenl9mFA_TWMrksAD
 
 # Pi Network Configuration
-VITE_PI_API_KEY=h1y9zxfm7infu7ysppf7mene5bab9y8gm1f09jsludamf48vler4n6vsiqrdmruy
+VITE_PI_API_KEY=c7ee5itt8zfxgaio8uk9pciyomouospv3rnybrhmbbemh0whc0kkdd6x12ldjucc
 VITE_PI_MAINNET_MODE=true
 VITE_PI_NETWORK=mainnet
 VITE_API_URL=https://api.minepi.com
