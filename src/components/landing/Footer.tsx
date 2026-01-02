@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Twitter, Instagram, Linkedin, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 
 export function Footer() {
-  const [isOfficialStatementModalOpen, setIsOfficialStatementModalOpen] = useState(false);
-
   return (
     <footer className="bg-card border-t border-border py-16">
       <div className="container mx-auto px-4">
@@ -167,13 +164,14 @@ export function Footer() {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex justify-end gap-3 mt-6">
-                  <button
-                    onClick={() => setIsOfficialStatementModalOpen(false)}
-                    className="px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-secondary transition-colors"
-                  >
-                    Close
-                  </button>
+                <div className="bg-white border-t border-gray-200 p-6 flex justify-end gap-3 mt-6">
+                  <DialogClose asChild>
+                    <button
+                      className="px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-secondary transition-colors"
+                    >
+                      Close
+                    </button>
+                  </DialogClose>
                 </div>
               </DialogContent>
             </Dialog>
