@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Twitter, Instagram, Linkedin, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function Footer() {
+  const [isOfficialStatementModalOpen, setIsOfficialStatementModalOpen] = useState(false);
+
   return (
     <footer className="bg-card border-t border-border py-16">
       <div className="container mx-auto px-4">
@@ -84,6 +87,97 @@ export function Footer() {
             Built on Pi Network Mainnet • Accept Pi Payments
           </p>
           <div className="mt-4 flex items-center justify-center gap-4">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="link" size="sm">Official Statement</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>MrWain Organization - Official Statement</DialogTitle>
+                </DialogHeader>
+                
+                {/* Modal Content */}
+                <div className="p-6 space-y-6 text-sm text-gray-700 leading-relaxed">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Declaration of Independence</h3>
+                    <p>
+                      The <strong>MrWain Organization</strong> operates as a fully independent, private institution with no affiliation, partnership, endorsement, or collaboration with any local or international government, governmental agency, regulatory body, or state-sponsored entity whatsoever.
+                    </p>
+
+                    <p>
+                      We maintain a strict policy of non-participation in any governmental program, project, initiative, or partnership. This unwavering commitment to independence ensures the complete autonomy, privacy, and security of our developers, founders, and the communities we serve.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Mission & Focus</h3>
+                    <p>
+                      The <strong>MrWain Organization</strong> is dedicated exclusively to the research, design, and development of innovative software applications within the Pi Network ecosystem, serving both current needs and future expansion of the decentralized economy.
+                    </p>
+
+                    <p>
+                      Our mission is to deliver cutting-edge, secure, and high-quality digital solutions that generate tangible utility for the global Pi Network community. We are committed to advancing the ecosystem through technological innovation and practical application development.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Core Values & Commitment</h3>
+                    <p>
+                      As a proudly independent entity, the <strong>MrWain Organization</strong> upholds the highest standards of:
+                    </p>
+                    <ul className="list-disc list-inside space-y-2 ml-4">
+                      <li><strong>Ethical Development:</strong> Maintaining integrity and responsible practices in all development activities</li>
+                      <li><strong>Technological Excellence:</strong> Delivering superior quality and innovative solutions</li>
+                      <li><strong>Decentralization Principles:</strong> Full alignment with the foundational values of decentralized systems</li>
+                      <li><strong>Transparency & Security:</strong> Ensuring open communication and robust protection for all users</li>
+                      <li><strong>Community First:</strong> Creating a forward-thinking environment that empowers builders and creators</li>
+                    </ul>
+                  </div>
+
+                  <p className="text-xs text-gray-600 italic pt-4">
+                    This statement reflects our organizational policy and is for informational purposes only; it does not constitute legal advice or a waiver of any rights or obligations.
+                  </p>
+
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border border-blue-200 mt-6">
+                    <div className="text-center mb-6">
+                      <p className="font-bold text-lg text-gray-900">© 2025 MrWain Organization</p>
+                      <p className="text-sm text-gray-700 mt-2">All Rights Reserved</p>
+                      <p className="mt-4 text-xs text-gray-600 italic">
+                        This official statement is protected by copyright law. Unauthorized reproduction, distribution, modification, or use of this document or any portion thereof is strictly prohibited and may result in legal action.
+                      </p>
+                    </div>
+                    
+                    <div className="border-t border-blue-300 pt-4 mt-4">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-gray-900">Officially Issued</p>
+                          <p className="text-xs text-gray-600 mt-1">December 10, 2025</p>
+                        </div>
+                        
+                        <div className="text-center mt-2">
+                          <div className="font-signature text-2xl text-gray-800 mb-1" style={{ fontFamily: 'Brush Script MT, cursive' }}>
+                            MrWain Organization
+                          </div>
+                          <div className="h-px w-48 bg-gray-400 mx-auto"></div>
+                          <p className="text-xs text-gray-600 mt-1">Authorized Signature</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => setIsOfficialStatementModalOpen(false)}
+                    className="px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-secondary transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="link" size="sm">Droplink Ecosystem</Button>
