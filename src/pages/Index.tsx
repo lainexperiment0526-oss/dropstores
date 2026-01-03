@@ -16,7 +16,7 @@ import { ScrollToTopButton } from '@/components/ui/scroll-to-top';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
       <main>
         <Hero />
