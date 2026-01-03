@@ -70,10 +70,11 @@ declare global {
         paymentData: PiPaymentData,
         callbacks: PiPaymentCallbacks
       ) => void;
+      nativeFeaturesList?: () => Promise<string[]>;
       Ads?: {
         isAdReady: (adType: string) => Promise<PiAdReadyResponse>;
         showAd: (adType: string) => Promise<PiAdShowResponse>;
-        requestAd: (adType: string) => Promise<{ result: 'AD_LOADED' | 'AD_NOT_AVAILABLE' | 'ADS_NOT_SUPPORTED' }>;
+        requestAd: (adType: string) => Promise<{ result: 'AD_LOADED' | 'AD_FAILED_TO_LOAD' | 'AD_NOT_AVAILABLE' }>;
       };
     };
   }
@@ -247,6 +248,29 @@ export const createPiPayment = (
   }
 };
 
+// Pi AdNetwork - Check if AdNetwork is supported in current Pi Browser
+export const isPiAdNetworkSupported = async (): Promise<boolean> => {
+  if (!isPiAvailable()) {
+    console.debug('Pi SDK not available');
+    return false;
+  }
+
+  if (!window.Pi?.nativeFeaturesList) {
+    console.debug('Pi nativeFeaturesList not available');
+    return false;
+  }
+
+  try {
+    const nativeFeatures = await window.Pi.nativeFeaturesList();
+    const adNetworkSupported = nativeFeatures.includes('ad_network');
+    console.log('Pi AdNetwork supported:', adNetworkSupported, 'Features:', nativeFeatures);
+    return adNetworkSupported;
+  } catch (error) {
+    console.error('Error checking AdNetwork support:', error);
+    return false;
+  }
+};
+
 // Pi AdNetwork - Check if ad is ready
 export const isPiAdReady = async (adType: 'interstitial' | 'rewarded'): Promise<boolean> => {
   if (!isPiAvailable()) {
@@ -261,6 +285,7 @@ export const isPiAdReady = async (adType: 'interstitial' | 'rewarded'): Promise<
 
   try {
     const response = await window.Pi.Ads.isAdReady(adType);
+    console.log(`${adType} ad ready status:`, response);
     return response?.ready === true;
   } catch (error) {
     console.error(`Error checking if ${adType} ad is ready:`, error);
@@ -271,33 +296,32 @@ export const isPiAdReady = async (adType: 'interstitial' | 'rewarded'): Promise<
 // Pi AdNetwork - Request ad (manually load ad)
 export const requestPiAd = async (
   adType: 'interstitial' | 'rewarded'
-): Promise<boolean> => {
+): Promise<string | null> => {
   if (!isPiAvailable()) {
     console.debug('Pi SDK not available for ad request');
-    return false;
+    return null;
   }
 
   if (!window.Pi?.Ads?.requestAd) {
     console.debug('Pi Ads requestAd API not available');
-    return false;
+    return null;
   }
 
   try {
     console.log(`Requesting ${adType} ad...`);
     const response = await window.Pi.Ads.requestAd(adType);
-    const success = response?.result === 'AD_LOADED';
     console.log(`${adType} ad request result:`, response?.result);
-    return success;
+    return response?.result || null;
   } catch (error) {
     console.error(`Failed to request ${adType} ad:`, error);
-    return false;
+    return null;
   }
 };
 
 // Pi AdNetwork - Show ad
 export const showPiAd = async (
   adType: 'interstitial' | 'rewarded'
-): Promise<{ adId: string; reward?: boolean } | null> => {
+): Promise<{ adId: string; result: string; reward?: boolean } | null> => {
   if (!isPiAvailable()) {
     console.error('Pi SDK not available for showing ads');
     return null;
@@ -312,21 +336,38 @@ export const showPiAd = async (
     console.log(`Showing ${adType} ad...`);
     const response = await window.Pi.Ads.showAd(adType);
     
-    if (!response || !response.adId) {
-      console.warn(`Ad shown but no adId returned:`, response);
+    console.log(`${adType} ad response:`, response);
+    
+    if (!response) {
+      console.warn(`Ad shown but no response returned`);
       return null;
     }
     
-    if (response.result === 'AD_REWARDED' || response.result === 'AD_CLOSED') {
-      console.log(`${adType} ad completed:`, { adId: response.adId, result: response.result });
+    // Handle different response types
+    if (response.result === 'AD_REWARDED') {
+      console.log(`Rewarded ad completed:`, { adId: response.adId });
       return {
         adId: response.adId,
-        reward: response.result === 'AD_REWARDED',
+        result: response.result,
+        reward: true,
+      };
+    }
+    
+    if (response.result === 'AD_CLOSED') {
+      console.log(`Interstitial ad closed:`, { adId: response.adId });
+      return {
+        adId: response.adId,
+        result: response.result,
+        reward: false,
       };
     }
     
     console.log(`${adType} ad result: ${response.result}`);
-    return null;
+    return {
+      adId: response.adId || '',
+      result: response.result,
+      reward: false,
+    };
   } catch (error) {
     console.error(`Failed to show ${adType} ad:`, error);
     return null;

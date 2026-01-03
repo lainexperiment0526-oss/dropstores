@@ -216,6 +216,13 @@ serve(async (req) => {
     console.log(`Expected amount: ${expected_amount}`);
 
     // Create Supabase client
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Supabase configuration missing');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // If order_id provided, fetch order and store details

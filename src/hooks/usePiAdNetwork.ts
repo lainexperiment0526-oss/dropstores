@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { isPiAdReady, showPiAd, isPiAvailable } from '@/lib/pi-sdk';
+import { isPiAdReady, showPiAd, isPiAvailable, isPiAdNetworkSupported, requestPiAd } from '@/lib/pi-sdk';
 import { toast } from 'sonner';
 
 interface AdConfig {
@@ -21,6 +21,7 @@ const SESSION_STORAGE_KEY = 'pi_ad_session';
 
 export function usePiAdNetwork() {
   const [isLoading, setIsLoading] = useState(false);
+  const [adNetworkSupported, setAdNetworkSupported] = useState<boolean | null>(null);
   const [adSession, setAdSession] = useState<AdSession>(() => {
     try {
       const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -34,6 +35,22 @@ export function usePiAdNetwork() {
   const interstitialEnabled = import.meta.env.VITE_PI_INTERSTITIAL_ADS_ENABLED === 'true';
   const rewardedEnabled = import.meta.env.VITE_PI_REWARDED_ADS_ENABLED === 'true';
 
+  // Check AdNetwork support on mount
+  useEffect(() => {
+    const checkSupport = async () => {
+      if (!adNetworkEnabled || !isPiAvailable()) {
+        setAdNetworkSupported(false);
+        return;
+      }
+      
+      const supported = await isPiAdNetworkSupported();
+      setAdNetworkSupported(supported);
+      console.log('Pi AdNetwork support status:', supported);
+    };
+    
+    checkSupport();
+  }, [adNetworkEnabled]);
+
   // Update session storage when adSession changes
   useEffect(() => {
     try {
@@ -44,7 +61,7 @@ export function usePiAdNetwork() {
   }, [adSession]);
 
   const canShowAd = useCallback((): boolean => {
-    if (!adNetworkEnabled || !isPiAvailable()) {
+    if (!adNetworkEnabled || !isPiAvailable() || adNetworkSupported === false) {
       return false;
     }
 
@@ -66,7 +83,7 @@ export function usePiAdNetwork() {
     }
 
     return true;
-  }, [adNetworkEnabled, adSession]);
+  }, [adNetworkEnabled, adSession, adNetworkSupported]);
 
   const showInterstitialAd = useCallback(async (): Promise<boolean> => {
     if (!interstitialEnabled) {
@@ -81,17 +98,25 @@ export function usePiAdNetwork() {
 
     if (!isPiAvailable()) {
       console.warn('Pi SDK not available for interstitial ad');
-      toast.error('Ad service not available');
       return false;
     }
 
     setIsLoading(true);
     try {
       console.log('Checking if interstitial ad is ready...');
-      const ready = await isPiAdReady('interstitial');
+      let ready = await isPiAdReady('interstitial');
+      
+      // If not ready, try to request one
+      if (!ready) {
+        console.log('Ad not ready, requesting...');
+        const requestResult = await requestPiAd('interstitial');
+        if (requestResult === 'AD_LOADED') {
+          ready = true;
+        }
+      }
       
       if (!ready) {
-        console.log('Interstitial ad not ready');
+        console.log('Interstitial ad not ready after request');
         setIsLoading(false);
         return false;
       }
@@ -99,7 +124,7 @@ export function usePiAdNetwork() {
       console.log('Showing interstitial ad...');
       const result = await showPiAd('interstitial');
       
-      if (result?.adId) {
+      if (result?.adId && result.result === 'AD_CLOSED') {
         console.log('Interstitial ad shown successfully:', result.adId);
         setAdSession(prev => ({
           adsShownCount: prev.adsShownCount + 1,
@@ -109,12 +134,11 @@ export function usePiAdNetwork() {
         return true;
       }
 
-      console.log('Interstitial ad did not complete');
+      console.log('Interstitial ad did not complete:', result);
       setIsLoading(false);
       return false;
     } catch (error) {
       console.error('Failed to show interstitial ad:', error);
-      toast.error('Failed to show ad');
       setIsLoading(false);
       return false;
     }
@@ -145,10 +169,19 @@ export function usePiAdNetwork() {
     setIsLoading(true);
     try {
       console.log('Checking if rewarded ad is ready...');
-      const ready = await isPiAdReady('rewarded');
+      let ready = await isPiAdReady('rewarded');
+      
+      // If not ready, try to request one
+      if (!ready) {
+        console.log('Rewarded ad not ready, requesting...');
+        const requestResult = await requestPiAd('rewarded');
+        if (requestResult === 'AD_LOADED') {
+          ready = true;
+        }
+      }
       
       if (!ready) {
-        console.log('Rewarded ad not ready');
+        console.log('Rewarded ad not ready after request');
         toast.error('Ad not available right now. Please try again in a moment.');
         setIsLoading(false);
         return { success: false };
@@ -157,14 +190,17 @@ export function usePiAdNetwork() {
       console.log('Showing rewarded ad...');
       const result = await showPiAd('rewarded');
       
-      if (result?.adId) {
-        console.log('Rewarded ad shown:', result.adId, 'Rewarded:', result.reward);
+      if (result?.adId && result.result === 'AD_REWARDED') {
+        console.log('Rewarded ad completed:', result.adId, 'Rewarded:', result.reward);
         setAdSession(prev => ({
           adsShownCount: prev.adsShownCount + 1,
           lastAdShownAt: Date.now(),
         }));
         
         setIsLoading(false);
+        
+        // IMPORTANT: For security, the adId should be verified server-side
+        // before granting any rewards. See Pi Platform API documentation.
         return {
           success: true,
           adId: result.adId,
@@ -172,8 +208,8 @@ export function usePiAdNetwork() {
         };
       }
 
-      console.log('Rewarded ad did not complete properly');
-      toast.error('Failed to show ad. Please try again.');
+      console.log('Rewarded ad did not complete properly:', result);
+      toast.error('Failed to complete ad. Please try again.');
       setIsLoading(false);
       return { success: false };
     } catch (error) {
@@ -200,6 +236,7 @@ export function usePiAdNetwork() {
     isLoading,
     adSession,
     resetSession,
+    adNetworkSupported,
     config: {
       enabled: adNetworkEnabled,
       interstitialEnabled,
