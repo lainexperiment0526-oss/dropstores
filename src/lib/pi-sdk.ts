@@ -50,11 +50,12 @@ export interface PiPaymentCallbacks {
 
 export interface PiAdReadyResponse {
   ready: boolean;
+  type?: 'interstitial' | 'rewarded';
 }
 
 export interface PiAdShowResponse {
-  result: 'AD_CLOSED' | 'AD_REWARDED' | 'AD_NOT_READY' | 'ADS_NOT_SUPPORTED';
-  adId: string;
+  result: 'AD_CLOSED' | 'AD_REWARDED' | 'AD_DISPLAY_ERROR' | 'AD_NETWORK_ERROR' | 'AD_NOT_AVAILABLE' | 'ADS_NOT_SUPPORTED' | 'USER_UNAUTHENTICATED';
+  adId?: string;
   reward?: boolean;
 }
 
@@ -95,6 +96,7 @@ export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
     
     const initializeWhenReady = () => {
       if (window.Pi) {
+        // Official Pi SDK configuration as per documentation
         const config = {
           version: '2.0',
           sandbox: sandbox
@@ -141,7 +143,7 @@ export const isPiAvailable = (): boolean => {
   return available;
 };
 
-// Pi Authentication - Always request username, payments, and wallet_address scopes
+// Pi Authentication - Official Pi Network implementation
 export const authenticateWithPi = async (
   onIncompletePaymentFound?: (payment: PiPaymentDTO) => void,
   reqScopes?: string[]
@@ -159,17 +161,13 @@ export const authenticateWithPi = async (
   }
 
   try {
-    // ALWAYS request all required scopes: username, payments, wallet_address
-    // This ensures we get the user's Pi username and wallet address every time
-    const scopes = ['username', 'payments', 'wallet_address'];
+    // Default scopes as per Pi documentation
+    const defaultScopes = ['username', 'payments', 'wallet_address'];
+    const scopes = reqScopes && reqScopes.length > 0 ? reqScopes : defaultScopes;
     
-    // Add any additional requested scopes
-    if (reqScopes && reqScopes.length > 0) {
-      reqScopes.forEach(scope => {
-        if (!scopes.includes(scope)) {
-          scopes.push(scope);
-        }
-      });
+    // Ensure username is always included as per official docs
+    if (!scopes.includes('username')) {
+      scopes.push('username');
     }
     
     console.log('Starting Pi authentication with scopes:', scopes);
@@ -318,10 +316,10 @@ export const requestPiAd = async (
   }
 };
 
-// Pi AdNetwork - Show ad
+// Pi AdNetwork - Show ad (Official Pi Documentation implementation)
 export const showPiAd = async (
   adType: 'interstitial' | 'rewarded'
-): Promise<{ adId: string; result: string; reward?: boolean } | null> => {
+): Promise<{ adId?: string; result: string; reward?: boolean } | null> => {
   if (!isPiAvailable()) {
     console.error('Pi SDK not available for showing ads');
     return null;
@@ -340,37 +338,102 @@ export const showPiAd = async (
     
     if (!response) {
       console.warn(`Ad shown but no response returned`);
-      return null;
+      return { result: 'AD_NOT_AVAILABLE' };
     }
     
-    // Handle different response types
-    if (response.result === 'AD_REWARDED') {
-      console.log(`Rewarded ad completed:`, { adId: response.adId });
-      return {
-        adId: response.adId,
-        result: response.result,
-        reward: true,
-      };
+    // Handle response according to official Pi docs
+    switch (response.result) {
+      case 'AD_REWARDED':
+        console.log(`Rewarded ad completed successfully`, { adId: response.adId });
+        return {
+          adId: response.adId,
+          result: response.result,
+          reward: true,
+        };
+      
+      case 'AD_CLOSED':
+        console.log(`Ad closed successfully`, { adId: response.adId });
+        return {
+          adId: response.adId,
+          result: response.result,
+          reward: false,
+        };
+      
+      case 'AD_NOT_AVAILABLE':
+      case 'AD_DISPLAY_ERROR':
+      case 'AD_NETWORK_ERROR':
+        console.warn(`Ad error: ${response.result}`);
+        return {
+          result: response.result,
+          reward: false,
+        };
+      
+      case 'ADS_NOT_SUPPORTED':
+        console.warn('Ads not supported on this Pi Browser version');
+        return {
+          result: response.result,
+          reward: false,
+        };
+      
+      case 'USER_UNAUTHENTICATED':
+        console.warn('User not authenticated for rewarded ads');
+        return {
+          result: response.result,
+          reward: false,
+        };
+      
+      default:
+        console.log(`Ad result: ${response.result}`);
+        return {
+          adId: response.adId,
+          result: response.result,
+          reward: false,
+        };
     }
-    
-    if (response.result === 'AD_CLOSED') {
-      console.log(`Interstitial ad closed:`, { adId: response.adId });
-      return {
-        adId: response.adId,
-        result: response.result,
-        reward: false,
-      };
-    }
-    
-    console.log(`${adType} ad result: ${response.result}`);
-    return {
-      adId: response.adId || '',
-      result: response.result,
-      reward: false,
-    };
   } catch (error) {
     console.error(`Failed to show ${adType} ad:`, error);
-    return null;
+    return { result: 'AD_DISPLAY_ERROR' };
+  }
+};
+
+// Verify rewarded ad status with Pi Platform API (Official requirement)
+export const verifyRewardedAdStatus = async (
+  adId: string,
+  accessToken: string
+): Promise<{ rewarded: boolean; error?: string }> => {
+  if (!adId || !accessToken) {
+    return { rewarded: false, error: 'Missing adId or access token' };
+  }
+
+  try {
+    const response = await fetch(`https://api.minepi.com/v2/ads_network/status/${adId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to verify ad status:', response.status, response.statusText);
+      return { rewarded: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    
+    // Check if reward is granted according to official Pi docs
+    const rewarded = data.mediator_ack_status === 'granted';
+    
+    console.log('Ad verification result:', {
+      adId,
+      status: data.mediator_ack_status,
+      rewarded,
+    });
+
+    return { rewarded };
+  } catch (error) {
+    console.error('Error verifying ad status:', error);
+    return { rewarded: false, error: 'Network error' };
   }
 };
 
@@ -437,13 +500,17 @@ export const SUBSCRIPTION_PLANS = {
     originalAmount: 0,
     welcomeDiscount: 0,
     period: 'forever',
-    description: 'Get started with basic features',
+    description: 'Start your journey with essential features',
     features: [
-      '1 Store (Physical only)',
+      '1 Physical Store',
       '1 Product listing',
+      'Basic dashboard & analytics',
+      'Order management',
       'Pi payment integration',
-      'Pi Ad Network enabled',
-      'Basic store customization',
+      'Pi Ad Network',
+      'Basic theme colors',
+      'Product reviews',
+      'QR code generator',
       'Community support',
     ],
     storeTypes: ['physical'],
@@ -456,16 +523,21 @@ export const SUBSCRIPTION_PLANS = {
     originalAmount: 20,
     welcomeDiscount: 1,
     period: 'month',
-    description: 'Perfect for starting your Pi business',
+    description: 'Perfect for starting your online business',
     features: [
       '1 Store (Physical, Online, or Digital)',
-      '25 Products per store',
-      'Basic templates',
+      '25 Products with variants',
+      'Full theme customization',
+      'Hero section editor',
+      'Announcement bar',
+      'Banner & logo upload',
+      'Store pages (About, Contact, Policies)',
+      'Social media integration',
+      'Order & inventory tracking',
+      'Product reviews & ratings',
+      'Payout management',
+      'Email notifications',
       'Standard support',
-      'Pi payment integration',
-      'Basic analytics',
-      'Order management',
-      'Customer notifications',
     ],
     storeTypes: ['physical', 'online', 'digital'],
     popular: false
@@ -477,18 +549,23 @@ export const SUBSCRIPTION_PLANS = {
     originalAmount: 49,
     welcomeDiscount: 2,
     period: 'month',
-    description: 'For growing businesses',
+    description: 'Scale your business with advanced tools',
     features: [
       '3 Stores (Any type)',
-      'Unlimited products',
-      'Premium templates',
-      'Priority support',
+      'Unlimited products & variants',
+      'Advanced analytics dashboard',
+      'Revenue & performance tracking',
+      'Customer analytics',
+      'Traffic analytics',
+      'Export orders (CSV)',
+      'Advanced reporting',
       'Remove Drop Store branding',
-      'Advanced analytics',
-      'Custom store colors',
-      'Export orders to CSV',
-      'Promotional tools',
-      'Inventory management',
+      'Custom navigation menu',
+      'Wishlist & compare features',
+      'Stock count display',
+      'Multiple staff accounts',
+      'Priority email support',
+      'All Basic features',
     ],
     storeTypes: ['physical', 'online', 'digital'],
     popular: true
@@ -500,17 +577,23 @@ export const SUBSCRIPTION_PLANS = {
     originalAmount: 60,
     welcomeDiscount: 3,
     period: 'month',
-    description: 'Advanced features for serious sellers',
+    description: 'Professional tools for serious merchants',
     features: [
       '5 Stores (Any type)',
-      'Everything in Grow',
+      'Everything in Grow +',
       'Custom domain support',
-      'API access',
-      'Bulk product import',
-      'Multi-staff access',
-      'Advanced reporting',
-      'Priority queue support',
-      'Automated inventory alerts',
+      'API access & webhooks',
+      'Bulk product import/export',
+      'Multi-staff management',
+      'Advanced inventory alerts',
+      'Automated stock tracking',
+      'Custom integrations',
+      'Advanced security settings',
+      'Geographic analytics',
+      'Device analytics',
+      'Conversion tracking',
+      'Priority chat & phone support',
+      'Quarterly business review',
     ],
     storeTypes: ['physical', 'online', 'digital'],
     popular: false
@@ -522,18 +605,23 @@ export const SUBSCRIPTION_PLANS = {
     originalAmount: 100,
     welcomeDiscount: 5,
     period: 'month',
-    description: 'Enterprise-level features',
+    description: 'Enterprise solution with premium support',
     features: [
       'Unlimited Stores (All types)',
-      'Everything in Advance',
+      'Everything in Advance +',
       'Dedicated account manager',
-      'Custom integrations',
-      'White-label option',
-      'SLA guarantee',
       'Custom development support',
-      'Advanced security features',
+      'White-label branding',
+      'SLA guarantee (99.9% uptime)',
+      'Custom API integrations',
+      'Enterprise security features',
       'Multi-location management',
-      'Enterprise analytics',
+      'Advanced fraud protection',
+      'Custom reporting dashboard',
+      'Training & onboarding',
+      'Priority feature requests',
+      '24/7 phone & chat support',
+      'Monthly strategy calls',
     ],
     storeTypes: ['physical', 'online', 'digital'],
     popular: false

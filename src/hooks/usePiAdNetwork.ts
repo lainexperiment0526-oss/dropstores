@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { isPiAdReady, showPiAd, isPiAvailable, isPiAdNetworkSupported, requestPiAd } from '@/lib/pi-sdk';
+import { isPiAdReady, showPiAd, isPiAvailable, isPiAdNetworkSupported, requestPiAd, verifyRewardedAdStatus } from '@/lib/pi-sdk';
+import { usePiAuth } from '@/contexts/PiAuthContext';
 import { toast } from 'sonner';
 
 interface AdConfig {
@@ -22,6 +23,7 @@ const SESSION_STORAGE_KEY = 'pi_ad_session';
 export function usePiAdNetwork() {
   const [isLoading, setIsLoading] = useState(false);
   const [adNetworkSupported, setAdNetworkSupported] = useState<boolean | null>(null);
+  const { piAccessToken } = usePiAuth(); // Get access token for ad verification
   const [adSession, setAdSession] = useState<AdSession>(() => {
     try {
       const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -191,21 +193,48 @@ export function usePiAdNetwork() {
       const result = await showPiAd('rewarded');
       
       if (result?.adId && result.result === 'AD_REWARDED') {
-        console.log('Rewarded ad completed:', result.adId, 'Rewarded:', result.reward);
-        setAdSession(prev => ({
-          adsShownCount: prev.adsShownCount + 1,
-          lastAdShownAt: Date.now(),
-        }));
+        console.log('Rewarded ad completed successfully:', result.adId);
         
-        setIsLoading(false);
-        
-        // IMPORTANT: For security, the adId should be verified server-side
-        // before granting any rewards. See Pi Platform API documentation.
-        return {
-          success: true,
-          adId: result.adId,
-          rewarded: result.reward,
-        };
+        // SECURITY: Verify ad status with Pi Platform API as required by official docs
+        if (result.adId && piAccessToken) {
+          console.log('Verifying ad reward with Pi Platform API...');
+          try {
+            const verification = await verifyRewardedAdStatus(result.adId, piAccessToken);
+            
+            if (verification.rewarded) {
+              console.log('✅ Ad reward verified by Pi Platform API');
+              setAdSession(prev => ({
+                adsShownCount: prev.adsShownCount + 1,
+                lastAdShownAt: Date.now(),
+              }));
+              
+              setIsLoading(false);
+              return {
+                success: true,
+                adId: result.adId,
+                rewarded: true,
+              };
+            } else {
+              console.warn('❌ Ad reward not verified by Pi Platform API:', verification.error);
+              toast.error('Unable to verify ad reward. Please try again.');
+              setIsLoading(false);
+              return { success: false };
+            }
+          } catch (error) {
+            console.error('Failed to verify ad reward:', error);
+            toast.error('Failed to verify ad reward. Please try again.');
+            setIsLoading(false);
+            return { success: false };
+          }
+        } else {
+          console.warn('Missing adId or access token for verification');
+          setIsLoading(false);
+          return {
+            success: true,
+            adId: result.adId,
+            rewarded: false, // Cannot verify without proper credentials
+          };
+        }
       }
 
       console.log('Rewarded ad did not complete properly:', result);
