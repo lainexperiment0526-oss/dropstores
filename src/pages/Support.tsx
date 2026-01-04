@@ -368,7 +368,7 @@ export default function Support() {
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-white">
                     <img 
-                      src="https://i.ibb.co/zT6NRDsy/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1.png" 
+                      src="https://i.ibb.co/rRN0sS7y/favicon.png" 
                       alt="AI Support" 
                       className="w-full h-full object-cover"
                     />
@@ -402,7 +402,7 @@ export default function Support() {
                     {message.role === 'assistant' && (
                       <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white">
                         <img 
-                          src="https://i.ibb.co/zT6NRDsy/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1.png" 
+                          src="https://i.ibb.co/rRN0sS7y/favicon.png" 
                           alt="AI Support" 
                           className="w-full h-full object-cover"
                         />

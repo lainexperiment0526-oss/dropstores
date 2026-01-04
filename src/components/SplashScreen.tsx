@@ -155,7 +155,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               }}
             >
               <img
-                src="https://i.ibb.co/zT6NRDsy/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1.png"
+                src="https://i.ibb.co/rRN0sS7y/favicon.png"
                 alt="Drop Store Logo"
                 className="h-full w-full object-contain"
               />

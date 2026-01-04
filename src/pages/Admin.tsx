@@ -201,7 +201,7 @@ const Admin = () => {
           <CardHeader>
             <div className="flex flex-col items-center gap-2">
               <Avatar className="w-16 h-16">
-                <AvatarImage src="https://i.ibb.co/C5PXP14b/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1-removebg-preview.png" alt="Admin" />
+                <AvatarImage src="https://i.ibb.co/rRN0sS7y/favicon.png" alt="Admin" />
                 <AvatarFallback>AD</AvatarFallback>
               </Avatar>
               <CardTitle className="text-2xl text-center">Admin Portal</CardTitle>
@@ -288,7 +288,7 @@ const Admin = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Avatar className="w-12 h-12">
-              <AvatarImage src="https://i.ibb.co/C5PXP14b/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1-removebg-preview.png" alt="Admin" />
+              <AvatarImage src="https://i.ibb.co/rRN0sS7y/favicon.png" alt="Admin" />
               <AvatarFallback>AD</AvatarFallback>
             </Avatar>
             <div>

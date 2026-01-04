@@ -28,7 +28,7 @@ export function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-glow bg-transparent">
-              <img src="https://i.ibb.co/TzjprKp/Gemini-Generated-Image-9v9qpu9v9qpu9v9q-1-removebg-preview.png" alt="App Logo" className="w-10 h-10 object-contain" />
+              <img src="https://i.ibb.co/rRN0sS7y/favicon.png" alt="App Logo" className="w-10 h-10 object-contain" />
             </div>
             <span className="text-xl font-display font-bold text-foreground">Drop Store</span>
           </Link>
