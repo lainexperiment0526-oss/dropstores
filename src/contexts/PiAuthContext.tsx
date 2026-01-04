@@ -41,13 +41,14 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   // Initialize Pi SDK on mount
   useEffect(() => {
     console.log('PiAuth: Initializing Pi SDK...');
-    // Use sandbox mode from environment variable
-    const isSandbox = import.meta.env.VITE_PI_SANDBOX_MODE === 'true';
+    // Force production mainnet mode - never use sandbox in production
+    const isSandbox = false;
     
     console.log('PiAuth: Configuration:', {
-      sandbox: isSandbox,
-      network: import.meta.env.VITE_PI_NETWORK,
-      apiUrl: import.meta.env.VITE_API_URL
+      sandbox: false,
+      network: 'mainnet',
+      apiUrl: 'https://api.minepi.com'
+    });
     });
     
     initPiSdk(isSandbox).then((initialized) => {

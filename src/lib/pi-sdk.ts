@@ -81,8 +81,12 @@ declare global {
   }
 }
 
-// Initialize Pi SDK
+// Initialize Pi SDK - Force production mainnet mode
 export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
+  // Force production mode - ignore sandbox parameter
+  const isProductionMode = true;
+  const actualSandboxMode = false;
+  
   return new Promise((resolve) => {
     if (typeof window === 'undefined') {
       console.warn('Window object not available');
@@ -96,17 +100,18 @@ export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
     
     const initializeWhenReady = () => {
       if (window.Pi) {
-        // Official Pi SDK configuration as per documentation
+        // Official Pi SDK configuration - Force production mainnet
         const config = {
           version: '2.0',
-          sandbox: sandbox
+          sandbox: false  // Always false for production
         };
         
         try {
           window.Pi.init(config);
           console.log('✓ Pi SDK initialized successfully:', {
-            mode: sandbox ? 'sandbox' : 'mainnet',
-            piNetwork: import.meta.env.VITE_PI_NETWORK || 'mainnet',
+            mode: 'mainnet',
+            piNetwork: 'mainnet',
+            environment: 'production',
             hasApiKey: !!import.meta.env.VITE_PI_API_KEY,
             timestamp: new Date().toISOString()
           });

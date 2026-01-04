@@ -1,5 +1,6 @@
 # Pi Auth Fix Script - Comprehensive Solution
 # This script fixes Pi authentication issues with Supabase
+# Updated: Uses Write-Output instead of echo alias for PowerShell best practices
 
 Write-Host "🔧 Pi Authentication Fix Script" -ForegroundColor Cyan
 Write-Host "=================================" -ForegroundColor Cyan
@@ -27,10 +28,11 @@ Write-Host "2️⃣ Checking service role key format..." -ForegroundColor Yellow
 
 # Read current .env file
 $envContent = Get-Content ".env" -Raw
-$serviceKeyMatch = $envContent | Select-String 'VITE_SUPABASE_ANON_KEY="([^"]*)"'
-
-if ($serviceKeyMatch -and $serviceKeyMatch.Matches[0].Groups[1].Value.StartsWith("eyJ")) {
-    $correctKey = $serviceKeyMatch.Matches[0].Groups[1].Value
+# Extract service key using string manipulation instead of regex
+$serviceKeyLine = ($envContent -split '\n' | Where-Object { $_ -like '*VITE_SUPABASE_ANON_KEY=*' })
+if ($serviceKeyLine) {
+    $correctKey = ($serviceKeyLine -split '=')[1].Trim('"')
+    if ($correctKey.StartsWith("eyJ")) {
     Write-Host "✅ Found correct service role key format" -ForegroundColor Green
     
     # Check if it's being used correctly in supabase/.env
