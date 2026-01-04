@@ -428,7 +428,7 @@ export const WELCOME_DISCOUNTS: Record<string, number> = {
   plus: 5,     // 5 Pi discount
 };
 
-// Subscription Plans - Updated pricing with welcome discounts
+// Subscription Plans - Updated pricing with welcome discounts and accurate Dropstore features
 export const SUBSCRIPTION_PLANS = {
   free: {
     id: 'free',
@@ -452,7 +452,7 @@ export const SUBSCRIPTION_PLANS = {
   basic: {
     id: 'basic',
     name: 'Basic',
-    amount: 19, // 20 - 1 Pi welcome discount
+    amount: 19, // 20π - 1π welcome discount
     originalAmount: 20,
     welcomeDiscount: 1,
     period: 'month',
@@ -473,7 +473,7 @@ export const SUBSCRIPTION_PLANS = {
   grow: {
     id: 'grow',
     name: 'Grow',
-    amount: 47, // 49 - 2 Pi welcome discount
+    amount: 47, // 49π - 2π welcome discount
     originalAmount: 49,
     welcomeDiscount: 2,
     period: 'month',
@@ -496,7 +496,7 @@ export const SUBSCRIPTION_PLANS = {
   advance: {
     id: 'advance',
     name: 'Advance',
-    amount: 57, // 60 - 3 Pi welcome discount
+    amount: 57, // 60π - 3π welcome discount
     originalAmount: 60,
     welcomeDiscount: 3,
     period: 'month',
@@ -518,7 +518,7 @@ export const SUBSCRIPTION_PLANS = {
   plus: {
     id: 'plus',
     name: 'Plus',
-    amount: 95, // 100 - 5 Pi welcome discount
+    amount: 95, // 100π - 5π welcome discount
     originalAmount: 100,
     welcomeDiscount: 5,
     period: 'month',

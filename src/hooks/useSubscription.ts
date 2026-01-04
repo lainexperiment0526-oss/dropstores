@@ -33,15 +33,26 @@ export function useSubscription() {
 
   const fetchSubscription = useCallback(async () => {
     if (!user) {
-      setState(prev => ({ ...prev, isLoading: false }));
+      console.log('⚠️ No user found, setting default free plan limits');
+      // Set Free plan limits for users without subscription
+      setState({
+        subscription: null,
+        isActive: true, // Allow free users to access basic features
+        isExpired: false,
+        isLoading: false,
+        daysRemaining: 9999,
+        planLimits: PLAN_LIMITS['free'],
+      });
       return;
     }
 
     try {
+      // First try to get the most recent active subscription
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
+        .eq('status', 'active')
         .order('expires_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -52,6 +63,22 @@ export function useSubscription() {
         return;
       }
 
+      // If no active subscription found, check for any recent subscription
+      if (!data) {
+        console.log('⚠️ No active subscription found, checking for any recent subscription...');
+        const { data: anyData, error: anyError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('expires_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!anyError && anyData) {
+          console.log('📋 Found subscription with status:', anyData.status);
+        }
+      }
+
       if (data) {
         const expiresAt = new Date(data.expires_at);
         const now = new Date();
@@ -59,6 +86,19 @@ export function useSubscription() {
         const isExpired = expiresAt <= now;
         const daysRemaining = isActive ? Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
         const planLimits = PLAN_LIMITS[data.plan_type] || null;
+
+        // Debug logging
+        console.log('📊 Subscription Status:', {
+          plan_type: data.plan_type,
+          status: data.status,
+          expires_at: data.expires_at,
+          expiresAt: expiresAt.toISOString(),
+          now: now.toISOString(),
+          isActive,
+          isExpired,
+          daysRemaining,
+          hasPlanLimits: !!planLimits
+        });
 
         // Auto-expire if needed
         if (data.status === 'active' && isExpired) {
@@ -86,18 +126,28 @@ export function useSubscription() {
           });
         }
       } else {
+        // No paid subscription found - default to free plan
+        console.log('ℹ️ No paid subscription found, defaulting to Free plan');
         setState({
           subscription: null,
-          isActive: false,
+          isActive: true, // Free plan is always active
           isExpired: false,
           isLoading: false,
-          daysRemaining: 0,
-          planLimits: null,
+          daysRemaining: 9999, // Free plan never expires
+          planLimits: PLAN_LIMITS['free'],
         });
       }
     } catch (err) {
       console.error('Subscription fetch error:', err);
-      setState(prev => ({ ...prev, isLoading: false }));
+      // On error, default to free plan to avoid locking users out
+      setState({
+        subscription: null,
+        isActive: true,
+        isExpired: false,
+        isLoading: false,
+        daysRemaining: 9999,
+        planLimits: PLAN_LIMITS['free'],
+      });
     }
   }, [user]);
 

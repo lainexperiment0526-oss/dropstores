@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import WelcomeModal from './WelcomeModal';
 import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/AnalyticsCards';
@@ -214,52 +215,128 @@ function Dashboard() {
           {subscriptionLoading ? (
             <Card className="mb-8 bg-muted">
               <CardContent className="py-6">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Loading subscription...</span>
+                </div>
               </CardContent>
             </Card>
-          ) : isActive ? (
-            <Card className="mb-8 border-green-500 bg-green-50 dark:bg-green-950/20">
-              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <Crown className="w-6 h-6 text-green-600 dark:text-green-400" />
+          ) : subscription ? (
+            // Active or Expired Subscription
+            <Card className={`mb-8 ${isActive ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'}`}>
+              <CardContent className="py-6">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className={`w-12 h-12 rounded-full ${isActive ? 'bg-green-100 dark:bg-green-900/30' : 'bg-orange-100 dark:bg-orange-900/30'} flex items-center justify-center flex-shrink-0`}>
+                      <Crown className={`w-6 h-6 ${isActive ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className={`font-semibold ${isActive ? 'text-green-900 dark:text-green-100' : 'text-orange-900 dark:text-orange-100'}`}>
+                          {subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)} Plan
+                        </h3>
+                        <Badge variant={isActive ? 'default' : 'destructive'} className="text-xs">
+                          {isActive ? 'Active' : 'Expired'}
+                        </Badge>
+                      </div>
+                      <div className={`text-sm ${isActive ? 'text-green-700 dark:text-green-200' : 'text-orange-700 dark:text-orange-200'} space-y-1`}>
+                        {isActive ? (
+                          <>
+                            <p className="flex items-center gap-2">
+                              <span>Expires in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong></span>
+                              {daysRemaining <= 7 && (
+                                <AlertCircle className="w-4 h-4 text-orange-500" />
+                              )}
+                            </p>
+                            <p className="text-xs opacity-75">
+                              Started: {new Date(subscription.started_at).toLocaleDateString()}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-medium">Your subscription has expired</p>
+                            <p className="text-xs opacity-75">
+                              Expired on: {new Date(subscription.expires_at).toLocaleDateString()}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-green-900 dark:text-green-100">Subscription Active</h3>
-                    <p className="text-sm text-green-700 dark:text-green-200">
-                      {subscription?.plan_type && `Plan: ${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}`}
-                      {daysRemaining > 0 && ` • ${daysRemaining} days remaining`}
-                    </p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                    {isActive ? (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="w-full sm:w-auto border-green-500 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20" 
+                          asChild
+                        >
+                          <Link to="/subscription">
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Upgrade
+                          </Link>
+                        </Button>
+                        {daysRemaining <= 7 && (
+                          <Button 
+                            size="sm"
+                            className="w-full sm:w-auto gradient-hero" 
+                            asChild
+                          >
+                            <Link to="/subscription">
+                              <Crown className="w-4 h-4 mr-2" />
+                              Renew Now
+                            </Link>
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <Button 
+                        className="w-full sm:w-auto gradient-hero shadow-glow hover:opacity-90" 
+                        asChild
+                      >
+                        <Link to="/subscription">
+                          <Crown className="w-4 h-4 mr-2" />
+                          Renew Subscription
+                        </Link>
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <Button variant="outline" className="w-full sm:w-auto border-green-500 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/20" asChild>
-                  <Link to="/subscription">
-                    <Crown className="w-4 h-4 mr-2" />
-                    Upgrade Plan
-                  </Link>
-                </Button>
               </CardContent>
             </Card>
           ) : (
+            // No Subscription (Free Plan)
             <Card className="mb-8 border-primary/50 bg-primary/5">
-              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Lock className="w-6 h-6 text-primary" />
+              <CardContent className="py-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Store className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-foreground">Free Plan</h3>
+                        <Badge variant="secondary" className="text-xs">Limited</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        You're using the Free plan with limited features
+                      </p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li>• 1 Physical Store only</li>
+                        <li>• 1 Product listing</li>
+                        <li>• Basic features</li>
+                      </ul>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Subscribe to Unlock Features</h3>
-                    <p className="text-sm text-muted-foreground">
-                      You need an active subscription to create stores and access all features.
-                    </p>
-                  </div>
+                  <Button className="gradient-hero shadow-glow hover:opacity-90 w-full sm:w-auto" asChild>
+                    <Link to="/subscription">
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade to Pro
+                    </Link>
+                  </Button>
                 </div>
-                <Button className="gradient-hero shadow-glow hover:opacity-90 w-full sm:w-auto" asChild>
-                  <Link to="/subscription">
-                    <Crown className="w-4 h-4 mr-2" />
-                    View Plans
-                  </Link>
-                </Button>
               </CardContent>
             </Card>
           )}

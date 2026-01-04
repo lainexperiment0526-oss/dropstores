@@ -431,133 +431,226 @@ CREATE TABLE IF NOT EXISTS public.file_uploads (
 -- =============================================
 
 -- Profiles
-ALTER TABLE public.profiles 
-ADD CONSTRAINT profiles_id_fkey 
-FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'profiles_id_fkey'
+    ) THEN
+        ALTER TABLE public.profiles 
+        ADD CONSTRAINT profiles_id_fkey 
+        FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Pi Users
-ALTER TABLE public.pi_users 
-ADD CONSTRAINT pi_users_user_id_fkey 
-FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'pi_users_user_id_fkey') THEN
+        ALTER TABLE public.pi_users ADD CONSTRAINT pi_users_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Subscriptions
-ALTER TABLE public.subscriptions 
-ADD CONSTRAINT subscriptions_user_id_fkey 
-FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-ALTER TABLE public.subscriptions 
-ADD CONSTRAINT subscriptions_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'subscriptions_user_id_fkey') THEN
+        ALTER TABLE public.subscriptions ADD CONSTRAINT subscriptions_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'subscriptions_store_id_fkey') THEN
+        ALTER TABLE public.subscriptions ADD CONSTRAINT subscriptions_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Stores
-ALTER TABLE public.stores 
-ADD CONSTRAINT stores_owner_id_fkey 
-FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'stores_owner_id_fkey') THEN
+        ALTER TABLE public.stores ADD CONSTRAINT stores_owner_id_fkey 
+        FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Products
-ALTER TABLE public.products 
-ADD CONSTRAINT products_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'products_store_id_fkey') THEN
+        ALTER TABLE public.products ADD CONSTRAINT products_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Product Variants
-ALTER TABLE public.product_variants 
-ADD CONSTRAINT product_variants_product_id_fkey 
-FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'product_variants_product_id_fkey') THEN
+        ALTER TABLE public.product_variants ADD CONSTRAINT product_variants_product_id_fkey 
+        FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Product Options
-ALTER TABLE public.product_options 
-ADD CONSTRAINT product_options_product_id_fkey 
-FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'product_options_product_id_fkey') THEN
+        ALTER TABLE public.product_options ADD CONSTRAINT product_options_product_id_fkey 
+        FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Collections
-ALTER TABLE public.collections 
-ADD CONSTRAINT collections_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'collections_store_id_fkey') THEN
+        ALTER TABLE public.collections ADD CONSTRAINT collections_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Collection Products
-ALTER TABLE public.collection_products 
-ADD CONSTRAINT collection_products_collection_id_fkey 
-FOREIGN KEY (collection_id) REFERENCES public.collections(id) ON DELETE CASCADE;
-
-ALTER TABLE public.collection_products 
-ADD CONSTRAINT collection_products_product_id_fkey 
-FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'collection_products_collection_id_fkey') THEN
+        ALTER TABLE public.collection_products ADD CONSTRAINT collection_products_collection_id_fkey 
+        FOREIGN KEY (collection_id) REFERENCES public.collections(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'collection_products_product_id_fkey') THEN
+        ALTER TABLE public.collection_products ADD CONSTRAINT collection_products_product_id_fkey 
+        FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Orders
-ALTER TABLE public.orders 
-ADD CONSTRAINT orders_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_store_id_fkey') THEN
+        ALTER TABLE public.orders ADD CONSTRAINT orders_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Order Items
-ALTER TABLE public.order_items 
-ADD CONSTRAINT order_items_order_id_fkey 
-FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
-
-ALTER TABLE public.order_items 
-ADD CONSTRAINT order_items_product_id_fkey 
-FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
-
-ALTER TABLE public.order_items 
-ADD CONSTRAINT order_items_variant_id_fkey 
-FOREIGN KEY (variant_id) REFERENCES public.product_variants(id) ON DELETE SET NULL;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_items_order_id_fkey') THEN
+        ALTER TABLE public.order_items ADD CONSTRAINT order_items_order_id_fkey 
+        FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_items_product_id_fkey') THEN
+        ALTER TABLE public.order_items ADD CONSTRAINT order_items_product_id_fkey 
+        FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_items_variant_id_fkey') THEN
+        ALTER TABLE public.order_items ADD CONSTRAINT order_items_variant_id_fkey 
+        FOREIGN KEY (variant_id) REFERENCES public.product_variants(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- Store Customers
-ALTER TABLE public.store_customers 
-ADD CONSTRAINT store_customers_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'store_customers_store_id_fkey') THEN
+        ALTER TABLE public.store_customers ADD CONSTRAINT store_customers_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Discount Codes
-ALTER TABLE public.discount_codes 
-ADD CONSTRAINT discount_codes_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'discount_codes_store_id_fkey') THEN
+        ALTER TABLE public.discount_codes ADD CONSTRAINT discount_codes_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Price Rules
-ALTER TABLE public.price_rules 
-ADD CONSTRAINT price_rules_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'price_rules_store_id_fkey') THEN
+        ALTER TABLE public.price_rules ADD CONSTRAINT price_rules_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Shipping Zones
-ALTER TABLE public.shipping_zones 
-ADD CONSTRAINT shipping_zones_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shipping_zones_store_id_fkey') THEN
+        ALTER TABLE public.shipping_zones ADD CONSTRAINT shipping_zones_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Shipping Rates
-ALTER TABLE public.shipping_rates 
-ADD CONSTRAINT shipping_rates_zone_id_fkey 
-FOREIGN KEY (zone_id) REFERENCES public.shipping_zones(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shipping_rates_zone_id_fkey') THEN
+        ALTER TABLE public.shipping_rates ADD CONSTRAINT shipping_rates_zone_id_fkey 
+        FOREIGN KEY (zone_id) REFERENCES public.shipping_zones(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Inventory Locations
-ALTER TABLE public.inventory_locations 
-ADD CONSTRAINT inventory_locations_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'inventory_locations_store_id_fkey') THEN
+        ALTER TABLE public.inventory_locations ADD CONSTRAINT inventory_locations_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Store Analytics
-ALTER TABLE public.store_analytics 
-ADD CONSTRAINT store_analytics_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'store_analytics_store_id_fkey') THEN
+        ALTER TABLE public.store_analytics ADD CONSTRAINT store_analytics_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Merchant Sales
-ALTER TABLE public.merchant_sales 
-ADD CONSTRAINT merchant_sales_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
-
-ALTER TABLE public.merchant_sales 
-ADD CONSTRAINT merchant_sales_order_id_fkey 
-FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
-
-ALTER TABLE public.merchant_sales 
-ADD CONSTRAINT merchant_sales_payout_id_fkey 
-FOREIGN KEY (payout_id) REFERENCES public.merchant_payouts(id) ON DELETE SET NULL;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'merchant_sales_store_id_fkey') THEN
+        ALTER TABLE public.merchant_sales ADD CONSTRAINT merchant_sales_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'merchant_sales_order_id_fkey') THEN
+        ALTER TABLE public.merchant_sales ADD CONSTRAINT merchant_sales_order_id_fkey 
+        FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'merchant_sales_payout_id_fkey') THEN
+        ALTER TABLE public.merchant_sales ADD CONSTRAINT merchant_sales_payout_id_fkey 
+        FOREIGN KEY (payout_id) REFERENCES public.merchant_payouts(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- Merchant Payouts
-ALTER TABLE public.merchant_payouts 
-ADD CONSTRAINT merchant_payouts_store_id_fkey 
-FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'merchant_payouts_store_id_fkey') THEN
+        ALTER TABLE public.merchant_payouts ADD CONSTRAINT merchant_payouts_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- File Uploads
-ALTER TABLE public.file_uploads 
-ADD CONSTRAINT file_uploads_user_id_fkey 
-FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'file_uploads_user_id_fkey') THEN
+        ALTER TABLE public.file_uploads ADD CONSTRAINT file_uploads_user_id_fkey 
+        FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- =============================================
 -- INDEXES
@@ -584,23 +677,111 @@ CREATE INDEX IF NOT EXISTS idx_file_uploads_bucket_id ON public.file_uploads(buc
 -- =============================================
 
 -- Update timestamps
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_pi_users_updated_at BEFORE UPDATE ON public.pi_users FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON public.subscriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_stores_updated_at BEFORE UPDATE ON public.stores FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_product_variants_updated_at BEFORE UPDATE ON public.product_variants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_collections_updated_at BEFORE UPDATE ON public.collections FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_store_customers_updated_at BEFORE UPDATE ON public.store_customers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_discount_codes_updated_at BEFORE UPDATE ON public.discount_codes FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_price_rules_updated_at BEFORE UPDATE ON public.price_rules FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_shipping_zones_updated_at BEFORE UPDATE ON public.shipping_zones FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_inventory_locations_updated_at BEFORE UPDATE ON public.inventory_locations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_merchant_payouts_updated_at BEFORE UPDATE ON public.merchant_payouts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_profiles_updated_at') THEN
+        CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_pi_users_updated_at') THEN
+        CREATE TRIGGER update_pi_users_updated_at BEFORE UPDATE ON public.pi_users FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_subscriptions_updated_at') THEN
+        CREATE TRIGGER update_subscriptions_updated_at BEFORE UPDATE ON public.subscriptions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_stores_updated_at') THEN
+        CREATE TRIGGER update_stores_updated_at BEFORE UPDATE ON public.stores FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_products_updated_at') THEN
+        CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_product_variants_updated_at') THEN
+        CREATE TRIGGER update_product_variants_updated_at BEFORE UPDATE ON public.product_variants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_collections_updated_at') THEN
+        CREATE TRIGGER update_collections_updated_at BEFORE UPDATE ON public.collections FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_orders_updated_at') THEN
+        CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_store_customers_updated_at') THEN
+        CREATE TRIGGER update_store_customers_updated_at BEFORE UPDATE ON public.store_customers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_discount_codes_updated_at') THEN
+        CREATE TRIGGER update_discount_codes_updated_at BEFORE UPDATE ON public.discount_codes FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_price_rules_updated_at') THEN
+        CREATE TRIGGER update_price_rules_updated_at BEFORE UPDATE ON public.price_rules FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_shipping_zones_updated_at') THEN
+        CREATE TRIGGER update_shipping_zones_updated_at BEFORE UPDATE ON public.shipping_zones FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_inventory_locations_updated_at') THEN
+        CREATE TRIGGER update_inventory_locations_updated_at BEFORE UPDATE ON public.inventory_locations FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_merchant_payouts_updated_at') THEN
+        CREATE TRIGGER update_merchant_payouts_updated_at BEFORE UPDATE ON public.merchant_payouts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
 
 -- Auto-create profile on signup
-CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'on_auth_user_created') THEN
+        CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+    END IF;
+END $$;
 
 -- =============================================
 -- ROW LEVEL SECURITY (RLS)
@@ -634,41 +815,65 @@ ALTER TABLE public.file_uploads ENABLE ROW LEVEL SECURITY;
 -- =============================================
 
 -- Profiles
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
 -- Pi Users
+DROP POLICY IF EXISTS "Users can view their own pi user data" ON public.pi_users;
 CREATE POLICY "Users can view their own pi user data" ON public.pi_users FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create their own pi user data" ON public.pi_users;
 CREATE POLICY "Users can create their own pi user data" ON public.pi_users FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own pi user data" ON public.pi_users;
 CREATE POLICY "Users can update their own pi user data" ON public.pi_users FOR UPDATE USING (auth.uid() = user_id);
 
 -- Subscriptions
+DROP POLICY IF EXISTS "Users can view their own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users can view their own subscriptions" ON public.subscriptions FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create their own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users can create their own subscriptions" ON public.subscriptions FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own subscriptions" ON public.subscriptions;
 CREATE POLICY "Users can update their own subscriptions" ON public.subscriptions FOR UPDATE USING (auth.uid() = user_id);
 
 -- Stores
+DROP POLICY IF EXISTS "Published stores are viewable by everyone" ON public.stores;
 CREATE POLICY "Published stores are viewable by everyone" ON public.stores FOR SELECT USING (is_published = true);
+
+DROP POLICY IF EXISTS "Store owners can manage their stores" ON public.stores;
 CREATE POLICY "Store owners can manage their stores" ON public.stores USING (auth.uid() = owner_id);
 
 -- Products
+DROP POLICY IF EXISTS "Active products in published stores are viewable" ON public.products;
 CREATE POLICY "Active products in published stores are viewable" ON public.products FOR SELECT USING (
     is_active = true AND EXISTS (
         SELECT 1 FROM stores WHERE stores.id = products.store_id AND stores.is_published = true
     )
 );
+
+DROP POLICY IF EXISTS "Store owners can manage their products" ON public.products;
 CREATE POLICY "Store owners can manage their products" ON public.products USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = products.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Product Variants
+DROP POLICY IF EXISTS "Active variants in published stores are viewable" ON public.product_variants;
 CREATE POLICY "Active variants in published stores are viewable" ON public.product_variants FOR SELECT USING (
     is_active = true AND EXISTS (
         SELECT 1 FROM products p JOIN stores s ON s.id = p.store_id 
         WHERE p.id = product_variants.product_id AND p.is_active = true AND s.is_published = true
     )
 );
+
+DROP POLICY IF EXISTS "Store owners can manage their product variants" ON public.product_variants;
 CREATE POLICY "Store owners can manage their product variants" ON public.product_variants USING (
     EXISTS (
         SELECT 1 FROM products p JOIN stores s ON s.id = p.store_id 
@@ -677,12 +882,15 @@ CREATE POLICY "Store owners can manage their product variants" ON public.product
 );
 
 -- Product Options
+DROP POLICY IF EXISTS "Options viewable for published products" ON public.product_options;
 CREATE POLICY "Options viewable for published products" ON public.product_options FOR SELECT USING (
     EXISTS (
         SELECT 1 FROM products p JOIN stores s ON s.id = p.store_id 
         WHERE p.id = product_options.product_id AND p.is_active = true AND s.is_published = true
     )
 );
+
+DROP POLICY IF EXISTS "Store owners can manage product options" ON public.product_options;
 CREATE POLICY "Store owners can manage product options" ON public.product_options USING (
     EXISTS (
         SELECT 1 FROM products p JOIN stores s ON s.id = p.store_id 
@@ -691,15 +899,21 @@ CREATE POLICY "Store owners can manage product options" ON public.product_option
 );
 
 -- Collections
+DROP POLICY IF EXISTS "Published collections are viewable" ON public.collections;
 CREATE POLICY "Published collections are viewable" ON public.collections FOR SELECT USING (is_published = true);
+
+DROP POLICY IF EXISTS "Store owners can manage collections" ON public.collections;
 CREATE POLICY "Store owners can manage collections" ON public.collections USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = collections.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Collection Products
+DROP POLICY IF EXISTS "Collection products are viewable for published collections" ON public.collection_products;
 CREATE POLICY "Collection products are viewable for published collections" ON public.collection_products FOR SELECT USING (
     EXISTS (SELECT 1 FROM collections WHERE collections.id = collection_products.collection_id AND collections.is_published = true)
 );
+
+DROP POLICY IF EXISTS "Store owners can manage collection products" ON public.collection_products;
 CREATE POLICY "Store owners can manage collection products" ON public.collection_products USING (
     EXISTS (
         SELECT 1 FROM collections c JOIN stores s ON s.id = c.store_id 
@@ -708,16 +922,24 @@ CREATE POLICY "Store owners can manage collection products" ON public.collection
 );
 
 -- Orders
+DROP POLICY IF EXISTS "Anyone can create orders" ON public.orders;
 CREATE POLICY "Anyone can create orders" ON public.orders FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Store owners can view their orders" ON public.orders;
 CREATE POLICY "Store owners can view their orders" ON public.orders FOR SELECT USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = orders.store_id AND stores.owner_id = auth.uid())
 );
+
+DROP POLICY IF EXISTS "Store owners can update their orders" ON public.orders;
 CREATE POLICY "Store owners can update their orders" ON public.orders FOR UPDATE USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = orders.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Order Items
+DROP POLICY IF EXISTS "Order items can be created with orders" ON public.order_items;
 CREATE POLICY "Order items can be created with orders" ON public.order_items FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Store owners can view order items" ON public.order_items;
 CREATE POLICY "Store owners can view order items" ON public.order_items FOR SELECT USING (
     EXISTS (
         SELECT 1 FROM orders o JOIN stores s ON s.id = o.store_id 
@@ -726,35 +948,44 @@ CREATE POLICY "Store owners can view order items" ON public.order_items FOR SELE
 );
 
 -- Store Customers
+DROP POLICY IF EXISTS "Store owners can manage their customers" ON public.store_customers;
 CREATE POLICY "Store owners can manage their customers" ON public.store_customers USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = store_customers.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Discount Codes
+DROP POLICY IF EXISTS "Active discount codes are viewable" ON public.discount_codes;
 CREATE POLICY "Active discount codes are viewable" ON public.discount_codes FOR SELECT USING (
     is_active = true AND (starts_at IS NULL OR starts_at <= now()) AND (ends_at IS NULL OR ends_at > now())
 );
+
+DROP POLICY IF EXISTS "Store owners can manage their discount codes" ON public.discount_codes;
 CREATE POLICY "Store owners can manage their discount codes" ON public.discount_codes USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = discount_codes.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Price Rules
+DROP POLICY IF EXISTS "Store owners can manage their price rules" ON public.price_rules;
 CREATE POLICY "Store owners can manage their price rules" ON public.price_rules USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = price_rules.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Shipping Zones
+DROP POLICY IF EXISTS "Store owners can manage shipping zones" ON public.shipping_zones;
 CREATE POLICY "Store owners can manage shipping zones" ON public.shipping_zones USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = shipping_zones.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Shipping Rates
+DROP POLICY IF EXISTS "Shipping rates viewable for published stores" ON public.shipping_rates;
 CREATE POLICY "Shipping rates viewable for published stores" ON public.shipping_rates FOR SELECT USING (
     EXISTS (
         SELECT 1 FROM shipping_zones sz JOIN stores s ON s.id = sz.store_id 
         WHERE sz.id = shipping_rates.zone_id AND s.is_published = true
     )
 );
+
+DROP POLICY IF EXISTS "Store owners can manage shipping rates" ON public.shipping_rates;
 CREATE POLICY "Store owners can manage shipping rates" ON public.shipping_rates USING (
     EXISTS (
         SELECT 1 FROM shipping_zones sz JOIN stores s ON s.id = sz.store_id 
@@ -763,35 +994,50 @@ CREATE POLICY "Store owners can manage shipping rates" ON public.shipping_rates 
 );
 
 -- Inventory Locations
+DROP POLICY IF EXISTS "Store owners can manage inventory locations" ON public.inventory_locations;
 CREATE POLICY "Store owners can manage inventory locations" ON public.inventory_locations USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = inventory_locations.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Store Analytics
+DROP POLICY IF EXISTS "Store owners can view their analytics" ON public.store_analytics;
 CREATE POLICY "Store owners can view their analytics" ON public.store_analytics FOR SELECT USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = store_analytics.store_id AND stores.owner_id = auth.uid())
 );
+
+DROP POLICY IF EXISTS "Store owners can insert analytics" ON public.store_analytics;
 CREATE POLICY "Store owners can insert analytics" ON public.store_analytics FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = store_analytics.store_id AND stores.owner_id = auth.uid())
 );
 
 -- Merchant Sales
+DROP POLICY IF EXISTS "Store owners can view their sales" ON public.merchant_sales;
 CREATE POLICY "Store owners can view their sales" ON public.merchant_sales FOR SELECT USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = merchant_sales.store_id AND stores.owner_id = auth.uid())
 );
+
+DROP POLICY IF EXISTS "Service role can insert sales" ON public.merchant_sales;
 CREATE POLICY "Service role can insert sales" ON public.merchant_sales FOR INSERT WITH CHECK (true);
 
 -- Merchant Payouts
+DROP POLICY IF EXISTS "Store owners can view their payout requests" ON public.merchant_payouts;
 CREATE POLICY "Store owners can view their payout requests" ON public.merchant_payouts FOR SELECT USING (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = merchant_payouts.store_id AND stores.owner_id = auth.uid())
 );
+
+DROP POLICY IF EXISTS "Store owners can create payout requests" ON public.merchant_payouts;
 CREATE POLICY "Store owners can create payout requests" ON public.merchant_payouts FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM stores WHERE stores.id = merchant_payouts.store_id AND stores.owner_id = auth.uid())
 );
 
 -- File Uploads
+DROP POLICY IF EXISTS "Users can view their own files" ON public.file_uploads;
 CREATE POLICY "Users can view their own files" ON public.file_uploads FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can upload files" ON public.file_uploads;
 CREATE POLICY "Users can upload files" ON public.file_uploads FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own files" ON public.file_uploads;
 CREATE POLICY "Users can delete their own files" ON public.file_uploads FOR DELETE USING (auth.uid() = user_id);
 
 -- =============================================
