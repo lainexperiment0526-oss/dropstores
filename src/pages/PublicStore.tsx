@@ -34,6 +34,7 @@ import {
   Twitter,
   Music,
   AlertCircle,
+  Gift,
 } from 'lucide-react';
 import {
   Sheet,
@@ -63,7 +64,13 @@ interface StoreData {
   address: string | null;
   payout_wallet: string | null;
   store_type: string | null;
-  // Theme customization fields
+  // Theme customization fields - Colors
+  heading_text_color?: string | null;
+  body_text_color?: string | null;
+  hero_title_text_color?: string | null;
+  hero_subtitle_text_color?: string | null;
+  announcement_bar_text_color?: string | null;
+  // Theme customization fields - Typography & Layout
   font_heading?: string | null;
   font_body?: string | null;
   layout_style?: string | null;
@@ -105,11 +112,33 @@ interface Product {
   inventory_count: number | null;
   product_type: string | null;
   digital_file_url: string | null;
+  variants?: Array<any> | null;
+  sku?: string | null;
+  weight?: number | null;
+  dimensions?: { length: number; width: number; height: number } | null;
+}
+
+interface ProductVariant {
+  id: string;
+  product_id: string;
+  name: string;
+  sku?: string;
+  price?: number;
+  inventory_count?: number;
+  image_url?: string;
+  option1_name?: string;
+  option1_value?: string;
+  option2_name?: string;
+  option2_value?: string;
+  option3_name?: string;
+  option3_value?: string;
 }
 
 interface CartItem {
   product: Product;
   quantity: number;
+  selectedVariant?: ProductVariant | null;
+  giftMessage?: string | null;
 }
 
 export default function PublicStore() {
@@ -126,7 +155,9 @@ export default function PublicStore() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [productViewCount, setProductViewCount] = useState(0);
-  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [selectedProductVariant, setSelectedProductVariant] = useState<ProductVariant | null>(null);
+  const [giftMessage, setGiftMessage] = useState('');
+  const [showGiftOptions, setShowGiftOptions] = useState(false);
 
   useEffect(() => {
     initPiSdk(false); // Mainnet mode for production
@@ -134,6 +165,29 @@ export default function PublicStore() {
       fetchStore();
     }
   }, [slug]);
+
+  // Apply theme colors
+  useEffect(() => {
+    if (store) {
+      const root = document.documentElement;
+      // Apply CSS variables for theme colors
+      root.style.setProperty('--primary-color', store.primary_color || '#0EA5E9');
+      root.style.setProperty('--secondary-color', store.secondary_color || '#64748B');
+      root.style.setProperty('--heading-text-color', store.heading_text_color || '#000000');
+      root.style.setProperty('--body-text-color', store.body_text_color || '#333333');
+      root.style.setProperty('--hero-title-text-color', store.hero_title_text_color || '#FFFFFF');
+      root.style.setProperty('--hero-subtitle-text-color', store.hero_subtitle_text_color || '#E5E7EB');
+      root.style.setProperty('--announcement-bar-text-color', store.announcement_bar_text_color || '#FFFFFF');
+      
+      // Apply typography
+      if (store.font_heading) {
+        root.style.setProperty('--font-heading', store.font_heading);
+      }
+      if (store.font_body) {
+        root.style.setProperty('--font-body', store.font_body);
+      }
+    }
+  }, [store]);
 
   const fetchStore = async () => {
     try {
@@ -162,7 +216,28 @@ export default function PublicStore() {
         .order('created_at', { ascending: false });
 
       if (productsError) throw productsError;
-      setProducts(productsData || []);
+      
+      // Fetch variants for all products
+      if (productsData && productsData.length > 0) {
+        const productIds = productsData.map(p => p.id);
+        const { data: variantsData, error: variantsError } = await supabase
+          .from('product_variants')
+          .select('*')
+          .in('product_id', productIds)
+          .order('created_at', { ascending: true });
+
+        if (variantsError) throw variantsError;
+
+        // Map variants to products
+        const productsWithVariants = productsData.map(product => ({
+          ...product,
+          variants: variantsData?.filter(v => v.product_id === product.id) || null,
+        }));
+
+        setProducts(productsWithVariants);
+      } else {
+        setProducts(productsData || []);
+      }
     } catch (error) {
       console.error('Error fetching store:', error);
       setNotFound(true);
@@ -171,17 +246,20 @@ export default function PublicStore() {
     }
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, variant?: ProductVariant | null, gift?: string) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
+      const variantKey = variant?.id || 'no-variant';
+      const existing = prev.find(
+        (item) => item.product.id === product.id && (item.selectedVariant?.id || 'no-variant') === variantKey
+      );
       if (existing) {
         return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+          item.product.id === product.id && (item.selectedVariant?.id || 'no-variant') === variantKey
+            ? { ...item, quantity: item.quantity + 1, giftMessage: gift || item.giftMessage }
             : item
         );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity: 1, selectedVariant: variant || null, giftMessage: gift || null }];
     });
     toast({ title: 'Added to cart', description: product.name });
   };
@@ -218,11 +296,14 @@ export default function PublicStore() {
     try {
       const orderItems = cart.map((item) => ({
         product_id: item.product.id,
+        variant_id: item.selectedVariant?.id || null,
         name: item.product.name,
-        price: item.product.price,
+        price: item.selectedVariant?.price || item.product.price,
         quantity: item.quantity,
         product_type: item.product.product_type,
         digital_file_url: item.product.digital_file_url,
+        variant_name: item.selectedVariant?.name || null,
+        gift_message: item.giftMessage || null,
       }));
 
       // Check if any digital products
@@ -426,7 +507,13 @@ export default function PublicStore() {
     );
   }
 
-  const primaryColor = store.primary_color || '#0EA5E9';
+  const primaryColor = store?.primary_color || '#0EA5E9';
+  const secondaryColor = store?.secondary_color || '#64748B';
+  const headingTextColor = store?.heading_text_color || '#000000';
+  const bodyTextColor = store?.body_text_color || '#333333';
+  const heroTitleTextColor = store?.hero_title_text_color || '#FFFFFF';
+  const heroSubtitleTextColor = store?.hero_subtitle_text_color || '#E5E7EB';
+  const announcementBarTextColor = store?.announcement_bar_text_color || '#FFFFFF';
 
   return (
     <>
@@ -438,10 +525,10 @@ export default function PublicStore() {
         {store.show_announcement_bar && store.announcement_text && (
           <div className="py-3 px-4 bg-muted border-b border-border">
             <div className="container mx-auto">
-              <div className="flex items-center justify-center gap-2 text-sm text-foreground font-medium flex-wrap">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: primaryColor }} />
+              <div className="flex items-center justify-center gap-2 text-sm font-medium flex-wrap" style={{ color: announcementBarTextColor }}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: announcementBarTextColor }} />
                 {store.announcement_link ? (
-                  <a href={store.announcement_link} className="hover:underline">
+                  <a href={store.announcement_link} className="hover:underline" style={{ color: announcementBarTextColor }}>
                     {store.announcement_text}
                   </a>
                 ) : (
@@ -642,12 +729,18 @@ export default function PublicStore() {
               />
             </div>
           )}
-          <div className="container mx-auto max-w-4xl relative z-10 text-center text-white">
-            <h1 className="text-5xl md:text-6xl font-display font-bold mb-6 leading-tight">
+          <div className="container mx-auto max-w-4xl relative z-10 text-center">
+            <h1 
+              className="text-5xl md:text-6xl font-display font-bold mb-6 leading-tight"
+              style={{ color: heroTitleTextColor }}
+            >
               {store.hero_title}
             </h1>
             {store.hero_subtitle && (
-              <p className="text-xl md:text-2xl mb-10 opacity-95 font-light">
+              <p 
+                className="text-xl md:text-2xl mb-10 font-light"
+                style={{ color: heroSubtitleTextColor }}
+              >
                 {store.hero_subtitle}
               </p>
             )}
@@ -719,15 +812,18 @@ export default function PublicStore() {
         <div className="mb-12">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">
+              <h2 
+                className="text-3xl md:text-4xl font-display font-bold"
+                style={{ color: headingTextColor }}
+              >
                 Shop Products
               </h2>
-              <p className="text-muted-foreground mt-2">
+              <p className="mt-2" style={{ color: bodyTextColor }}>
                 {products.length} {products.length === 1 ? 'product' : 'products'} available
               </p>
             </div>
             <Button variant="outline" asChild>
-              <Link to={`/${store.slug}`}>View All</Link>
+              <Link to={`/shop/${store.slug}`}>View All</Link>
             </Button>
           </div>
         </div>
@@ -773,11 +869,17 @@ export default function PublicStore() {
                   )}
                 </div>
                 <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-2 text-sm md:text-base line-clamp-2 group-hover:text-primary transition-colors">
+                  <h3 
+                    className="font-semibold mb-2 text-sm md:text-base line-clamp-2 group-hover:text-primary transition-colors"
+                    style={{ color: headingTextColor }}
+                  >
                     {product.name}
                   </h3>
                   {product.description && (
-                    <p className="text-xs md:text-sm text-muted-foreground mb-3 line-clamp-2 hidden sm:block">
+                    <p 
+                      className="text-xs md:text-sm mb-3 line-clamp-2 hidden sm:block"
+                      style={{ color: bodyTextColor }}
+                    >
                       {product.description}
                     </p>
                   )}
@@ -839,8 +941,15 @@ export default function PublicStore() {
       </main>
 
       {/* Product Detail Modal */}
-      <Dialog open={!!selectedProduct} onOpenChange={open => !open && setSelectedProduct(null)}>
-        <DialogContent className="max-w-md">
+      <Dialog open={!!selectedProduct} onOpenChange={open => {
+        if (!open) {
+          setSelectedProduct(null);
+          setSelectedProductVariant(null);
+          setGiftMessage('');
+          setShowGiftOptions(false);
+        }
+      }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           {selectedProduct && (
             <div className="flex flex-col gap-4">
               <div className="w-full aspect-square bg-secondary rounded-lg overflow-hidden flex items-center justify-center">
@@ -852,7 +961,7 @@ export default function PublicStore() {
               </div>
               <h2 className="text-xl font-bold">{selectedProduct.name}</h2>
               <div className="text-lg font-bold" style={{ color: primaryColor }}>
-                {selectedProduct.price.toFixed(2)} π
+                {(selectedProductVariant?.price || selectedProduct.price).toFixed(2)} π
                 {selectedProduct.compare_at_price && (
                   <span className="text-muted-foreground line-through ml-2 text-base">
                     {selectedProduct.compare_at_price.toFixed(2)} π
@@ -865,23 +974,82 @@ export default function PublicStore() {
                 </span>
               )}
               {selectedProduct.description && (
-                <p className="text-muted-foreground">{selectedProduct.description}</p>
+                <p className="text-muted-foreground text-sm">{selectedProduct.description}</p>
               )}
-              <div className="flex flex-col gap-2">
-                <Button style={{ backgroundColor: primaryColor }} onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}>
+              
+              {/* Product Variants */}
+              {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+                <div className="space-y-2 border-t pt-4">
+                  <label className="text-sm font-medium">Options:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedProduct.variants.map((variant) => (
+                      <button
+                        key={variant.id}
+                        onClick={() => setSelectedProductVariant(variant)}
+                        className={`p-2 text-xs border rounded transition-colors ${
+                          selectedProductVariant?.id === variant.id
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary'
+                        }`}
+                      >
+                        {variant.name}
+                        {variant.price && variant.price !== selectedProduct.price && (
+                          <div className="text-xs text-muted-foreground">{variant.price.toFixed(2)} π</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Gift Message Option */}
+              <div className="border-t pt-4">
+                <button
+                  onClick={() => setShowGiftOptions(!showGiftOptions)}
+                  className="text-sm font-medium text-primary hover:underline flex items-center gap-2"
+                >
+                  <Gift className="w-4 h-4" />
+                  {showGiftOptions ? 'Hide' : 'Add'} Gift Message
+                </button>
+                {showGiftOptions && (
+                  <textarea
+                    value={giftMessage}
+                    onChange={(e) => setGiftMessage(e.target.value)}
+                    placeholder="Add a personal message..."
+                    className="w-full mt-2 p-2 text-sm border border-border rounded resize-none"
+                    rows={3}
+                    maxLength={200}
+                  />
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 border-t pt-4">
+                <Button 
+                  style={{ backgroundColor: primaryColor }} 
+                  onClick={() => { 
+                    addToCart(selectedProduct, selectedProductVariant, giftMessage);
+                    setSelectedProduct(null);
+                    setSelectedProductVariant(null);
+                    setGiftMessage('');
+                    setShowGiftOptions(false);
+                  }}
+                >
                   <Plus className="w-4 h-4 mr-2" /> Add to Cart
                 </Button>
                 <Button 
                   variant="outline"
                   onClick={() => { 
-                    addToCart(selectedProduct); 
-                    setSelectedProduct(null); 
+                    addToCart(selectedProduct, selectedProductVariant, giftMessage);
+                    setSelectedProduct(null);
+                    setSelectedProductVariant(null);
+                    setGiftMessage('');
+                    setShowGiftOptions(false);
                     setPaymentModalOpen(true); 
                   }}
                 >
                   Buy Now
                 </Button>
-                <div className="pt-2 border-t mt-2">
+                <div className="pt-2 border-t">
                   <StoreReportModal
                     storeId={store.id}
                     storeName={store.name}

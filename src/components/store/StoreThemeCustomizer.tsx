@@ -25,6 +25,11 @@ interface StoreTheme {
   show_announcement_bar: boolean;
   announcement_text: string | null;
   announcement_link: string | null;
+  heading_text_color: string | null;
+  body_text_color: string | null;
+  hero_title_text_color: string | null;
+  hero_subtitle_text_color: string | null;
+  announcement_bar_text_color: string | null;
   social_facebook: string | null;
   social_instagram: string | null;
   social_twitter: string | null;
@@ -112,6 +117,11 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
           show_announcement_bar: localTheme.show_announcement_bar,
           announcement_text: localTheme.announcement_text,
           announcement_link: localTheme.announcement_link,
+          heading_text_color: localTheme.heading_text_color,
+          body_text_color: localTheme.body_text_color,
+          hero_title_text_color: localTheme.hero_title_text_color,
+          hero_subtitle_text_color: localTheme.hero_subtitle_text_color,
+          announcement_bar_text_color: localTheme.announcement_bar_text_color,
           social_facebook: localTheme.social_facebook,
           social_instagram: localTheme.social_instagram,
           social_twitter: localTheme.social_twitter,
@@ -159,7 +169,7 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
               Theme Customizer
             </CardTitle>
             <CardDescription>
-              Customize your store's appearance like Shopify
+              Customize your store's appearance and colors
             </CardDescription>
           </div>
           <Button onClick={handleSave} disabled={saving}>
@@ -200,11 +210,11 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
           {/* Branding Tab */}
           <TabsContent value="branding" className="space-y-6 mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Colors */}
+              {/* Theme Colors */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Palette className="w-4 h-4" />
-                  Colors
+                  Theme Colors
                 </h3>
                 <div className="space-y-3">
                   <div className="space-y-2">
@@ -286,6 +296,101 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text Colors */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Type className="w-4 h-4" />
+                  Text Colors
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Heading Text Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={localTheme.heading_text_color || '#000000'}
+                        onChange={(e) => handleChange('heading_text_color', e.target.value)}
+                        className="w-12 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        value={localTheme.heading_text_color || '#000000'}
+                        onChange={(e) => handleChange('heading_text_color', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Body Text Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={localTheme.body_text_color || '#333333'}
+                        onChange={(e) => handleChange('body_text_color', e.target.value)}
+                        className="w-12 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        value={localTheme.body_text_color || '#333333'}
+                        onChange={(e) => handleChange('body_text_color', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hero Title Text Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={localTheme.hero_title_text_color || '#FFFFFF'}
+                        onChange={(e) => handleChange('hero_title_text_color', e.target.value)}
+                        className="w-12 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        value={localTheme.hero_title_text_color || '#FFFFFF'}
+                        onChange={(e) => handleChange('hero_title_text_color', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hero Subtitle Text Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={localTheme.hero_subtitle_text_color || '#E5E7EB'}
+                        onChange={(e) => handleChange('hero_subtitle_text_color', e.target.value)}
+                        className="w-12 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        value={localTheme.hero_subtitle_text_color || '#E5E7EB'}
+                        onChange={(e) => handleChange('hero_subtitle_text_color', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Announcement Bar Text Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={localTheme.announcement_bar_text_color || '#FFFFFF'}
+                        onChange={(e) => handleChange('announcement_bar_text_color', e.target.value)}
+                        className="w-12 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        value={localTheme.announcement_bar_text_color || '#FFFFFF'}
+                        onChange={(e) => handleChange('announcement_bar_text_color', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

@@ -1339,39 +1339,45 @@ export default function StoreManagement() {
             ) : (
               <div className="space-y-4">
                 {orders.map((order) => (
-                  <Card key={order.id}>
+                  <Card key={order.id} className="overflow-hidden">
                     <CardContent className="pt-6">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                        <div>
-                          <h3 className="font-semibold text-foreground">
-                            {order.customer_name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {order.customer_email}
-                          </p>
-                          {order.customer_phone && (
-                            <p className="text-sm text-muted-foreground">
-                              {order.customer_phone}
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-foreground">
+                              {order.customer_name}
+                            </h3>
+                            <span className={`text-xs px-2 py-1 rounded font-medium ${
+                              order.status === 'completed' || order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                              order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            <p className="text-muted-foreground">📧 {order.customer_email}</p>
+                            {order.customer_phone && (
+                              <p className="text-muted-foreground">📱 {order.customer_phone}</p>
+                            )}
+                            {order.shipping_address && (
+                              <p className="text-muted-foreground">📍 {order.shipping_address}</p>
+                            )}
+                            {order.notes && (
+                              <p className="text-muted-foreground">📝 {order.notes}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {new Date(order.created_at).toLocaleDateString()} {new Date(order.created_at).toLocaleTimeString()}
                             </p>
-                          )}
-                          {order.shipping_address && (
-                            <p className="text-sm text-muted-foreground">
-                              {order.shipping_address}
-                            </p>
-                          )}
-                          {order.notes && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Note: {order.notes}
-                            </p>
-                          )}
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <p className="font-bold text-primary">
-                            {order.total.toFixed(2)} π
-                          </p>
+                        <div className="flex flex-col items-end gap-3">
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Total</p>
+                            <p className="font-bold text-lg text-primary">
+                              {order.total.toFixed(2)} π
+                            </p>
+                          </div>
                           <select
                             value={order.status}
                             onChange={(e) =>
@@ -1389,6 +1395,32 @@ export default function StoreManagement() {
                           </select>
                         </div>
                       </div>
+
+                      {/* Order Items */}
+                      {order.items && Array.isArray(order.items) && order.items.length > 0 && (
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-sm text-foreground mb-3">Items ({order.items.length})</h4>
+                          <div className="space-y-2">
+                            {order.items.map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-start p-2 bg-muted/30 rounded text-sm">
+                                <div className="flex-1">
+                                  <p className="font-medium text-foreground">{item.name}</p>
+                                  {item.variant_name && (
+                                    <p className="text-xs text-muted-foreground">Variant: {item.variant_name}</p>
+                                  )}
+                                  {item.gift_message && (
+                                    <p className="text-xs text-muted-foreground">🎁 Gift: {item.gift_message}</p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                </div>
+                                <p className="font-semibold text-foreground">
+                                  {(item.price * item.quantity).toFixed(2)} π
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -1420,10 +1452,20 @@ export default function StoreManagement() {
           <TabsContent value="analytics">
             <Card>
               <CardHeader>
-                <CardTitle>Store Analytics</CardTitle>
-                <CardDescription>
-                  Track your store performance and sales metrics.
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Store Analytics</CardTitle>
+                    <CardDescription>
+                      Track your store performance and sales metrics.
+                    </CardDescription>
+                  </div>
+                  <Link to={`/store/${storeId}/analytics`}>
+                    <Button className="gap-2">
+                      <BarChart3 className="w-4 h-4" />
+                      Advanced Analytics
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <AnalyticsCards data={analyticsData} />

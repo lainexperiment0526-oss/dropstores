@@ -24,6 +24,7 @@ import Pricing from "./pages/Pricing";
 import AdminPayouts from "./pages/AdminPayouts";
 import AdminReports from "./pages/AdminReports";
 import AdminMrwain from "./pages/AdminMrwain";
+import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import ExternalRedirect from "./pages/ExternalRedirect";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -69,6 +70,7 @@ const App = () => {
                                 <Route path="/pi-test" element={<PiAuthTest />} />
                 <Route path="/admin-payouts" element={<AdminPayouts />} />
                 <Route path="/admin-reports" element={<AdminReports />} />
+                <Route path="/store/:storeId/analytics" element={<AdvancedAnalytics />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin-mrwain" element={<AdminMrwain />} />
                 {/* Privacy Policy and Terms of Service local pages */}
