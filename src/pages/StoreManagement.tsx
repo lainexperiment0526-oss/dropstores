@@ -73,6 +73,40 @@ interface StoreData {
   template_id: string | null;
   payout_wallet: string | null;
   store_type: string | null;
+  // Theme customization fields (optional until migration applied)
+  font_heading?: string;
+  font_body?: string;
+  layout_style?: string;
+  header_style?: string;
+  footer_style?: string;
+  show_announcement_bar?: boolean;
+  announcement_text?: string | null;
+  announcement_link?: string | null;
+  heading_text_color?: string | null;
+  body_text_color?: string | null;
+  hero_title_text_color?: string | null;
+  hero_subtitle_text_color?: string | null;
+  announcement_bar_text_color?: string | null;
+  social_facebook?: string | null;
+  social_instagram?: string | null;
+  social_twitter?: string | null;
+  social_tiktok?: string | null;
+  about_page?: string | null;
+  contact_page?: string | null;
+  shipping_policy?: string | null;
+  refund_policy?: string | null;
+  privacy_policy?: string | null;
+  terms_of_service?: string | null;
+  show_product_reviews?: boolean;
+  enable_wishlist?: boolean;
+  enable_compare?: boolean;
+  products_per_page?: number;
+  show_stock_count?: boolean;
+  show_sold_count?: boolean;
+  hero_title?: string | null;
+  hero_subtitle?: string | null;
+  hero_button_text?: string;
+  hero_button_link?: string | null;
 }
 
 interface ProductVariant {
@@ -193,7 +227,29 @@ export default function StoreManagement() {
         return;
       }
 
-      setStore(storeData);
+      // Set store with defaults for missing theme fields (cast to any since columns may not exist yet)
+      const data = storeData as any;
+      setStore({
+        ...storeData,
+        font_heading: data.font_heading || 'Inter',
+        font_body: data.font_body || 'Inter',
+        layout_style: data.layout_style || 'grid',
+        header_style: data.header_style || 'simple',
+        footer_style: data.footer_style || 'simple',
+        show_announcement_bar: data.show_announcement_bar ?? false,
+        heading_text_color: data.heading_text_color || '#000000',
+        body_text_color: data.body_text_color || '#333333',
+        hero_title_text_color: data.hero_title_text_color || '#FFFFFF',
+        hero_subtitle_text_color: data.hero_subtitle_text_color || '#E5E7EB',
+        announcement_bar_text_color: data.announcement_bar_text_color || '#FFFFFF',
+        show_product_reviews: data.show_product_reviews ?? true,
+        enable_wishlist: data.enable_wishlist ?? true,
+        enable_compare: data.enable_compare ?? true,
+        products_per_page: data.products_per_page || 12,
+        show_stock_count: data.show_stock_count ?? true,
+        show_sold_count: data.show_sold_count ?? false,
+        hero_button_text: data.hero_button_text || 'Shop Now',
+      });
 
       const { data: productsData, error: productsError } = await supabase
         .from('products')
