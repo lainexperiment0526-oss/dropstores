@@ -53,7 +53,7 @@ export function initializePiSDK(config: PiPaymentConfig = {}): void {
     if (window.Pi && typeof window.Pi.init === 'function') {
       window.Pi.init({
         version: '2.0',
-        sandbox: config.sandbox ?? true,
+        sandbox: config.sandbox ?? false,
       });
       console.log('Pi SDK initialized');
     }

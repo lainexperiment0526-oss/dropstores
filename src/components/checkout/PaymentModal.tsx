@@ -43,7 +43,8 @@ export function PaymentModal({
   // Initialize Pi SDK on component mount
   const initPi = () => {
     try {
-      initializePiSDK({ sandbox: true });
+      const isSandbox = import.meta.env.VITE_PI_SANDBOX_MODE === 'true';
+      initializePiSDK({ sandbox: isSandbox });
     } catch (err) {
       console.error('Failed to initialize Pi SDK:', err);
     }

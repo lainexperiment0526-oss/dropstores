@@ -258,7 +258,7 @@ const Subscription = () => {
           throw error;
         }
         
-        toast.success(`🎉 ${plan.name} activated! (Test Mode) Redirecting to dashboard...`);
+        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
         setCurrentSubscription(data);
         
         setTimeout(() => {
@@ -284,7 +284,7 @@ const Subscription = () => {
           throw error;
         }
         
-        toast.success(`🎉 ${plan.name} activated! (Test Mode) Redirecting to dashboard...`);
+        toast.success(`🎉 ${plan.name} activated! Redirecting to dashboard...`);
         
         // Update current subscription state
         setCurrentSubscription(data);
