@@ -17,6 +17,7 @@ import Dashboard from "./pages/Dashboard";
 import CreateStore from "./pages/CreateStore";
 import StoreManagement from "./pages/StoreManagement";
 import PublicStore from "./pages/PublicStore";
+import StorePage from "./pages/StorePage";
 import StoreDirectory from "./pages/StoreDirectory";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,7 @@ const App = () => {
                 <Route path="/create-store" element={<CreateStore />} />
                 <Route path="/store/:storeId" element={<StoreManagement />} />
                 <Route path="/shop/:slug" element={<PublicStore />} />
+                <Route path="/shop/:slug/page/:pageSlug" element={<StorePage />} />
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/redeem-gift-card" element={<RedeemGiftCard />} />
                 <Route path="/pricing" element={<Pricing />} />

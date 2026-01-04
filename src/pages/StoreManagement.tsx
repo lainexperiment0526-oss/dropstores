@@ -18,6 +18,7 @@ import { MerchantPayouts } from '@/components/store/MerchantPayouts';
 import { StoreThemeCustomizer } from '@/components/store/StoreThemeCustomizer';
 import { StoreBannerManager } from '@/components/store/StoreBannerManager';
 import { StoreNavigationManager } from '@/components/store/StoreNavigationManager';
+import { StorePagesManager } from '@/components/store/StorePagesManager';
 import { ProductReviewsManager } from '@/components/store/ProductReviewsManager';
 import { StoreQRCode } from '@/components/store/StoreQRCode';
 import {
@@ -1437,6 +1438,7 @@ export default function StoreManagement() {
             />
             <StoreBannerManager storeId={store.id} />
             <StoreNavigationManager storeId={store.id} />
+            <StorePagesManager storeId={store.id} storeSlug={store.slug} />
             <ProductReviewsManager storeId={store.id} />
           </TabsContent>
 
