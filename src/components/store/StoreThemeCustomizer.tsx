@@ -170,12 +170,31 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="branding" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="branding">Branding</TabsTrigger>
-            <TabsTrigger value="layout">Layout</TabsTrigger>
-            <TabsTrigger value="hero">Hero</TabsTrigger>
-            <TabsTrigger value="features">Features</TabsTrigger>
-            <TabsTrigger value="pages">Pages</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsTrigger value="branding" className="flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              <span className="hidden sm:inline">Branding</span>
+            </TabsTrigger>
+            <TabsTrigger value="layout" className="flex items-center gap-2">
+              <Layout className="w-4 h-4" />
+              <span className="hidden sm:inline">Layout</span>
+            </TabsTrigger>
+            <TabsTrigger value="hero" className="flex items-center gap-2">
+              <Image className="w-4 h-4" />
+              <span className="hidden sm:inline">Hero</span>
+            </TabsTrigger>
+            <TabsTrigger value="features" className="flex items-center gap-2">
+              <Share2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Features</span>
+            </TabsTrigger>
+            <TabsTrigger value="content" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Content</span>
+            </TabsTrigger>
+            <TabsTrigger value="pages" className="flex items-center gap-2">
+              <Bell className="w-4 h-4" />
+              <span className="hidden sm:inline">Pages</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Branding Tab */}
@@ -555,55 +574,164 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
             </div>
           </TabsContent>
 
-          {/* Pages Tab */}
-          <TabsContent value="pages" className="space-y-6 mt-6">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="about">
-                <AccordionTrigger>
-                  <div className="flex items-center gap-2">
+          {/* Content Tab - About, Contact, Social Media */}
+          <TabsContent value="content" className="space-y-6 mt-6">
+            <div className="space-y-6">
+              {/* About Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="w-4 h-4" />
-                    About Us
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
+                    About Your Store
+                  </CardTitle>
+                  <CardDescription>
+                    Tell your customers about your business
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <Textarea
-                    placeholder="Tell your customers about your business..."
+                    placeholder="Describe your business, mission, and values..."
                     value={localTheme.about_page || ''}
                     onChange={(e) => handleChange('about_page', e.target.value)}
-                    rows={6}
+                    rows={5}
                     className="mt-2"
                   />
-                </AccordionContent>
-              </AccordionItem>
+                </CardContent>
+              </Card>
 
-              <AccordionItem value="contact">
-                <AccordionTrigger>
-                  <div className="flex items-center gap-2">
+              {/* Contact Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Contact Information
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
+                  </CardTitle>
+                  <CardDescription>
+                    How customers can get in touch with you
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
                   <Textarea
-                    placeholder="How can customers reach you..."
+                    placeholder="Additional contact information or inquiries page content..."
                     value={localTheme.contact_page || ''}
                     onChange={(e) => handleChange('contact_page', e.target.value)}
-                    rows={6}
+                    rows={4}
                     className="mt-2"
                   />
-                </AccordionContent>
-              </AccordionItem>
+                </CardContent>
+              </Card>
 
+              {/* Social Media Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Share2 className="w-4 h-4" />
+                    Social Media Links
+                  </CardTitle>
+                  <CardDescription>
+                    Connect with customers on social platforms
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="facebook">Facebook URL</Label>
+                    <Input
+                      id="facebook"
+                      placeholder="https://facebook.com/yourpage"
+                      value={localTheme.social_facebook || ''}
+                      onChange={(e) => handleChange('social_facebook', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram">Instagram URL</Label>
+                    <Input
+                      id="instagram"
+                      placeholder="https://instagram.com/yourprofile"
+                      value={localTheme.social_instagram || ''}
+                      onChange={(e) => handleChange('social_instagram', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="twitter">Twitter/X URL</Label>
+                    <Input
+                      id="twitter"
+                      placeholder="https://twitter.com/yourprofile"
+                      value={localTheme.social_twitter || ''}
+                      onChange={(e) => handleChange('social_twitter', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tiktok">TikTok URL</Label>
+                    <Input
+                      id="tiktok"
+                      placeholder="https://tiktok.com/@yourprofile"
+                      value={localTheme.social_tiktok || ''}
+                      onChange={(e) => handleChange('social_tiktok', e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Announcement Bar Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bell className="w-4 h-4" />
+                    Announcement Bar
+                  </CardTitle>
+                  <CardDescription>
+                    Display a notification banner at the top of your store
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                    <div>
+                      <Label>Enable Announcement Bar</Label>
+                      <p className="text-xs text-muted-foreground">Show banner to customers</p>
+                    </div>
+                    <Switch
+                      checked={localTheme.show_announcement_bar || false}
+                      onCheckedChange={(checked) => handleChange('show_announcement_bar', checked)}
+                    />
+                  </div>
+                  {localTheme.show_announcement_bar && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Announcement Text</Label>
+                        <Input
+                          placeholder="e.g., Free shipping on orders over $50"
+                          value={localTheme.announcement_text || ''}
+                          onChange={(e) => handleChange('announcement_text', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Announcement Link (Optional)</Label>
+                        <Input
+                          placeholder="https://example.com/promo"
+                          value={localTheme.announcement_link || ''}
+                          onChange={(e) => handleChange('announcement_link', e.target.value)}
+                        />
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Pages Tab - Policies */}
+          <TabsContent value="pages" className="space-y-6 mt-6">
+            <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="shipping">
-                <AccordionTrigger>
+                <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Shipping Policy
                   </div>
                 </AccordionTrigger>
-                <AccordionContent>
+                <AccordionContent className="pt-4">
                   <Textarea
-                    placeholder="Describe your shipping policies..."
+                    placeholder="Describe your shipping methods, costs, and delivery times..."
                     value={localTheme.shipping_policy || ''}
                     onChange={(e) => handleChange('shipping_policy', e.target.value)}
                     rows={6}
@@ -613,15 +741,15 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
               </AccordionItem>
 
               <AccordionItem value="refund">
-                <AccordionTrigger>
+                <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
-                    Refund Policy
+                    Refund & Return Policy
                   </div>
                 </AccordionTrigger>
-                <AccordionContent>
+                <AccordionContent className="pt-4">
                   <Textarea
-                    placeholder="Describe your refund and return policies..."
+                    placeholder="Describe your refund period, conditions, and return procedures..."
                     value={localTheme.refund_policy || ''}
                     onChange={(e) => handleChange('refund_policy', e.target.value)}
                     rows={6}
@@ -631,15 +759,15 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
               </AccordionItem>
 
               <AccordionItem value="privacy">
-                <AccordionTrigger>
+                <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Privacy Policy
                   </div>
                 </AccordionTrigger>
-                <AccordionContent>
+                <AccordionContent className="pt-4">
                   <Textarea
-                    placeholder="Your privacy policy..."
+                    placeholder="Explain how you collect, use, and protect customer data..."
                     value={localTheme.privacy_policy || ''}
                     onChange={(e) => handleChange('privacy_policy', e.target.value)}
                     rows={6}
@@ -649,15 +777,15 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
               </AccordionItem>
 
               <AccordionItem value="terms">
-                <AccordionTrigger>
+                <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Terms of Service
                   </div>
                 </AccordionTrigger>
-                <AccordionContent>
+                <AccordionContent className="pt-4">
                   <Textarea
-                    placeholder="Your terms of service..."
+                    placeholder="Define the terms under which customers can use your store..."
                     value={localTheme.terms_of_service || ''}
                     onChange={(e) => handleChange('terms_of_service', e.target.value)}
                     rows={6}
