@@ -42,6 +42,8 @@ import {
   Image as ImageIcon,
   Banknote,
   Palette,
+  Grid3x3,
+  List,
 } from 'lucide-react';
 import {
   Dialog,
@@ -72,6 +74,19 @@ interface StoreData {
   store_type: string | null;
 }
 
+interface ProductVariant {
+  id?: string;
+  title: string;
+  sku: string;
+  price: string;
+  compare_at_price: string;
+  inventory_quantity: string;
+  option1?: string;
+  option2?: string;
+  option3?: string;
+  image_url?: string;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -84,6 +99,7 @@ interface Product {
   is_active: boolean;
   product_type: string | null;
   digital_file_url: string | null;
+  has_variants?: boolean;
 }
 
 interface Order {
@@ -114,6 +130,7 @@ export default function StoreManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('products');
+  const [productView, setProductView] = useState<'grid' | 'list'>('grid');
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productForm, setProductForm] = useState({
@@ -125,6 +142,8 @@ export default function StoreManagement() {
     inventory_count: '',
     images: [] as string[],
     product_type: 'physical',
+    has_variants: false,
+    variants: [] as ProductVariant[],
     digital_file_url: '',
   });
 
@@ -281,12 +300,44 @@ export default function StoreManagement() {
       images: [],
       product_type: store?.store_type === 'digital' ? 'digital' : 'physical',
       digital_file_url: '',
+      has_variants: false,
+      variants: [],
     });
     setEditingProduct(null);
   };
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = async (product: Product) => {
     setEditingProduct(product);
+    
+    // Load variants if product has variants
+    let variants: ProductVariant[] = [];
+    if (product.has_variants) {
+      try {
+        const { data: variantsData, error } = await supabase
+          .from('product_variants')
+          .select('*')
+          .eq('product_id', product.id)
+          .order('position', { ascending: true });
+        
+        if (!error && variantsData) {
+          variants = variantsData.map(v => ({
+            id: v.id,
+            title: v.title,
+            sku: v.sku || '',
+            price: v.price.toString(),
+            compare_at_price: v.compare_at_price?.toString() || '',
+            inventory_quantity: v.inventory_quantity?.toString() || '0',
+            option1: v.option1 || '',
+            option2: v.option2 || '',
+            option3: v.option3 || '',
+            image_url: v.image_url || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading variants:', error);
+      }
+    }
+    
     setProductForm({
       name: product.name,
       description: product.description || '',
@@ -297,6 +348,8 @@ export default function StoreManagement() {
       images: product.images || [],
       product_type: product.product_type || 'physical',
       digital_file_url: product.digital_file_url || '',
+      has_variants: product.has_variants || false,
+      variants: variants,
     });
     setShowProductDialog(true);
   };
@@ -351,7 +404,10 @@ export default function StoreManagement() {
         images: productForm.images.length > 0 ? productForm.images : [],
         product_type: productForm.product_type,
         digital_file_url: productForm.product_type === 'digital' ? productForm.digital_file_url.trim() || null : null,
+        has_variants: productForm.has_variants,
       };
+
+      let savedProductId = editingProduct?.id;
 
       if (editingProduct) {
         const { error } = await supabase
@@ -360,12 +416,62 @@ export default function StoreManagement() {
           .eq('id', editingProduct.id);
 
         if (error) throw error;
+        
+        // Delete existing variants if has_variants is now false
+        if (!productForm.has_variants) {
+          await supabase
+            .from('product_variants')
+            .delete()
+            .eq('product_id', editingProduct.id);
+        }
+        
         toast({ title: 'Product updated' });
       } else {
-        const { error } = await supabase.from('products').insert(productData);
+        const { data: newProduct, error } = await supabase
+          .from('products')
+          .insert(productData)
+          .select()
+          .single();
 
         if (error) throw error;
+        savedProductId = newProduct.id;
         toast({ title: 'Product added' });
+      }
+
+      // Save variants if enabled
+      if (productForm.has_variants && productForm.variants.length > 0 && savedProductId) {
+        // Delete existing variants for this product
+        await supabase
+          .from('product_variants')
+          .delete()
+          .eq('product_id', savedProductId);
+
+        // Insert new variants
+        const variantsData = productForm.variants.map((variant, index) => ({
+          product_id: savedProductId,
+          title: variant.title.trim(),
+          sku: variant.sku.trim() || null,
+          price: parseFloat(variant.price) || 0,
+          compare_at_price: variant.compare_at_price ? parseFloat(variant.compare_at_price) : null,
+          inventory_quantity: parseInt(variant.inventory_quantity) || 0,
+          option1: variant.option1?.trim() || null,
+          option2: variant.option2?.trim() || null,
+          option3: variant.option3?.trim() || null,
+          position: index,
+        }));
+
+        const { error: variantsError } = await supabase
+          .from('product_variants')
+          .insert(variantsData);
+
+        if (variantsError) {
+          console.error('Error saving variants:', variantsError);
+          toast({
+            title: 'Warning',
+            description: 'Product saved but variants failed to save.',
+            variant: 'destructive',
+          });
+        }
       }
 
       setShowProductDialog(false);
@@ -566,7 +672,30 @@ export default function StoreManagement() {
               <h2 className="text-xl font-display font-bold text-foreground">
                 Products ({products.length})
               </h2>
-              <Dialog open={showProductDialog} onOpenChange={setShowProductDialog}>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {/* View Toggle */}
+                <div className="flex items-center border border-border rounded-lg overflow-hidden">
+                  <Button
+                    variant={productView === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setProductView('grid')}
+                    className="rounded-r-none border-r-0"
+                  >
+                    <Grid3x3 className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Grid</span>
+                  </Button>
+                  <Button
+                    variant={productView === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setProductView('list')}
+                    className="rounded-l-none"
+                  >
+                    <List className="w-4 h-4 sm:mr-1" />
+                    <span className="hidden sm:inline">List</span>
+                  </Button>
+                </div>
+                {/* Add Product Dialog */}
+                <Dialog open={showProductDialog} onOpenChange={setShowProductDialog}>
                 <DialogTrigger asChild>
                   <Button
                     className="gradient-hero shadow-glow hover:opacity-90 w-full sm:w-auto"
@@ -586,32 +715,52 @@ export default function StoreManagement() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
-                    {/* Product Type Selection */}
-                    <div className="space-y-2">
-                      <Label>Product Type</Label>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant={productForm.product_type === 'physical' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setProductForm({ ...productForm, product_type: 'physical' })}
-                          className="flex-1"
-                        >
-                          <Package className="w-4 h-4 mr-2" />
-                          Physical
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={productForm.product_type === 'digital' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setProductForm({ ...productForm, product_type: 'digital' })}
-                          className="flex-1"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Digital
-                        </Button>
+                    {/* Product Type Selection - Conditional based on store type */}
+                    {store?.store_type === 'online' && (
+                      <div className="space-y-2">
+                        <Label>Product Type</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={productForm.product_type === 'physical' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setProductForm({ ...productForm, product_type: 'physical' })}
+                            className="flex-1"
+                            disabled={productForm.has_variants && productForm.product_type === 'digital'}
+                          >
+                            <Package className="w-4 h-4 mr-2" />
+                            Physical
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={productForm.product_type === 'digital' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setProductForm({ ...productForm, product_type: 'digital', has_variants: false, variants: [] })}
+                            className="flex-1"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Digital
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    
+                    {/* Show store type badge if not online */}
+                    {store?.store_type !== 'online' && (
+                      <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                        {store?.store_type === 'physical' ? (
+                          <>
+                            <Package className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">Physical Store - Adding Physical Products</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">Digital Store - Adding Digital Products</span>
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="product-name">Product Name *</Label>
@@ -674,6 +823,199 @@ export default function StoreManagement() {
                       </div>
                     </div>
 
+                    {/* Product Variants - Only for physical products */}
+                    {productForm.product_type === 'physical' && (
+                      <div className="space-y-3 p-4 border border-border rounded-lg bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label className="text-base">Product Variants</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Add variants like sizes, colors, materials, etc.
+                            </p>
+                          </div>
+                          <Switch
+                            checked={productForm.has_variants}
+                            onCheckedChange={(checked) => {
+                              setProductForm({
+                                ...productForm,
+                                has_variants: checked,
+                                variants: checked ? [{ title: '', sku: '', price: productForm.price, compare_at_price: '', inventory_quantity: '0', option1: '', option2: '', option3: '' }] : []
+                              });
+                            }}
+                          />
+                        </div>
+
+                        {productForm.has_variants && (
+                          <div className="space-y-3 mt-3">
+                            <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                              💡 When using variants, the base price above will be used as default. Each variant can override the price.
+                            </div>
+                            
+                            {productForm.variants.map((variant, index) => (
+                              <Card key={index} className="p-3">
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-semibold">Variant {index + 1}</h4>
+                                    {productForm.variants.length > 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => {
+                                          const newVariants = productForm.variants.filter((_, i) => i !== index);
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Variant Title *</Label>
+                                      <Input
+                                        placeholder="e.g., Large / Red"
+                                        value={variant.title}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].title = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">SKU</Label>
+                                      <Input
+                                        placeholder="SKU-001"
+                                        value={variant.sku}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].sku = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Price (π)</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        value={variant.price}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].price = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Compare</Label>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        value={variant.compare_at_price}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].compare_at_price = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Inventory</Label>
+                                      <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={variant.inventory_quantity}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].inventory_quantity = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Option 1 (e.g., Size)</Label>
+                                      <Input
+                                        placeholder="Large"
+                                        value={variant.option1}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].option1 = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Option 2 (e.g., Color)</Label>
+                                      <Input
+                                        placeholder="Red"
+                                        value={variant.option2}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].option2 = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Option 3 (e.g., Material)</Label>
+                                      <Input
+                                        placeholder="Cotton"
+                                        value={variant.option3}
+                                        onChange={(e) => {
+                                          const newVariants = [...productForm.variants];
+                                          newVariants[index].option3 = e.target.value;
+                                          setProductForm({ ...productForm, variants: newVariants });
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setProductForm({
+                                  ...productForm,
+                                  variants: [
+                                    ...productForm.variants,
+                                    { title: '', sku: '', price: productForm.price, compare_at_price: '', inventory_quantity: '0', option1: '', option2: '', option3: '' }
+                                  ]
+                                });
+                              }}
+                              className="w-full"
+                            >
+                              <Plus className="w-3 h-3 mr-1" />
+                              Add Another Variant
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Digital Product URL */}
                     {productForm.product_type === 'digital' && (
                       <div className="space-y-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -729,36 +1071,75 @@ export default function StoreManagement() {
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Product Images</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base">Product Images</Label>
+                        <span className="text-xs text-muted-foreground">
+                          {productForm.images.length}/10 images
+                        </span>
+                      </div>
                       <div className="space-y-3">
                         {/* Image preview grid */}
                         {productForm.images.length > 0 && (
-                          <div className="grid grid-cols-4 gap-2">
-                            {productForm.images.map((img, index) => (
-                              <div key={index} className="relative aspect-square bg-muted rounded overflow-hidden border">
-                                <img src={img} alt={`Product ${index + 1}`} className="w-full h-full object-cover" />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="absolute top-1 right-1 w-5 h-5"
-                                  onClick={() => handleRemoveProductImage(index)}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            ))}
+                          <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 p-2 rounded flex items-center gap-2">
+                              <ImageIcon className="w-3 h-3" />
+                              First image will be the featured image shown in listings
+                            </div>
+                            <div className="grid grid-cols-5 gap-2">
+                              {productForm.images.map((img, index) => (
+                                <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden border-2 hover:border-primary transition-colors group">
+                                  <img src={img} alt={`Product ${index + 1}`} className="w-full h-full object-cover" />
+                                  {index === 0 && (
+                                    <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                                      Featured
+                                    </div>
+                                  )}
+                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                    {index > 0 && (
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="icon"
+                                        className="w-6 h-6"
+                                        onClick={() => {
+                                          const newImages = [...productForm.images];
+                                          const temp = newImages[index];
+                                          newImages[index] = newImages[0];
+                                          newImages[0] = temp;
+                                          setProductForm({ ...productForm, images: newImages });
+                                        }}
+                                        title="Set as featured"
+                                      >
+                                        <ImageIcon className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="icon"
+                                      className="w-6 h-6"
+                                      onClick={() => handleRemoveProductImage(index)}
+                                      title="Remove image"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                         {/* Upload component */}
-                        <ImageUpload
-                          label="Add Image"
-                          onUpload={handleProductImageUpload}
-                          bucket="store-assets"
-                          folder={`products/${store?.id}`}
-                          aspectRatio="square"
-                        />
+                        {productForm.images.length < 10 && (
+                          <ImageUpload
+                            label={productForm.images.length === 0 ? "Add Product Images" : "Add More Images"}
+                            onUpload={handleProductImageUpload}
+                            bucket="store-assets"
+                            folder={`products/${store?.id}`}
+                            aspectRatio="square"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -777,6 +1158,7 @@ export default function StoreManagement() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
 
             {products.length === 0 ? (
@@ -792,62 +1174,147 @@ export default function StoreManagement() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {products.map((product) => (
-                  <Card key={product.id}>
-                    <CardContent className="pt-6">
-                      <div className="aspect-square bg-secondary rounded-lg mb-4 overflow-hidden relative">
-                        {product.images && product.images[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-12 h-12 text-muted-foreground" />
+              <>
+                {/* Grid View */}
+                {productView === 'grid' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    {products.map((product) => (
+                      <Card key={product.id}>
+                        <CardContent className="pt-6">
+                          <div className="aspect-square bg-secondary rounded-lg mb-4 overflow-hidden relative">
+                            {product.images && product.images[0] ? (
+                              <img
+                                src={product.images[0]}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-12 h-12 text-muted-foreground" />
+                              </div>
+                            )}
+                            {product.product_type === 'digital' && (
+                              <span className="absolute top-2 left-2 px-2 py-1 rounded bg-blue-500 text-white text-xs font-medium">
+                                Digital
+                              </span>
+                            )}
                           </div>
-                        )}
-                        {product.product_type === 'digital' && (
-                          <span className="absolute top-2 left-2 px-2 py-1 rounded bg-blue-500 text-white text-xs font-medium">
-                            Digital
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-semibold text-foreground mb-1 truncate">
-                        {product.name}
-                      </h3>
-                      <p className="text-primary font-bold mb-2">
-                        {product.price.toFixed(2)} π
-                        {product.compare_at_price && (
-                          <span className="text-muted-foreground line-through ml-2 font-normal text-sm">
-                            {product.compare_at_price.toFixed(2)} π
-                          </span>
-                        )}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleEditProduct(product)}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteProduct(product.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                          <h3 className="font-semibold text-foreground mb-1 truncate">
+                            {product.name}
+                          </h3>
+                          <p className="text-primary font-bold mb-2">
+                            {product.price.toFixed(2)} π
+                            {product.compare_at_price && (
+                              <span className="text-muted-foreground line-through ml-2 font-normal text-sm">
+                                {product.compare_at_price.toFixed(2)} π
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleEditProduct(product)}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteProduct(product.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* List View */}
+                {productView === 'list' && (
+                  <div className="space-y-3">
+                    {products.map((product) => (
+                      <Card key={product.id}>
+                        <CardContent className="py-4">
+                          <div className="flex items-center gap-4">
+                            {/* Product Image */}
+                            <div className="w-20 h-20 bg-secondary rounded-lg overflow-hidden flex-shrink-0 relative">
+                              {product.images && product.images[0] ? (
+                                <img
+                                  src={product.images[0]}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-8 h-8 text-muted-foreground" />
+                                </div>
+                              )}
+                              {product.product_type === 'digital' && (
+                                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-blue-500 text-white text-xs font-medium">
+                                  Digital
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Product Info */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-foreground truncate">
+                                {product.name}
+                              </h3>
+                              {product.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                  {product.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-primary font-bold">
+                                  {product.price.toFixed(2)} π
+                                </span>
+                                {product.compare_at_price && (
+                                  <span className="text-muted-foreground line-through text-sm">
+                                    {product.compare_at_price.toFixed(2)} π
+                                  </span>
+                                )}
+                                {product.inventory_count !== null && (
+                                  <span className="text-xs text-muted-foreground">
+                                    • Stock: {product.inventory_count}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditProduct(product)}
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                <span className="hidden sm:inline">Edit</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteProduct(product.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
 

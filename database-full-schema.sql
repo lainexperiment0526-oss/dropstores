@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     digital_file_url TEXT,
     download_limit INTEGER DEFAULT 3,
     download_count INTEGER DEFAULT 0,
+    has_variants BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
