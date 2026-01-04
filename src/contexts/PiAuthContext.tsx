@@ -49,7 +49,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       network: 'mainnet',
       apiUrl: 'https://api.minepi.com'
     });
-    });
     
     initPiSdk(isSandbox).then((initialized) => {
       if (initialized) {

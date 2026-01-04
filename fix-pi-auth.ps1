@@ -33,25 +33,28 @@ $serviceKeyLine = ($envContent -split '\n' | Where-Object { $_ -like '*VITE_SUPA
 if ($serviceKeyLine) {
     $correctKey = ($serviceKeyLine -split '=')[1].Trim('"')
     if ($correctKey.StartsWith("eyJ")) {
-    Write-Host "✅ Found correct service role key format" -ForegroundColor Green
-    
-    # Check if it's being used correctly in supabase/.env
-    $supabaseEnvPath = "supabase\.env"
-    if (Test-Path $supabaseEnvPath) {
-        $supabaseEnvContent = Get-Content $supabaseEnvPath -Raw
-        if ($supabaseEnvContent -match 'SUPABASE_SERVICE_ROLE_KEY=sb_secret_') {
-            Write-Host "⚠️  Supabase .env has incorrect service key format" -ForegroundColor Yellow
-            Write-Host "Fixing supabase/.env with correct service role key..." -ForegroundColor Cyan
-            
-            # Update supabase/.env with correct key
-            $newSupabaseEnv = $supabaseEnvContent -replace 'SUPABASE_SERVICE_ROLE_KEY=sb_secret_.*', "SUPABASE_SERVICE_ROLE_KEY=$correctKey"
-            $newSupabaseEnv = $newSupabaseEnv -replace 'MY_SUPABASE_SERVICE_ROLE_KEY=sb_secret_.*', "MY_SUPABASE_SERVICE_ROLE_KEY=$correctKey"
-            
-            Set-Content -Path $supabaseEnvPath -Value $newSupabaseEnv
-            Write-Host "✅ Updated supabase/.env with correct service role key" -ForegroundColor Green
-        } else {
-            Write-Host "✅ Supabase .env already has correct format" -ForegroundColor Green
+        Write-Host "✅ Found correct service role key format" -ForegroundColor Green
+        
+        # Check if it's being used correctly in supabase/.env
+        $supabaseEnvPath = "supabase\.env"
+        if (Test-Path $supabaseEnvPath) {
+            $supabaseEnvContent = Get-Content $supabaseEnvPath -Raw
+            if ($supabaseEnvContent -match 'SUPABASE_SERVICE_ROLE_KEY=sb_secret_') {
+                Write-Host "⚠️  Supabase .env has incorrect service key format" -ForegroundColor Yellow
+                Write-Host "Fixing supabase/.env with correct service role key..." -ForegroundColor Cyan
+                
+                # Update supabase/.env with correct key
+                $newSupabaseEnv = $supabaseEnvContent -replace 'SUPABASE_SERVICE_ROLE_KEY=sb_secret_.*', "SUPABASE_SERVICE_ROLE_KEY=$correctKey"
+                $newSupabaseEnv = $newSupabaseEnv -replace 'MY_SUPABASE_SERVICE_ROLE_KEY=sb_secret_.*', "MY_SUPABASE_SERVICE_ROLE_KEY=$correctKey"
+                
+                Set-Content -Path $supabaseEnvPath -Value $newSupabaseEnv
+                Write-Host "✅ Updated supabase/.env with correct service role key" -ForegroundColor Green
+            } else {
+                Write-Host "✅ Supabase .env already has correct format" -ForegroundColor Green
+            }
         }
+    } else {
+        Write-Host "❌ Invalid service role key format" -ForegroundColor Red
     }
 } else {
     Write-Host "❌ No valid service role key found in main .env file" -ForegroundColor Red
