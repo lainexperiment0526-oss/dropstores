@@ -302,7 +302,7 @@ export function PaymentModal({
                       Authenticating...
                     </>
                   ) : (
-                    'Authenticate with Pi'
+                    'Pi Auth Sign In'
                   )}
                 </Button>
               )}

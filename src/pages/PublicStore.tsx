@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { PaymentModal, OrderForm } from '@/components/store/PaymentModal';
 import { StoreReportModal } from '@/components/store/StoreReportModal';
+import { StoreThemeCustomizer } from '@/components/store/StoreThemeCustomizer';
 import { createPiPayment, initPiSdk } from '@/lib/pi-sdk';
 import { RewardedAdButton } from '@/components/ads/RewardedAdButton';
 import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
@@ -21,6 +22,18 @@ import {
   Mail,
   Phone,
   MapPin,
+  Eye,
+  Settings,
+  Palette,
+  Heart,
+  Repeat2,
+  Award,
+  FileText,
+  Facebook,
+  Instagram,
+  Twitter,
+  Music,
+  AlertCircle,
 } from 'lucide-react';
 import {
   Sheet,
@@ -38,11 +51,41 @@ interface StoreData {
   logo_url: string | null;
   banner_url: string | null;
   primary_color: string | null;
+  secondary_color: string | null;
   contact_email: string | null;
   contact_phone: string | null;
   address: string | null;
   payout_wallet: string | null;
   store_type: string | null;
+  // Theme customization fields
+  font_heading?: string | null;
+  font_body?: string | null;
+  layout_style?: string | null;
+  header_style?: string | null;
+  footer_style?: string | null;
+  show_announcement_bar?: boolean;
+  announcement_text?: string | null;
+  announcement_link?: string | null;
+  social_facebook?: string | null;
+  social_instagram?: string | null;
+  social_twitter?: string | null;
+  social_tiktok?: string | null;
+  about_page?: string | null;
+  contact_page?: string | null;
+  shipping_policy?: string | null;
+  refund_policy?: string | null;
+  privacy_policy?: string | null;
+  terms_of_service?: string | null;
+  show_product_reviews?: boolean;
+  enable_wishlist?: boolean;
+  enable_compare?: boolean;
+  products_per_page?: number;
+  show_stock_count?: boolean;
+  show_sold_count?: boolean;
+  hero_title?: string | null;
+  hero_subtitle?: string | null;
+  hero_button_text?: string;
+  hero_button_link?: string | null;
 }
 
 interface Product {
@@ -77,6 +120,7 @@ export default function PublicStore() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [productViewCount, setProductViewCount] = useState(0);
+  const [showCustomizer, setShowCustomizer] = useState(false);
 
   useEffect(() => {
     initPiSdk(false); // Mainnet mode for production
@@ -555,6 +599,81 @@ export default function PublicStore() {
         </section>
       )}
 
+      {/* Hero Section */}
+      {store.hero_title && (
+        <section className="py-16 px-4" style={{ backgroundColor: store.primary_color }}>
+          <div className="container mx-auto max-w-4xl text-center text-white">
+            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
+              {store.hero_title}
+            </h1>
+            {store.hero_subtitle && (
+              <p className="text-lg md:text-xl mb-8 opacity-90">
+                {store.hero_subtitle}
+              </p>
+            )}
+            {store.hero_button_text && store.hero_button_link && (
+              <Button
+                size="lg"
+                asChild
+                className="bg-white text-foreground hover:bg-gray-100"
+              >
+                <Link to={store.hero_button_link}>
+                  {store.hero_button_text}
+                </Link>
+              </Button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Store Features Section */}
+      {(store.show_product_reviews || store.enable_wishlist || store.enable_compare || store.show_stock_count || store.show_sold_count) && (
+        <section className="py-12 px-4 bg-muted/50 border-y border-border">
+          <div className="container mx-auto">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-8 text-center">
+              Store Features
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {store.show_product_reviews && (
+                <Card className="text-center p-4">
+                  <Award className="w-8 h-8 mx-auto mb-2" style={{ color: store.primary_color }} />
+                  <h3 className="font-semibold text-foreground">Product Reviews</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Customer reviews</p>
+                </Card>
+              )}
+              {store.enable_wishlist && (
+                <Card className="text-center p-4">
+                  <Heart className="w-8 h-8 mx-auto mb-2" style={{ color: store.primary_color }} />
+                  <h3 className="font-semibold text-foreground">Wishlist</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Save favorites</p>
+                </Card>
+              )}
+              {store.enable_compare && (
+                <Card className="text-center p-4">
+                  <Repeat2 className="w-8 h-8 mx-auto mb-2" style={{ color: store.primary_color }} />
+                  <h3 className="font-semibold text-foreground">Compare</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Compare products</p>
+                </Card>
+              )}
+              {store.show_stock_count && (
+                <Card className="text-center p-4">
+                  <Package className="w-8 h-8 mx-auto mb-2" style={{ color: store.primary_color }} />
+                  <h3 className="font-semibold text-foreground">Stock</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Availability shown</p>
+                </Card>
+              )}
+              {store.show_sold_count && (
+                <Card className="text-center p-4">
+                  <ShoppingCart className="w-8 h-8 mx-auto mb-2" style={{ color: store.primary_color }} />
+                  <h3 className="font-semibold text-foreground">Popular</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Sales count shown</p>
+                </Card>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Products */}
       <main className="container mx-auto px-4 py-12">
         <h2 className="text-2xl font-display font-bold text-foreground mb-8">
@@ -616,14 +735,24 @@ export default function PublicStore() {
                         </span>
                       )}
                     </div>
-                    <Button
-                      size="sm"
-                      style={{ backgroundColor: primaryColor }}
-                      onClick={e => { e.stopPropagation(); addToCart(product); }}
-                      className="px-2 md:px-3"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={e => { e.stopPropagation(); setSelectedProduct(product); setProductViewCount(prev => prev + 1); }}
+                        className="px-2 md:px-3"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        style={{ backgroundColor: primaryColor }}
+                        onClick={e => { e.stopPropagation(); addToCart(product); }}
+                        className="px-2 md:px-3"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -701,6 +830,195 @@ export default function PublicStore() {
         onSubmit={handleSubmitOrder}
         submitting={submitting}
       />
+
+      {/* About Section */}
+      {store.about_page && (
+        <section className="py-12 px-4 bg-background border-b border-border">
+          <div className="container mx-auto max-w-3xl">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-6">About Us</h2>
+            <div className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {store.about_page}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Contact Section */}
+      {(store.contact_page || store.contact_email || store.contact_phone || store.address) && (
+        <section className="py-12 px-4 bg-muted/50 border-b border-border">
+          <div className="container mx-auto max-w-3xl">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-8">Contact Us</h2>
+            <div className="space-y-4">
+              {store.contact_page && (
+                <div className="text-muted-foreground whitespace-pre-wrap leading-relaxed mb-6">
+                  {store.contact_page}
+                </div>
+              )}
+              <div className="grid md:grid-cols-3 gap-6">
+                {store.contact_email && (
+                  <div className="flex items-start gap-3">
+                    <Mail className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: primaryColor }} />
+                    <div>
+                      <p className="font-medium text-foreground text-sm">Email</p>
+                      <a href={`mailto:${store.contact_email}`} className="text-muted-foreground hover:text-foreground transition-colors">
+                        {store.contact_email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {store.contact_phone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: primaryColor }} />
+                    <div>
+                      <p className="font-medium text-foreground text-sm">Phone</p>
+                      <a href={`tel:${store.contact_phone}`} className="text-muted-foreground hover:text-foreground transition-colors">
+                        {store.contact_phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {store.address && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 mt-1 flex-shrink-0" style={{ color: primaryColor }} />
+                    <div>
+                      <p className="font-medium text-foreground text-sm">Address</p>
+                      <p className="text-muted-foreground">{store.address}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Social Media Section */}
+      {(store.social_facebook || store.social_instagram || store.social_twitter || store.social_tiktok) && (
+        <section className="py-12 px-4 bg-background border-b border-border">
+          <div className="container mx-auto max-w-3xl">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-8 text-center">Follow Us</h2>
+            <div className="flex justify-center items-center gap-6 flex-wrap">
+              {store.social_facebook && (
+                <a
+                  href={store.social_facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 rounded-lg bg-muted hover:bg-primary/10 transition-colors"
+                  title="Follow on Facebook"
+                >
+                  <Facebook className="w-6 h-6" style={{ color: primaryColor }} />
+                </a>
+              )}
+              {store.social_instagram && (
+                <a
+                  href={store.social_instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 rounded-lg bg-muted hover:bg-primary/10 transition-colors"
+                  title="Follow on Instagram"
+                >
+                  <Instagram className="w-6 h-6" style={{ color: primaryColor }} />
+                </a>
+              )}
+              {store.social_twitter && (
+                <a
+                  href={store.social_twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 rounded-lg bg-muted hover:bg-primary/10 transition-colors"
+                  title="Follow on Twitter"
+                >
+                  <Twitter className="w-6 h-6" style={{ color: primaryColor }} />
+                </a>
+              )}
+              {store.social_tiktok && (
+                <a
+                  href={store.social_tiktok}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 rounded-lg bg-muted hover:bg-primary/10 transition-colors"
+                  title="Follow on TikTok"
+                >
+                  <Music className="w-6 h-6" style={{ color: primaryColor }} />
+                </a>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Policies Section */}
+      {(store.shipping_policy || store.refund_policy || store.privacy_policy || store.terms_of_service) && (
+        <section className="py-12 px-4 bg-muted/50 border-b border-border">
+          <div className="container mx-auto max-w-3xl">
+            <h2 className="text-2xl font-display font-bold text-foreground mb-8">Store Policies</h2>
+            <div className="space-y-8">
+              {store.shipping_policy && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" style={{ color: primaryColor }} />
+                    Shipping Policy
+                  </h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed text-sm">
+                    {store.shipping_policy}
+                  </p>
+                </div>
+              )}
+              {store.refund_policy && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" style={{ color: primaryColor }} />
+                    Refund Policy
+                  </h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed text-sm">
+                    {store.refund_policy}
+                  </p>
+                </div>
+              )}
+              {store.privacy_policy && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" style={{ color: primaryColor }} />
+                    Privacy Policy
+                  </h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed text-sm">
+                    {store.privacy_policy}
+                  </p>
+                </div>
+              )}
+              {store.terms_of_service && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" style={{ color: primaryColor }} />
+                    Terms of Service
+                  </h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed text-sm">
+                    {store.terms_of_service}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Announcement Bar */}
+      {store.show_announcement_bar && store.announcement_text && (
+        <section className="py-3 px-4 bg-muted border-b border-border">
+          <div className="container mx-auto">
+            <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: primaryColor }} />
+              {store.announcement_link ? (
+                <a href={store.announcement_link} className="hover:underline font-medium">
+                  {store.announcement_text}
+                </a>
+              ) : (
+                <span>{store.announcement_text}</span>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border bg-card py-8">

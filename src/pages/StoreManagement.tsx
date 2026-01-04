@@ -461,8 +461,8 @@ export default function StoreManagement() {
           <div className="flex items-center justify-between h-16 gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <Link to="/dashboard" className="flex items-center gap-2 flex-shrink-0">
-                <div className="w-10 h-10 gradient-hero rounded-xl flex items-center justify-center">
-                  <Store className="w-5 h-5 text-primary-foreground" />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-transparent">
+                  <img src="https://i.ibb.co/rRN0sS7y/favicon.png" alt="App Logo" className="w-10 h-10 object-contain" />
                 </div>
                 <span className="text-xl font-display font-bold text-foreground hidden md:inline">
                   Drop Store

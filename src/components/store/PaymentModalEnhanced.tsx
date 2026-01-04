@@ -408,7 +408,7 @@ export function PaymentModalEnhanced({
                     Authenticating...
                   </>
                 ) : (
-                  'Authenticate with Pi'
+                  'Pi Auth Sign In'
                 )}
               </Button>
             </div>
