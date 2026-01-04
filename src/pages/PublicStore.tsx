@@ -168,25 +168,31 @@ export default function PublicStore() {
 
   // Apply theme colors
   useEffect(() => {
-    if (store) {
-      const root = document.documentElement;
-      // Apply CSS variables for theme colors
-      root.style.setProperty('--primary-color', store.primary_color || '#0EA5E9');
-      root.style.setProperty('--secondary-color', store.secondary_color || '#64748B');
-      root.style.setProperty('--heading-text-color', store.heading_text_color || '#000000');
-      root.style.setProperty('--body-text-color', store.body_text_color || '#333333');
-      root.style.setProperty('--hero-title-text-color', store.hero_title_text_color || '#FFFFFF');
-      root.style.setProperty('--hero-subtitle-text-color', store.hero_subtitle_text_color || '#E5E7EB');
-      root.style.setProperty('--announcement-bar-text-color', store.announcement_bar_text_color || '#FFFFFF');
-      
-      // Apply typography
-      if (store.font_heading) {
-        root.style.setProperty('--font-heading', store.font_heading);
-      }
-      if (store.font_body) {
-        root.style.setProperty('--font-body', store.font_body);
-      }
-    }
+    const root = document.documentElement;
+    const primary = store?.primary_color || '#0EA5E9';
+    const secondary = store?.secondary_color || '#64748B';
+    const headingColor = store?.heading_text_color || '#000000';
+    const bodyColor = store?.body_text_color || '#333333';
+    const heroTitleColor = store?.hero_title_text_color || '#FFFFFF';
+    const heroSubtitleColor = store?.hero_subtitle_text_color || '#E5E7EB';
+    const announcementColor = store?.announcement_bar_text_color || '#FFFFFF';
+    const headingFont = store?.font_heading || 'Inter';
+    const bodyFont = store?.font_body || 'Inter';
+
+    // Apply CSS variables for theme colors so shadcn text utilities pick them up
+    root.style.setProperty('--primary-color', primary);
+    root.style.setProperty('--secondary-color', secondary);
+    root.style.setProperty('--heading-text-color', headingColor);
+    root.style.setProperty('--body-text-color', bodyColor);
+    root.style.setProperty('--hero-title-text-color', heroTitleColor);
+    root.style.setProperty('--hero-subtitle-text-color', heroSubtitleColor);
+    root.style.setProperty('--announcement-bar-text-color', announcementColor);
+    root.style.setProperty('--foreground', headingColor);
+    root.style.setProperty('--muted-foreground', bodyColor);
+
+    // Apply typography defaults
+    root.style.setProperty('--font-heading', headingFont);
+    root.style.setProperty('--font-body', bodyFont);
   }, [store]);
 
   const fetchStore = async () => {
@@ -514,13 +520,15 @@ export default function PublicStore() {
   const heroTitleTextColor = store?.hero_title_text_color || '#FFFFFF';
   const heroSubtitleTextColor = store?.hero_subtitle_text_color || '#E5E7EB';
   const announcementBarTextColor = store?.announcement_bar_text_color || '#FFFFFF';
+  const headingFont = store?.font_heading || 'Inter';
+  const bodyFont = store?.font_body || 'Inter';
 
   return (
     <>
       {/* Show interstitial ad every 5 product views */}
       <InterstitialAdTrigger actionCount={productViewCount} showEvery={5} delay={1500} />
       
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background" style={{ color: bodyTextColor, fontFamily: bodyFont }}>
         {/* Announcement Bar - Top Priority */}
         {store.show_announcement_bar && store.announcement_text && (
           <div className="py-3 px-4 bg-muted border-b border-border">
@@ -703,7 +711,7 @@ export default function PublicStore() {
           style={{ backgroundColor: `${primaryColor}08` }}
         >
           <div className="container mx-auto max-w-3xl text-center">
-            <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
+            <p className="text-base md:text-lg text-muted-foreground leading-relaxed" style={{ color: bodyTextColor, fontFamily: bodyFont }}>
               {store.description}
             </p>
           </div>
@@ -732,14 +740,14 @@ export default function PublicStore() {
           <div className="container mx-auto max-w-4xl relative z-10 text-center">
             <h1 
               className="text-5xl md:text-6xl font-display font-bold mb-6 leading-tight"
-              style={{ color: heroTitleTextColor }}
+              style={{ color: heroTitleTextColor, fontFamily: headingFont }}
             >
               {store.hero_title}
             </h1>
             {store.hero_subtitle && (
               <p 
                 className="text-xl md:text-2xl mb-10 font-light"
-                style={{ color: heroSubtitleTextColor }}
+                style={{ color: heroSubtitleTextColor, fontFamily: bodyFont }}
               >
                 {store.hero_subtitle}
               </p>
@@ -763,7 +771,10 @@ export default function PublicStore() {
       {(store.show_product_reviews || store.enable_wishlist || store.enable_compare || store.show_stock_count || store.show_sold_count) && (
         <section className="py-16 px-4 bg-muted/30 border-b border-border">
           <div className="container mx-auto">
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-12 text-center">
+            <h2 
+              className="text-3xl md:text-4xl font-display font-bold text-foreground mb-12 text-center"
+              style={{ color: headingTextColor, fontFamily: headingFont }}
+            >
               Why Shop With Us
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-4">
@@ -814,7 +825,7 @@ export default function PublicStore() {
             <div>
               <h2 
                 className="text-3xl md:text-4xl font-display font-bold"
-                style={{ color: headingTextColor }}
+                style={{ color: headingTextColor, fontFamily: headingFont }}
               >
                 Shop Products
               </h2>
@@ -871,14 +882,14 @@ export default function PublicStore() {
                 <CardContent className="p-4">
                   <h3 
                     className="font-semibold mb-2 text-sm md:text-base line-clamp-2 group-hover:text-primary transition-colors"
-                    style={{ color: headingTextColor }}
+                    style={{ color: headingTextColor, fontFamily: headingFont }}
                   >
                     {product.name}
                   </h3>
                   {product.description && (
                     <p 
                       className="text-xs md:text-sm mb-3 line-clamp-2 hidden sm:block"
-                      style={{ color: bodyTextColor }}
+                      style={{ color: bodyTextColor, fontFamily: bodyFont }}
                     >
                       {product.description}
                     </p>

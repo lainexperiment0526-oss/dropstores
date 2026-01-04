@@ -9,7 +9,8 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [christmasTheme, setChristmasTheme] = useState(() => {
     const saved = localStorage.getItem('dropstore-christmas-theme');
-    return saved !== null ? JSON.parse(saved) : true;
+    // Default to standard theme; user can opt-in to Christmas mode
+    return saved !== null ? JSON.parse(saved) : false;
   });
 
   const toggleChristmasTheme = () => {

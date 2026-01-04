@@ -11,7 +11,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isExiting, setIsExiting] = useState(false);
   const [enableChristmasTheme, setEnableChristmasTheme] = useState(() => {
     const saved = localStorage.getItem('dropstore-christmas-theme');
-    return saved !== null ? JSON.parse(saved) : true;
+    // Default to standard splash; user can opt-in to Christmas mode
+    return saved !== null ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {

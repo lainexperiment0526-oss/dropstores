@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -97,6 +97,11 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
+  // Keep local form state in sync when the parent provides fresh theme data
+  useEffect(() => {
+    setLocalTheme(theme);
+  }, [theme]);
+
   const handleChange = (field: keyof StoreTheme, value: any) => {
     setLocalTheme(prev => ({ ...prev, [field]: value }));
   };
@@ -104,52 +109,61 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
   const handleSave = async () => {
     setSaving(true);
     try {
+      const themePayload: StoreTheme = {
+        ...localTheme,
+        heading_text_color: localTheme.heading_text_color || '#000000',
+        body_text_color: localTheme.body_text_color || '#333333',
+        hero_title_text_color: localTheme.hero_title_text_color || '#FFFFFF',
+        hero_subtitle_text_color: localTheme.hero_subtitle_text_color || '#E5E7EB',
+        announcement_bar_text_color: localTheme.announcement_bar_text_color || '#FFFFFF',
+      };
+
       const { error } = await supabase
         .from('stores')
         .update({
-          primary_color: localTheme.primary_color,
-          secondary_color: localTheme.secondary_color,
-          font_heading: localTheme.font_heading,
-          font_body: localTheme.font_body,
-          layout_style: localTheme.layout_style,
-          header_style: localTheme.header_style,
-          footer_style: localTheme.footer_style,
-          show_announcement_bar: localTheme.show_announcement_bar,
-          announcement_text: localTheme.announcement_text,
-          announcement_link: localTheme.announcement_link,
-          heading_text_color: localTheme.heading_text_color,
-          body_text_color: localTheme.body_text_color,
-          hero_title_text_color: localTheme.hero_title_text_color,
-          hero_subtitle_text_color: localTheme.hero_subtitle_text_color,
-          announcement_bar_text_color: localTheme.announcement_bar_text_color,
-          social_facebook: localTheme.social_facebook,
-          social_instagram: localTheme.social_instagram,
-          social_twitter: localTheme.social_twitter,
-          social_tiktok: localTheme.social_tiktok,
-          about_page: localTheme.about_page,
-          contact_page: localTheme.contact_page,
-          shipping_policy: localTheme.shipping_policy,
-          refund_policy: localTheme.refund_policy,
-          privacy_policy: localTheme.privacy_policy,
-          terms_of_service: localTheme.terms_of_service,
-          show_product_reviews: localTheme.show_product_reviews,
-          enable_wishlist: localTheme.enable_wishlist,
-          enable_compare: localTheme.enable_compare,
-          products_per_page: localTheme.products_per_page,
-          show_stock_count: localTheme.show_stock_count,
-          show_sold_count: localTheme.show_sold_count,
-          hero_title: localTheme.hero_title,
-          hero_subtitle: localTheme.hero_subtitle,
-          hero_button_text: localTheme.hero_button_text,
-          hero_button_link: localTheme.hero_button_link,
-          banner_url: localTheme.banner_url,
-          logo_url: localTheme.logo_url,
+          primary_color: themePayload.primary_color,
+          secondary_color: themePayload.secondary_color,
+          font_heading: themePayload.font_heading,
+          font_body: themePayload.font_body,
+          layout_style: themePayload.layout_style,
+          header_style: themePayload.header_style,
+          footer_style: themePayload.footer_style,
+          show_announcement_bar: themePayload.show_announcement_bar,
+          announcement_text: themePayload.announcement_text,
+          announcement_link: themePayload.announcement_link,
+          heading_text_color: themePayload.heading_text_color,
+          body_text_color: themePayload.body_text_color,
+          hero_title_text_color: themePayload.hero_title_text_color,
+          hero_subtitle_text_color: themePayload.hero_subtitle_text_color,
+          announcement_bar_text_color: themePayload.announcement_bar_text_color,
+          social_facebook: themePayload.social_facebook,
+          social_instagram: themePayload.social_instagram,
+          social_twitter: themePayload.social_twitter,
+          social_tiktok: themePayload.social_tiktok,
+          about_page: themePayload.about_page,
+          contact_page: themePayload.contact_page,
+          shipping_policy: themePayload.shipping_policy,
+          refund_policy: themePayload.refund_policy,
+          privacy_policy: themePayload.privacy_policy,
+          terms_of_service: themePayload.terms_of_service,
+          show_product_reviews: themePayload.show_product_reviews,
+          enable_wishlist: themePayload.enable_wishlist,
+          enable_compare: themePayload.enable_compare,
+          products_per_page: themePayload.products_per_page,
+          show_stock_count: themePayload.show_stock_count,
+          show_sold_count: themePayload.show_sold_count,
+          hero_title: themePayload.hero_title,
+          hero_subtitle: themePayload.hero_subtitle,
+          hero_button_text: themePayload.hero_button_text,
+          hero_button_link: themePayload.hero_button_link,
+          banner_url: themePayload.banner_url,
+          logo_url: themePayload.logo_url,
         })
         .eq('id', storeId);
 
       if (error) throw error;
 
-      onUpdate(localTheme);
+      onUpdate(themePayload);
       toast({ title: 'Theme saved', description: 'Your store theme has been updated.' });
     } catch (error) {
       console.error('Error saving theme:', error);
