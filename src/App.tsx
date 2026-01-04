@@ -22,6 +22,7 @@ import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
 import AdminPayouts from "./pages/AdminPayouts";
+import AdminReports from "./pages/AdminReports";
 import AdminMrwain from "./pages/AdminMrwain";
 import ExternalRedirect from "./pages/ExternalRedirect";
 import Privacy from "./pages/Privacy";
@@ -67,6 +68,7 @@ const App = () => {
                 <Route path="/gdpr" element={<GDPR />} />
                                 <Route path="/pi-test" element={<PiAuthTest />} />
                 <Route path="/admin-payouts" element={<AdminPayouts />} />
+                <Route path="/admin-reports" element={<AdminReports />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin-mrwain" element={<AdminMrwain />} />
                 {/* Privacy Policy and Terms of Service local pages */}

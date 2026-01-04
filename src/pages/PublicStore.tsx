@@ -42,6 +42,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 interface StoreData {
   id: string;
@@ -625,10 +631,10 @@ export default function PublicStore() {
       {store.hero_title && (
         <section 
           className="relative py-24 px-4 overflow-hidden"
-          style={{ backgroundColor: store.primary_color }}
+          style={{ backgroundColor: store.banner_url ? 'transparent' : store.primary_color }}
         >
           {store.banner_url && (
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0">
               <img 
                 src={store.banner_url} 
                 alt="Hero Background" 
@@ -794,12 +800,12 @@ export default function PublicStore() {
                   </div>
 
                   {/* Stock Status */}
-                  {store.show_stock_count && product.stock_quantity !== null && (
+                  {store.show_stock_count && product.inventory_count !== null && (
                     <div className="text-xs mb-3">
-                      {product.stock_quantity > 10 ? (
+                      {product.inventory_count > 10 ? (
                         <span className="text-green-600 font-medium">In Stock</span>
-                      ) : product.stock_quantity > 0 ? (
-                        <span className="text-amber-600 font-medium">Only {product.stock_quantity} left</span>
+                      ) : product.inventory_count > 0 ? (
+                        <span className="text-amber-600 font-medium">Only {product.inventory_count} left</span>
                       ) : (
                         <span className="text-destructive font-medium">Out of Stock</span>
                       )}
@@ -1045,52 +1051,68 @@ export default function PublicStore() {
         <section className="py-16 px-4 bg-muted/30 border-b border-border">
           <div className="container mx-auto max-w-3xl">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-12 text-center">Store Policies</h2>
-            <div className="space-y-6">
+            <Accordion type="single" collapsible className="space-y-4">
               {store.shipping_policy && (
-                <div className="bg-white rounded-lg p-8 shadow-sm border border-border">
-                  <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" style={{ color: primaryColor }} />
-                    Shipping Policy
-                  </h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {store.shipping_policy}
-                  </p>
-                </div>
+                <AccordionItem value="shipping" className="bg-white rounded-lg border border-border shadow-sm">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="flex items-center gap-2 text-left">
+                      <FileText className="w-5 h-5 flex-shrink-0" style={{ color: primaryColor }} />
+                      <span className="text-lg font-display font-semibold text-foreground">Shipping Policy</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {store.shipping_policy}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
               )}
               {store.refund_policy && (
-                <div className="bg-white rounded-lg p-8 shadow-sm border border-border">
-                  <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" style={{ color: primaryColor }} />
-                    Refund & Return Policy
-                  </h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {store.refund_policy}
-                  </p>
-                </div>
+                <AccordionItem value="refund" className="bg-white rounded-lg border border-border shadow-sm">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="flex items-center gap-2 text-left">
+                      <FileText className="w-5 h-5 flex-shrink-0" style={{ color: primaryColor }} />
+                      <span className="text-lg font-display font-semibold text-foreground">Refund & Return Policy</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {store.refund_policy}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
               )}
               {store.privacy_policy && (
-                <div className="bg-white rounded-lg p-8 shadow-sm border border-border">
-                  <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" style={{ color: primaryColor }} />
-                    Privacy Policy
-                  </h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {store.privacy_policy}
-                  </p>
-                </div>
+                <AccordionItem value="privacy" className="bg-white rounded-lg border border-border shadow-sm">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="flex items-center gap-2 text-left">
+                      <FileText className="w-5 h-5 flex-shrink-0" style={{ color: primaryColor }} />
+                      <span className="text-lg font-display font-semibold text-foreground">Privacy Policy</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {store.privacy_policy}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
               )}
               {store.terms_of_service && (
-                <div className="bg-white rounded-lg p-8 shadow-sm border border-border">
-                  <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" style={{ color: primaryColor }} />
-                    Terms of Service
-                  </h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {store.terms_of_service}
-                  </p>
-                </div>
+                <AccordionItem value="terms" className="bg-white rounded-lg border border-border shadow-sm">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="flex items-center gap-2 text-left">
+                      <FileText className="w-5 h-5 flex-shrink-0" style={{ color: primaryColor }} />
+                      <span className="text-lg font-display font-semibold text-foreground">Terms of Service</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {store.terms_of_service}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
               )}
-            </div>
+            </Accordion>
           </div>
         </section>
       )}

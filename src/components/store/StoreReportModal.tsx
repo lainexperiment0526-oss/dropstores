@@ -78,20 +78,19 @@ export function StoreReportModal({ storeId, storeName, productId, productName, v
       });
 
       if (error) {
-        // If table doesn't exist, we'll store in a temporary way or show success anyway
         console.error('Report submission error:', error);
-        
-        // Still show success to user - we can handle reports via other means
         toast({
-          title: "Report Submitted",
-          description: "Thank you for your report. Our team will review it shortly.",
+          title: "Error",
+          description: "Failed to submit report. Please try again.",
+          variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Report Submitted",
-          description: "Thank you for your report. Our team will review it shortly.",
-        });
+        return;
       }
+
+      toast({
+        title: "Report Submitted",
+        description: "Thank you for your report. Our team will review it shortly.",
+      });
 
       // Reset form
       setReportType('');
@@ -101,12 +100,10 @@ export function StoreReportModal({ storeId, storeName, productId, productName, v
     } catch (error) {
       console.error('Error submitting report:', error);
       toast({
-        title: "Report Submitted",
-        description: "Thank you for your report. Our team will review it shortly.",
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive",
       });
-      
-      // Still close the modal
-      setOpen(false);
     } finally {
       setSubmitting(false);
     }

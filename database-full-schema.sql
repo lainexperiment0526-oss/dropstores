@@ -427,6 +427,32 @@ CREATE TABLE IF NOT EXISTS public.file_uploads (
 );
 
 -- =============================================
+-- REPORTS & MODERATION
+-- =============================================
+
+-- Store Reports
+CREATE TABLE IF NOT EXISTS public.store_reports (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    store_id UUID NOT NULL,
+    product_id UUID,
+    report_type TEXT NOT NULL CHECK (report_type IN ('illegal', 'fraud', 'inappropriate', 'counterfeit', 'copyright', 'misleading', 'other')),
+    description TEXT NOT NULL,
+    reporter_email TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed', 'resolved', 'dismissed')),
+    admin_notes TEXT,
+    reviewed_by UUID,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Create indexes for reports
+CREATE INDEX IF NOT EXISTS idx_store_reports_store_id ON public.store_reports(store_id);
+CREATE INDEX IF NOT EXISTS idx_store_reports_product_id ON public.store_reports(product_id);
+CREATE INDEX IF NOT EXISTS idx_store_reports_status ON public.store_reports(status);
+CREATE INDEX IF NOT EXISTS idx_store_reports_created_at ON public.store_reports(created_at DESC);
+
+-- =============================================
 -- FOREIGN KEY CONSTRAINTS
 -- =============================================
 
@@ -652,6 +678,25 @@ BEGIN
     END IF;
 END $$;
 
+-- Store Reports
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'store_reports_store_id_fkey') THEN
+        ALTER TABLE public.store_reports ADD CONSTRAINT store_reports_store_id_fkey 
+        FOREIGN KEY (store_id) REFERENCES public.stores(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'store_reports_product_id_fkey') THEN
+        ALTER TABLE public.store_reports ADD CONSTRAINT store_reports_product_id_fkey 
+        FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'store_reports_reviewed_by_fkey') THEN
+        ALTER TABLE public.store_reports ADD CONSTRAINT store_reports_reviewed_by_fkey 
+        FOREIGN KEY (reviewed_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
 -- =============================================
 -- INDEXES
 -- =============================================
@@ -775,6 +820,13 @@ BEGIN
     END IF;
 END $$;
 
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_store_reports_updated_at') THEN
+        CREATE TRIGGER update_store_reports_updated_at BEFORE UPDATE ON public.store_reports FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    END IF;
+END $$;
+
 -- Auto-create profile on signup
 DO $$
 BEGIN
@@ -809,6 +861,7 @@ ALTER TABLE public.store_analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.merchant_sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.merchant_payouts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.file_uploads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_reports ENABLE ROW LEVEL SECURITY;
 
 -- =============================================
 -- RLS POLICIES
@@ -1039,6 +1092,21 @@ CREATE POLICY "Users can upload files" ON public.file_uploads FOR INSERT WITH CH
 
 DROP POLICY IF EXISTS "Users can delete their own files" ON public.file_uploads;
 CREATE POLICY "Users can delete their own files" ON public.file_uploads FOR DELETE USING (auth.uid() = user_id);
+
+-- Store Reports
+DROP POLICY IF EXISTS "Anyone can submit reports" ON public.store_reports;
+CREATE POLICY "Anyone can submit reports" ON public.store_reports FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Store owners can view reports about their store" ON public.store_reports;
+CREATE POLICY "Store owners can view reports about their store" ON public.store_reports FOR SELECT USING (
+    EXISTS (SELECT 1 FROM stores WHERE stores.id = store_reports.store_id AND stores.owner_id = auth.uid())
+);
+
+DROP POLICY IF EXISTS "Authenticated users can view all reports" ON public.store_reports;
+CREATE POLICY "Authenticated users can view all reports" ON public.store_reports FOR SELECT USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Authenticated users can update reports" ON public.store_reports;
+CREATE POLICY "Authenticated users can update reports" ON public.store_reports FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- =============================================
 -- STORAGE BUCKETS (Create in Supabase Dashboard)
