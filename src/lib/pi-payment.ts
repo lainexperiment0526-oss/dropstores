@@ -1,4 +1,4 @@
-/**
+ /**
  * Pi Network Payment Integration
  * Handles Pi wallet payment requests and verification
  * NOTE: Corrected to match actual Pi SDK API
