@@ -1,5 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
-import "./index.css";
+import "./index.css";import { runPiSetupVerification } from './lib/pi-config-verification.ts';
 
+// Run Pi Network setup verification in development mode
+if (import.meta.env.DEV) {
+  // Delay verification to allow console to be ready
+  setTimeout(runPiSetupVerification, 1000);
+}
 createRoot(document.getElementById("root")!).render(<App />);

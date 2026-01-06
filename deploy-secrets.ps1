@@ -31,7 +31,7 @@ Write-Host "2️⃣ Deploying secrets from supabase/.env..." -ForegroundColor Ye
 
 # Define the secrets to deploy
 $secrets = @{
-    "PI_API_KEY" = "rh1q6tdt5vedxokn5kpgzdexijslclqucsreranlshxwd7sib25rri7nmdobqwd0"
+    "PI_API_KEY" = "mj69bcvflcervamlbzgissqoxij6sxzr1k71wcuvdhcuwxtjmjinlgk0zfhz90y7"
     "SUPABASE_URL" = "https://kvqfnmdkxaclsnyuzkyp.supabase.co"
     "SUPABASE_SERVICE_ROLE_KEY" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2cWZubWRreGFjbHNueXV6a3lwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjE5MjU0NCwiZXhwIjoyMDgxNzY4NTQ0fQ.z6wgqg7RJMaTYX2AZUJdFUeqxF7o9n5MQO3vCfTjJ8"
     "MY_SUPABASE_URL" = "https://kvqfnmdkxaclsnyuzkyp.supabase.co"

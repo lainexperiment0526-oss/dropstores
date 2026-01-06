@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { usePiPayment } from '@/hooks/usePiPayment';
 import { SUBSCRIPTION_PLANS, STORE_TYPES, PlanType } from '@/lib/pi-sdk';
 import { supabase } from '@/integrations/supabase/client';
 import { RewardedAdButton } from '@/components/ads/RewardedAdButton';
-import { ArrowLeft, Check, Coins, Loader2, AlertCircle, Crown, Zap, Building2, Rocket, Store, Globe, Download, Gift } from 'lucide-react';
+import { ArrowLeft, Check, Coins, Loader2, AlertCircle, Crown, Zap, Building2, Rocket, Store, Globe, Download, Gift, CreditCard } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import TermsPrivacyModal from './TermsPrivacyModal';
@@ -23,6 +23,7 @@ interface CurrentSubscription {
 
 const Subscription = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { 
     isPiAvailable, 
@@ -38,6 +39,9 @@ const Subscription = () => {
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [isActivating, setIsActivating] = useState(false);
+  
+  // Get plan from URL parameter
+  const planFromUrl = searchParams.get('plan') as PlanType | null;
 
   // Fetch current subscription (reusable for refresh after payment)
   const fetchActiveSubscription = useCallback(async () => {
@@ -212,7 +216,28 @@ const Subscription = () => {
     }
   };
 
-  // Mock payment handler for testing
+  // Droppay payment handler
+  const handleDropPayPayment = (planType: PlanType) => {
+    const plan = SUBSCRIPTION_PLANS[planType];
+    const baseUrl = window.location.origin;
+    
+    // Redirect to Droppay payment
+    const dropPayUrl = `https://droppay.space/pay?` + new URLSearchParams({
+      amount: plan.amount.toString(),
+      currency: 'pi',
+      description: `Drop Store ${plan.name} Plan - ${plan.description}`,
+      success_url: `${baseUrl}/payment/droppay/success?plan=${planType}&payment_id={PAYMENT_ID}&amount={AMOUNT}&timestamp={TIMESTAMP}`,
+      cancel_url: `${baseUrl}/payment/droppay/cancel?plan=${planType}&payment_id={PAYMENT_ID}&reason={REASON}&timestamp={TIMESTAMP}`,
+      metadata: JSON.stringify({
+        plan_type: planType,
+        user_id: user?.id,
+        platform: 'dropstore'
+      })
+    });
+    
+    console.log('Redirecting to Droppay:', dropPayUrl);
+    window.location.href = dropPayUrl;
+  };
   const handleMockPayment = async (planType: PlanType) => {
     setIsActivating(true);
     setSelectedPlan(planType);
@@ -447,7 +472,18 @@ const Subscription = () => {
           {/* Subscription Plans Grid */}
           <div className="grid md:grid-cols-3 gap-8 mb-12">
           {/* Free Plan */}
-          <Card className={`relative ${isCurrentPlan('free') ? 'border-primary bg-primary/5' : ''}`}>
+          <Card className={`relative ${
+            isCurrentPlan('free') 
+              ? 'border-primary bg-primary/5' 
+              : planFromUrl === 'free'
+                ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                : ''
+          }`}>
+            {planFromUrl === 'free' && !isCurrentPlan('free') && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-blue-600 text-white">Recommended</Badge>
+              </div>
+            )}
             <CardHeader>
               <div className="flex items-center gap-2 mb-2">
                 {getPlanIcon('free')}
@@ -491,9 +527,23 @@ const Subscription = () => {
             </Card>
 
             {/* Basic Plan */}
-            <Card className={`relative border-2 transition-colors ${isCurrentPlan('basic') ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
+            <Card className={`relative border-2 transition-colors ${
+              isCurrentPlan('basic') 
+                ? 'border-primary bg-primary/5' 
+                : planFromUrl === 'basic'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'hover:border-primary/50'
+            }`}>
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-green-600 text-white">Best Value</Badge>
+                {planFromUrl === 'basic' && !isCurrentPlan('basic') && (
+                  <Badge className="bg-blue-600 text-white">Recommended</Badge>
+                )}
+                {isCurrentPlan('basic') && (
+                  <Badge className="bg-green-600 text-white">Current</Badge>
+                )}
+                {!planFromUrl && !isCurrentPlan('basic') && (
+                  <Badge className="bg-green-600 text-white">Best Value</Badge>
+                )}
               </div>
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
@@ -524,34 +574,59 @@ const Subscription = () => {
                   ))}
                 </ul>
               </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full" 
-                  variant={isCurrentPlan('basic') ? 'secondary' : 'outline'}
-                  onClick={() => handleSubscribe('basic')}
-                  disabled={isProcessing || isActivating || isCurrentPlan('basic')}
-                >
-                  {((isProcessing || isActivating) && selectedPlan === 'basic') ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : isCurrentPlan('basic') ? (
-                    'Current Plan'
-                  ) : (
-                    <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
-                    </>
-                  )}
-                </Button>
+              <CardFooter className="flex flex-col gap-2">
+                {!isCurrentPlan('basic') ? (
+                  <>
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => handleSubscribe('basic')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      {((isProcessing || isActivating) && selectedPlan === 'basic') ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Coins className="w-4 h-4 mr-2" />
+                          Pay with Pi Network
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      variant="secondary"
+                      onClick={() => handleDropPayPayment('basic')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay with Droppay
+                    </Button>
+                  </>
+                ) : (
+                  <Button className="w-full" variant="secondary" disabled>
+                    Current Plan
+                  </Button>
+                )}
               </CardFooter>
             </Card>
 
             {/* Grow Plan - Popular */}
-            <Card className={`relative border-2 ${isCurrentPlan('grow') ? 'border-primary bg-primary/5' : 'border-primary'}`}>
+            <Card className={`relative border-2 ${
+              isCurrentPlan('grow') 
+                ? 'border-primary bg-primary/5' 
+                : planFromUrl === 'grow'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'border-primary'
+            }`}>
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+                {planFromUrl === 'grow' && !isCurrentPlan('grow') ? (
+                  <Badge className="bg-blue-600 text-white">Recommended</Badge>
+                ) : (
+                  <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+                )}
               </div>
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
@@ -582,31 +657,57 @@ const Subscription = () => {
                   ))}
                 </ul>
               </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full gradient-hero" 
-                  onClick={() => handleSubscribe('grow')}
-                  disabled={isProcessing || isActivating || isCurrentPlan('grow')}
-                >
-                  {((isProcessing || isActivating) && selectedPlan === 'grow') ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Activating...
-                    </>
-                  ) : isCurrentPlan('grow') ? (
-                    'Current Plan'
-                  ) : (
-                    <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
-                    </>
-                  )}
-                </Button>
+              <CardFooter className="flex flex-col gap-2">
+                {!isCurrentPlan('grow') ? (
+                  <>
+                    <Button 
+                      className="w-full gradient-hero" 
+                      onClick={() => handleSubscribe('grow')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      {((isProcessing || isActivating) && selectedPlan === 'grow') ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Activating...
+                        </>
+                      ) : (
+                        <>
+                          <Coins className="w-4 h-4 mr-2" />
+                          Pay with Pi Network
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      variant="secondary"
+                      onClick={() => handleDropPayPayment('grow')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay with Droppay
+                    </Button>
+                  </>
+                ) : (
+                  <Button className="w-full gradient-hero" disabled>
+                    Current Plan
+                  </Button>
+                )}
               </CardFooter>
             </Card>
 
             {/* Advance Plan */}
-            <Card className={`relative border-2 transition-colors ${isCurrentPlan('advance') ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
+            <Card className={`relative border-2 transition-colors ${
+              isCurrentPlan('advance') 
+                ? 'border-primary bg-primary/5' 
+                : planFromUrl === 'advance'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'hover:border-primary/50'
+            }`}>
+              {planFromUrl === 'advance' && !isCurrentPlan('advance') && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-blue-600 text-white">Recommended</Badge>
+                </div>
+              )}
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   {getPlanIcon('advance')}
@@ -636,31 +737,57 @@ const Subscription = () => {
                   ))}
                 </ul>
               </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleSubscribe('advance')}
-                  disabled={isProcessing || isActivating || isCurrentPlan('advance')}
-                >
-                  {((isProcessing || isActivating) && selectedPlan === 'advance') ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Activating...
-                    </>
-                  ) : isCurrentPlan('advance') ? (
-                    'Current Plan'
-                  ) : (
-                    <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
-                    </>
-                  )}
-                </Button>
+              <CardFooter className="flex flex-col gap-2">
+                {!isCurrentPlan('advance') ? (
+                  <>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleSubscribe('advance')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      {((isProcessing || isActivating) && selectedPlan === 'advance') ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Activating...
+                        </>
+                      ) : (
+                        <>
+                          <Coins className="w-4 h-4 mr-2" />
+                          Pay with Pi Network
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      variant="secondary"
+                      onClick={() => handleDropPayPayment('advance')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay with Droppay
+                    </Button>
+                  </>
+                ) : (
+                  <Button className="w-full" disabled>
+                    Current Plan
+                  </Button>
+                )}
               </CardFooter>
             </Card>
 
             {/* Plus Plan */}
-            <Card className={`relative border-2 transition-colors ${isCurrentPlan('plus') ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
+            <Card className={`relative border-2 transition-colors ${
+              isCurrentPlan('plus') 
+                ? 'border-primary bg-primary/5' 
+                : planFromUrl === 'plus'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                  : 'hover:border-primary/50'
+            }`}>
+              {planFromUrl === 'plus' && !isCurrentPlan('plus') && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-blue-600 text-white">Recommended</Badge>
+                </div>
+              )}
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   {getPlanIcon('plus')}
@@ -690,26 +817,41 @@ const Subscription = () => {
                   ))}
                 </ul>
               </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleSubscribe('plus')}
-                  disabled={isProcessing || isActivating || isCurrentPlan('plus')}
-                >
-                  {((isProcessing || isActivating) && selectedPlan === 'plus') ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Activating...
-                    </>
-                  ) : isCurrentPlan('plus') ? (
-                    'Current Plan'
-                  ) : (
-                    <>
-                      <Coins className="w-4 h-4 mr-2" />
-                      Subscribe
-                    </>
-                  )}
-                </Button>
+              <CardFooter className="flex flex-col gap-2">
+                {!isCurrentPlan('plus') ? (
+                  <>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleSubscribe('plus')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      {((isProcessing || isActivating) && selectedPlan === 'plus') ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Activating...
+                        </>
+                      ) : (
+                        <>
+                          <Coins className="w-4 h-4 mr-2" />
+                          Pay with Pi Network
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      variant="secondary"
+                      onClick={() => handleDropPayPayment('plus')}
+                      disabled={isProcessing || isActivating}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay with Droppay
+                    </Button>
+                  </>
+                ) : (
+                  <Button className="w-full" disabled>
+                    Current Plan
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           </div>

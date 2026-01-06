@@ -35,6 +35,8 @@ import Support from "./pages/Support";
 import Help from "./pages/Help";
 import AboutPiSupplier from "./pages/AboutPiSupplier";
 import GDPR from "./pages/GDPR";
+import DropPaySuccess from "./pages/DropPaySuccess";
+import DropPayCancel from "./pages/DropPayCancel";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +73,8 @@ const App = () => {
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/redeem-gift-card" element={<RedeemGiftCard />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/payment/droppay/success" element={<DropPaySuccess />} />
+                <Route path="/payment/droppay/cancel" element={<DropPayCancel />} />
                 <Route path="/support" element={<Support />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/gdpr" element={<GDPR />} />

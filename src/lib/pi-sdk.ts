@@ -98,7 +98,7 @@ export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
     let attempts = 0;
     const maxAttempts = 50;
     
-    const initializeWhenReady = () => {
+    const initializeWhenReady = async () => {
       if (window.Pi) {
         // Official Pi SDK configuration - Force production mainnet
         const config = {
@@ -108,11 +108,24 @@ export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
         
         try {
           window.Pi.init(config);
+          
+          // Check for native features support (including ad network)
+          let nativeFeatures: string[] = [];
+          try {
+            if (window.Pi.nativeFeaturesList) {
+              nativeFeatures = await window.Pi.nativeFeaturesList();
+            }
+          } catch (err) {
+            console.log('Native features check not available in this browser version');
+          }
+          
           console.log('✓ Pi SDK initialized successfully:', {
             mode: 'mainnet',
             piNetwork: 'mainnet',
             environment: 'production',
             hasApiKey: !!import.meta.env.VITE_PI_API_KEY,
+            nativeFeatures,
+            adNetworkSupported: nativeFeatures.includes('ad_network'),
             timestamp: new Date().toISOString()
           });
           resolve(true);

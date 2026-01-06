@@ -30,7 +30,7 @@ const Pricing: React.FC = () => {
   };
 
   const handleGetStarted = (planId: string) => {
-    navigate('/subscription');
+    navigate(`/subscription?plan=${planId}`);
   };
 
   return (
