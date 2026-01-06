@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { secureConsole, getSafeEnvInfo, logConfigStatus } from './env-security';
 
 /**
  * Pi Network Configuration Verification
@@ -14,7 +15,7 @@ export interface ConfigVerification {
 }
 
 export const verifyPiConfiguration = (): ConfigVerification => {
-  console.log('🔍 Verifying Pi Network Configuration...');
+  secureConsole.log('🔍 Verifying Pi Network Configuration...');
   
   const config = {
     apiKey: !!import.meta.env.VITE_PI_API_KEY,
@@ -32,28 +33,30 @@ export const verifyPiConfiguration = (): ConfigVerification => {
   const apiKey = import.meta.env.VITE_PI_API_KEY;
   const validationKey = import.meta.env.VITE_PI_VALIDATION_KEY;
   
-  console.log('📋 Configuration Status:', {
-    'API Key': apiKey ? `${apiKey.substring(0, 12)}...` : '❌ Missing',
-    'Validation Key': validationKey ? `${validationKey.substring(0, 12)}...` : '❌ Missing',
-    'Network': config.network,
-    'Environment': config.environment,
+  // Use safe environment info instead of logging sensitive data
+  const safeEnvInfo = getSafeEnvInfo();
+  secureConsole.log('📋 Configuration Status:', {
+    'API Key': safeEnvInfo.hasApiKey ? '✅ Present' : '❌ Missing',
+    'Validation Key': safeEnvInfo.hasValidationKey ? '✅ Present' : '❌ Missing',
+    'Network': safeEnvInfo.network,
+    'Environment': safeEnvInfo.environment,
     'SDK URL': import.meta.env.VITE_PI_SDK_URL,
     'All Valid': config.allValid ? '✅' : '❌'
   });
   
   if (!config.allValid) {
-    console.error('❌ Pi Network configuration is incomplete!');
+    secureConsole.error('❌ Pi Network configuration is incomplete!');
     toast.error('Pi Network configuration error. Please check console for details.');
   } else {
-    console.log('✅ Pi Network configuration verified successfully!');
+    secureConsole.log('✅ Pi Network configuration verified successfully!');
     
-    // Verify the new API keys match expected format
-    if (apiKey === 'mj69bcvflcervamlbzgissqoxij6sxzr1k71wcuvdhcuwxtjmjinlgk0zfhz90y7') {
-      console.log('✅ New Dropstore API key detected and verified');
+    // Verify the new API keys match expected format (without logging actual values)
+    if (apiKey && apiKey.length > 50) {
+      secureConsole.log('✅ New Dropstore API key detected and verified');
     }
     
-    if (validationKey === 'a0111d77037c4bf013d6f4e3fd6cdc17357b996c7f4340887a642c65603ad6d50a392a3c9e57e3aa80b85934e1e92d87750d229229323dde96dd4761ddc555e1') {
-      console.log('✅ New validation key detected and verified');
+    if (validationKey && validationKey.length > 100) {
+      secureConsole.log('✅ New validation key detected and verified');
     }
   }
   
@@ -68,13 +71,13 @@ export const initializePiWithVerification = async (): Promise<boolean> => {
   const configCheck = verifyPiConfiguration();
   
   if (!configCheck.allValid) {
-    console.error('Cannot initialize Pi Network - configuration is invalid');
+    secureConsole.error('Cannot initialize Pi Network - configuration is invalid');
     return false;
   }
   
   // Check if Pi SDK is loaded
   if (typeof window === 'undefined' || !window.Pi) {
-    console.warn('Pi SDK not available - ensure app is opened in Pi Browser');
+    secureConsole.warn('Pi SDK not available - ensure app is opened in Pi Browser');
     return false;
   }
   
@@ -85,27 +88,27 @@ export const initializePiWithVerification = async (): Promise<boolean> => {
       sandbox: false // Always production mode
     });
     
-    console.log('✅ Pi SDK initialized with latest configuration standards');
+    secureConsole.log('✅ Pi SDK initialized with latest configuration standards');
     
     // Check for native features if available
     try {
       if (window.Pi.nativeFeaturesList) {
         const features = await window.Pi.nativeFeaturesList();
-        console.log('📱 Available Pi Browser features:', features);
+        secureConsole.log('📱 Available Pi Browser features:', features);
         
         if (features.includes('ad_network')) {
-          console.log('✅ Ad Network supported in this Pi Browser version');
+          secureConsole.log('✅ Ad Network supported in this Pi Browser version');
         } else {
-          console.log('⚠️ Ad Network not supported - user should update Pi Browser');
+          secureConsole.log('⚠️ Ad Network not supported - user should update Pi Browser');
         }
       }
     } catch (err) {
-      console.log('ℹ️ Native features check not available in this browser version');
+      secureConsole.log('ℹ️ Native features check not available in this browser version');
     }
     
     return true;
   } catch (error) {
-    console.error('❌ Failed to initialize Pi SDK:', error);
+    secureConsole.error('❌ Failed to initialize Pi SDK:', error);
     return false;
   }
 };
@@ -119,14 +122,14 @@ export const validatePiEndpoints = async (): Promise<boolean> => {
     'https://sdk.minepi.com/pi-sdk.js'
   ];
   
-  console.log('🌐 Validating Pi Network endpoints...');
+  secureConsole.log('🌐 Validating Pi Network endpoints...');
   
   for (const endpoint of endpoints) {
     try {
       const response = await fetch(endpoint, { method: 'HEAD', mode: 'no-cors' });
-      console.log(`✅ ${endpoint} - Reachable`);
+      secureConsole.log(`✅ ${endpoint} - Reachable`);
     } catch (error) {
-      console.warn(`⚠️ ${endpoint} - Check failed (may be normal due to CORS)`);
+      secureConsole.warn(`⚠️ ${endpoint} - Check failed (may be normal due to CORS)`);
     }
   }
   
@@ -137,8 +140,8 @@ export const validatePiEndpoints = async (): Promise<boolean> => {
  * Complete Pi Network setup verification
  */
 export const runPiSetupVerification = async (): Promise<void> => {
-  console.log('🚀 Running complete Pi Network setup verification...');
-  console.log('================================================');
+  secureConsole.log('🚀 Running complete Pi Network setup verification...');
+  secureConsole.log('================================================');
   
   // 1. Verify configuration
   const configValid = verifyPiConfiguration().allValid;
@@ -149,13 +152,16 @@ export const runPiSetupVerification = async (): Promise<void> => {
   // 3. Initialize Pi SDK
   const sdkInitialized = await initializePiWithVerification();
   
-  // 4. Summary
-  console.log('================================================');
-  console.log('📊 Setup Verification Summary:');
-  console.log(`Config Valid: ${configValid ? '✅' : '❌'}`);
-  console.log(`SDK Initialized: ${sdkInitialized ? '✅' : '❌'}`);
-  console.log(`Overall Status: ${configValid && sdkInitialized ? '✅ READY' : '❌ NEEDS ATTENTION'}`);
-  console.log('================================================');
+  // 4. Log safe configuration status
+  logConfigStatus();
+  
+  // 5. Summary
+  secureConsole.log('================================================');
+  secureConsole.log('📊 Setup Verification Summary:');
+  secureConsole.log(`Config Valid: ${configValid ? '✅' : '❌'}`);
+  secureConsole.log(`SDK Initialized: ${sdkInitialized ? '✅' : '❌'}`);
+  secureConsole.log(`Overall Status: ${configValid && sdkInitialized ? '✅ READY' : '❌ NEEDS ATTENTION'}`);
+  secureConsole.log('================================================');
   
   if (configValid && sdkInitialized) {
     toast.success('🎉 Pi Network setup verified successfully!');

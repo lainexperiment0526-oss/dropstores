@@ -1,4 +1,6 @@
 // Pi Network SDK Types and Utilities
+import { secureConsole, getSafeEnvInfo } from './env-security';
+
 export interface PiUser {
   uid: string;
   username: string;
@@ -89,7 +91,7 @@ export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
   
   return new Promise((resolve) => {
     if (typeof window === 'undefined') {
-      console.warn('Window object not available');
+      secureConsole.warn('Window object not available');
       resolve(false);
       return;
     }
@@ -116,28 +118,30 @@ export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
               nativeFeatures = await window.Pi.nativeFeaturesList();
             }
           } catch (err) {
-            console.log('Native features check not available in this browser version');
+            secureConsole.log('Native features check not available in this browser version');
           }
           
-          console.log('✓ Pi SDK initialized successfully:', {
+          // Use safe environment info for logging
+          const safeInfo = getSafeEnvInfo();
+          secureConsole.log('✓ Pi SDK initialized successfully:', {
             mode: 'mainnet',
-            piNetwork: 'mainnet',
-            environment: 'production',
-            hasApiKey: !!import.meta.env.VITE_PI_API_KEY,
+            piNetwork: safeInfo.network,
+            environment: safeInfo.environment,
+            hasApiKey: safeInfo.hasApiKey,
             nativeFeatures,
             adNetworkSupported: nativeFeatures.includes('ad_network'),
             timestamp: new Date().toISOString()
           });
           resolve(true);
         } catch (error) {
-          console.error('✗ Failed to initialize Pi SDK:', error);
+          secureConsole.error('✗ Failed to initialize Pi SDK:', error);
           resolve(false);
         }
       } else if (attempts < maxAttempts) {
         attempts++;
         setTimeout(initializeWhenReady, 100);
       } else {
-        console.warn('Pi SDK not available after waiting - ensure app is opened in Pi Browser');
+        secureConsole.warn('Pi SDK not available after waiting - ensure app is opened in Pi Browser');
         resolve(false);
       }
     };

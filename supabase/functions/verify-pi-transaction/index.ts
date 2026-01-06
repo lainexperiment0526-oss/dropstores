@@ -1,6 +1,48 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Secure console wrapper for edge functions
+const secureConsole = {
+  log: (...args: any[]) => {
+    // In production edge functions, minimize logging
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.log(...args);
+    }
+  },
+  error: (...args: any[]) => {
+    console.error(...args); // Always allow error logs
+  },
+  warn: (...args: any[]) => {
+    console.warn(...args); // Always allow warning logs
+  },
+  info: (...args: any[]) => {
+    if (Deno.env.get('ENVIRONMENT') !== 'production') {
+      console.info(...args);
+    }
+  }
+};
+
+// Sanitize sensitive data from logs
+const sanitizeForLog = (data: any): any => {
+  if (typeof data === 'string') {
+    // Remove any potential wallet addresses or long keys
+    return data.replace(/G[A-Z0-9]{55}/g, '[WALLET_REDACTED]');
+  }
+  if (typeof data === 'object' && data !== null) {
+    const sanitized = { ...data };
+    Object.keys(sanitized).forEach(key => {
+      if (key.toLowerCase().includes('key') || key.toLowerCase().includes('secret')) {
+        sanitized[key] = '[REDACTED]';
+      }
+      if (typeof sanitized[key] === 'string' && sanitized[key].length > 50) {
+        sanitized[key] = `${sanitized[key].substring(0, 10)}...[TRUNCATED]`;
+      }
+    });
+    return sanitized;
+  }
+  return data;
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -72,11 +114,11 @@ async function verifyTransactionOnChain(
     }
 
     const txData: HorizonTransaction = await txResponse.json();
-    console.log('Transaction data:', JSON.stringify(txData, null, 2));
+    secureConsole.info('Transaction data:', sanitizeForLog(txData));
 
-    // Check if transaction was successful
+    // Verify transaction was successful
     if (!txData.successful) {
-      console.error('Transaction was not successful');
+      secureConsole.error('Transaction was not successful');
       return {
         verified: false,
         transaction_hash: transactionHash,
@@ -91,7 +133,7 @@ async function verifyTransactionOnChain(
     const opsResponse = await fetch(`${PI_HORIZON_URL}/transactions/${transactionHash}/operations`);
     
     if (!opsResponse.ok) {
-      console.error('Failed to fetch transaction operations');
+      secureConsole.error('Failed to fetch transaction operations');
       return {
         verified: false,
         transaction_hash: transactionHash,
@@ -105,7 +147,7 @@ async function verifyTransactionOnChain(
     const opsData = await opsResponse.json();
     const operations: HorizonOperation[] = opsData._embedded?.records || [];
     
-    console.log(`Found ${operations.length} operations in transaction`);
+    secureConsole.log(`Found ${operations.length} operations in transaction`);
 
     // Find the payment operation
     const paymentOp = operations.find(op => 
@@ -113,7 +155,7 @@ async function verifyTransactionOnChain(
     );
 
     if (!paymentOp) {
-      console.error('No native payment operation found in transaction');
+      secureConsole.error('No native payment operation found in transaction');
       return {
         verified: false,
         transaction_hash: transactionHash,
@@ -127,11 +169,11 @@ async function verifyTransactionOnChain(
     const actualAmount = parseFloat(paymentOp.amount);
     const actualRecipient = paymentOp.to;
     
-    console.log(`Payment: ${actualAmount} Pi to ${actualRecipient}`);
+    secureConsole.log(`Payment: ${actualAmount} Pi to [WALLET_REDACTED]`);
 
     // Verify recipient matches expected merchant wallet
     if (actualRecipient !== expectedRecipient) {
-      console.error(`Recipient mismatch: expected ${expectedRecipient}, got ${actualRecipient}`);
+      secureConsole.error(`Recipient mismatch: payment sent to wrong wallet`);
       return {
         verified: false,
         transaction_hash: transactionHash,
@@ -145,7 +187,7 @@ async function verifyTransactionOnChain(
     // Verify amount matches (with small tolerance for floating point)
     const amountTolerance = 0.0001;
     if (Math.abs(actualAmount - expectedAmount) > amountTolerance) {
-      console.error(`Amount mismatch: expected ${expectedAmount}, got ${actualAmount}`);
+      secureConsole.error(`Amount mismatch: expected ${expectedAmount}, got ${actualAmount}`);
       return {
         verified: false,
         transaction_hash: transactionHash,
@@ -158,11 +200,11 @@ async function verifyTransactionOnChain(
 
     // Optionally verify memo (if provided)
     if (expectedMemo && txData.memo !== expectedMemo) {
-      console.warn(`Memo mismatch: expected ${expectedMemo}, got ${txData.memo}`);
+      secureConsole.warn(`Memo mismatch: memo verification failed`);
       // Don't fail on memo mismatch, just log warning
     }
 
-    console.log('Transaction verified successfully!');
+    secureConsole.log('Transaction verified successfully!');
     
     return {
       verified: true,
@@ -175,7 +217,7 @@ async function verifyTransactionOnChain(
     };
 
   } catch (error) {
-    console.error('Error verifying transaction:', error);
+    secureConsole.error('Error verifying transaction:', sanitizeForLog(error));
     return {
       verified: false,
       transaction_hash: transactionHash,
@@ -287,7 +329,7 @@ serve(async (req) => {
 
     // If verification failed, return error
     if (!verification.verified) {
-      console.error('Transaction verification failed:', verification.error);
+      secureConsole.error('Transaction verification failed:', sanitizeForLog(verification.error));
       
       // Update order status if order exists
       if (order_id) {
@@ -323,7 +365,7 @@ serve(async (req) => {
         .eq('id', order_id);
 
       if (updateError) {
-        console.error('Failed to update order:', updateError);
+        secureConsole.error('Failed to update order:', sanitizeForLog(updateError));
       } else {
         console.log(`Order ${order_id} marked as paid and released`);
       }
