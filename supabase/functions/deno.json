@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
-    "lib": ["deno.window"],
-    "strict": true
+    "lib": ["deno.window", "dom"],
+    "strict": false,
+    "allowJs": true,
+    "noImplicitAny": false
   },
   "fmt": {
     "files": {

@@ -1,3 +1,4 @@
+/// <reference path="../types.d.ts" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -5,8 +6,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const secureConsole = {
   log: (...args: any[]) => {
     // In production edge functions, minimize logging
-    if (Deno.env.get('ENVIRONMENT') !== 'production') {
-      console.log(...args);
+    try {
+      const environment = Deno?.env?.get('ENVIRONMENT') || 'development';
+      if (environment !== 'production') {
+        console.log(...args);
+      }
+    } catch {
+      console.log(...args); // Fallback if Deno is not available
     }
   },
   error: (...args: any[]) => {
@@ -16,8 +22,13 @@ const secureConsole = {
     console.warn(...args); // Always allow warning logs
   },
   info: (...args: any[]) => {
-    if (Deno.env.get('ENVIRONMENT') !== 'production') {
-      console.info(...args);
+    try {
+      const environment = Deno?.env?.get('ENVIRONMENT') || 'development';
+      if (environment !== 'production') {
+        console.info(...args);
+      }
+    } catch {
+      console.info(...args); // Fallback if Deno is not available
     }
   }
 };
@@ -43,13 +54,21 @@ const sanitizeForLog = (data: any): any => {
   return data;
 };
 
+const getEnvVar = (key: string): string | undefined => {
+  try {
+    return Deno?.env?.get(key);
+  } catch {
+    return undefined;
+  }
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('MY_SUPABASE_URL');
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_URL = getEnvVar('SUPABASE_URL') ?? getEnvVar('MY_SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = getEnvVar('SUPABASE_SERVICE_ROLE_KEY') ?? getEnvVar('MY_SUPABASE_SERVICE_ROLE_KEY');
 
 // Pi Mainnet Horizon API endpoint
 const PI_HORIZON_URL = 'https://api.mainnet.minepi.com';
@@ -229,7 +248,7 @@ async function verifyTransactionOnChain(
   }
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
