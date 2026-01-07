@@ -128,7 +128,7 @@ export function OfficialStatementModal() {
               <p><strong>Legal Inquiries:</strong> legal@dropshops.space</p>
               <div className="flex items-center gap-2 mt-3">
                 <a 
-                  href="https://droplink.space" 
+                  href="https://dropshops.space/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-primary hover:underline"
