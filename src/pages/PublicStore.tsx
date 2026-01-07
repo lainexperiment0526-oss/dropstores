@@ -168,6 +168,8 @@ export default function PublicStore() {
 
   // Apply theme colors
   useEffect(() => {
+    if (!store) return;
+    
     const root = document.documentElement;
     const primary = store?.primary_color || '#0EA5E9';
     const secondary = store?.secondary_color || '#64748B';
@@ -178,6 +180,16 @@ export default function PublicStore() {
     const announcementColor = store?.announcement_bar_text_color || '#FFFFFF';
     const headingFont = store?.font_heading || 'Inter';
     const bodyFont = store?.font_body || 'Inter';
+
+    console.log('🎨 Applying theme colors:', {
+      primary,
+      secondary, 
+      heading: headingColor,
+      body: bodyColor,
+      heroTitle: heroTitleColor,
+      heroSubtitle: heroSubtitleColor,
+      announcement: announcementColor
+    });
 
     // Apply CSS variables for theme colors so shadcn text utilities pick them up
     root.style.setProperty('--primary-color', primary);
@@ -193,10 +205,17 @@ export default function PublicStore() {
     // Apply typography defaults
     root.style.setProperty('--font-heading', headingFont);
     root.style.setProperty('--font-body', bodyFont);
+
+    // Apply theme to document body for global styling
+    document.body.style.setProperty('--store-primary', primary);
+    document.body.style.setProperty('--store-secondary', secondary);
+    document.body.style.setProperty('--store-heading-color', headingColor);
+    document.body.style.setProperty('--store-body-color', bodyColor);
   }, [store]);
 
   const fetchStore = async () => {
     try {
+      console.log('🔍 Fetching store data for slug:', slug);
       const { data: storeData, error: storeError } = await supabase
         .from('stores')
         .select('*')

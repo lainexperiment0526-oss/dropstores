@@ -118,6 +118,14 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
         announcement_bar_text_color: localTheme.announcement_bar_text_color || '#FFFFFF',
       };
 
+      console.log('🎨 Saving theme with colors:', {
+        heading: themePayload.heading_text_color,
+        body: themePayload.body_text_color,
+        hero_title: themePayload.hero_title_text_color,
+        hero_subtitle: themePayload.hero_subtitle_text_color,
+        announcement: themePayload.announcement_bar_text_color
+      });
+
       const { error } = await supabase
         .from('stores')
         .update({
@@ -161,10 +169,14 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
         })
         .eq('id', storeId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Theme save error:', error);
+        throw error;
+      }
 
+      console.log('✅ Theme saved successfully');
       onUpdate(themePayload);
-      toast({ title: 'Theme saved', description: 'Your store theme has been updated.' });
+      toast({ title: '🎨 Theme saved', description: 'Your store theme has been updated successfully!' });
     } catch (error) {
       console.error('Error saving theme:', error);
       toast({ title: 'Error', description: 'Failed to save theme settings.', variant: 'destructive' });

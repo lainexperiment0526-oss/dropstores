@@ -1,4 +1,4 @@
-// Pi Network SDK Types and Utilities
+// Pi Network SDK Types and Utilities - Complete Production Implementation
 import { secureConsole, getSafeEnvInfo } from './env-security';
 
 export interface PiUser {
@@ -50,17 +50,26 @@ export interface PiPaymentCallbacks {
   onError: (error: Error, payment?: PiPaymentDTO) => void;
 }
 
+// Ad Network Types
+export type AdType = 'interstitial' | 'rewarded';
+
 export interface PiAdReadyResponse {
   ready: boolean;
-  type?: 'interstitial' | 'rewarded';
+  type: AdType;
 }
 
 export interface PiAdShowResponse {
   result: 'AD_CLOSED' | 'AD_REWARDED' | 'AD_DISPLAY_ERROR' | 'AD_NETWORK_ERROR' | 'AD_NOT_AVAILABLE' | 'ADS_NOT_SUPPORTED' | 'USER_UNAUTHENTICATED';
+  type: AdType;
   adId?: string;
-  reward?: boolean;
 }
 
+export interface PiAdRequestResponse {
+  result: 'AD_LOADED' | 'AD_FAILED_TO_LOAD' | 'AD_NOT_AVAILABLE' | 'ADS_NOT_SUPPORTED';
+  type: AdType;
+}
+
+// Pi SDK Global Types
 declare global {
   interface Window {
     Pi?: {
@@ -73,113 +82,138 @@ declare global {
         paymentData: PiPaymentData,
         callbacks: PiPaymentCallbacks
       ) => void;
-      nativeFeaturesList?: () => Promise<string[]>;
-      Ads?: {
-        isAdReady: (adType: string) => Promise<PiAdReadyResponse>;
-        showAd: (adType: string) => Promise<PiAdShowResponse>;
-        requestAd: (adType: string) => Promise<{ result: 'AD_LOADED' | 'AD_FAILED_TO_LOAD' | 'AD_NOT_AVAILABLE' }>;
+      nativeFeaturesList: () => Promise<string[]>;
+      openShareDialog: (title: string, message: string) => void;
+      openUrlInSystemBrowser: (url: string) => Promise<void>;
+      Ads: {
+        isAdReady: (adType: AdType) => Promise<PiAdReadyResponse>;
+        showAd: (adType: AdType) => Promise<PiAdShowResponse>;
+        requestAd: (adType: AdType) => Promise<PiAdRequestResponse>;
       };
     };
   }
 }
 
-// Initialize Pi SDK - Force production mainnet mode
-export const initPiSdk = (sandbox: boolean = false): Promise<boolean> => {
-  // Force production mode - ignore sandbox parameter
-  const isProductionMode = true;
-  const actualSandboxMode = false;
+// Pi SDK Configuration and State
+class PiSDKManager {
+  private initialized: boolean = false;
+  private nativeFeatures: string[] = [];
+  private adNetworkSupported: boolean = false;
   
-  return new Promise((resolve) => {
+  // Initialize Pi SDK - Production Mainnet Mode
+  async init(sandbox: boolean = false): Promise<boolean> {
+    // Force production mode regardless of parameter
     if (typeof window === 'undefined') {
       secureConsole.warn('Window object not available');
-      resolve(false);
-      return;
+      return false;
     }
 
-    // Wait for Pi SDK to be loaded (max 5 seconds)
-    let attempts = 0;
-    const maxAttempts = 50;
-    
-    const initializeWhenReady = async () => {
-      if (window.Pi) {
-        // Official Pi SDK configuration - Force production mainnet
-        const config = {
-          version: '2.0',
-          sandbox: false  // Always false for production
-        };
-        
-        try {
-          window.Pi.init(config);
-          
-          // Check for native features support (including ad network)
-          let nativeFeatures: string[] = [];
-          try {
-            if (window.Pi.nativeFeaturesList) {
-              nativeFeatures = await window.Pi.nativeFeaturesList();
-            }
-          } catch (err) {
-            secureConsole.log('Native features check not available in this browser version');
-          }
-          
-          // Use safe environment info for logging
-          const safeInfo = getSafeEnvInfo();
-          secureConsole.log('✓ Pi SDK initialized successfully:', {
-            mode: 'mainnet',
-            piNetwork: safeInfo.network,
-            environment: safeInfo.environment,
-            hasApiKey: safeInfo.hasApiKey,
-            nativeFeatures,
-            adNetworkSupported: nativeFeatures.includes('ad_network'),
-            timestamp: new Date().toISOString()
-          });
+    // Wait for Pi SDK to be loaded
+    const isLoaded = await this.waitForPiSDK();
+    if (!isLoaded) {
+      return false;
+    }
+
+    try {
+      // Initialize with production configuration
+      const config = {
+        version: '2.0',
+        sandbox: false  // Always mainnet for production
+      };
+      
+      window.Pi!.init(config);
+      
+      // Check for native features support
+      await this.checkNativeFeatures();
+      
+      this.initialized = true;
+      
+      const safeInfo = getSafeEnvInfo();
+      secureConsole.log('✓ Pi SDK initialized successfully:', {
+        mode: 'mainnet',
+        piNetwork: safeInfo.network,
+        environment: safeInfo.environment,
+        hasApiKey: safeInfo.hasApiKey,
+        nativeFeatures: this.nativeFeatures,
+        adNetworkSupported: this.adNetworkSupported,
+        timestamp: new Date().toISOString()
+      });
+      
+      return true;
+    } catch (error) {
+      secureConsole.error('✗ Failed to initialize Pi SDK:', error);
+      return false;
+    }
+  }
+
+  private async waitForPiSDK(maxWaitTime: number = 5000): Promise<boolean> {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      const checkInterval = 100;
+      
+      const checkForPi = () => {
+        if (window.Pi) {
           resolve(true);
-        } catch (error) {
-          secureConsole.error('✗ Failed to initialize Pi SDK:', error);
+        } else if (Date.now() - startTime >= maxWaitTime) {
+          secureConsole.warn('Pi SDK not available after waiting - ensure app is opened in Pi Browser');
           resolve(false);
+        } else {
+          setTimeout(checkForPi, checkInterval);
         }
-      } else if (attempts < maxAttempts) {
-        attempts++;
-        setTimeout(initializeWhenReady, 100);
-      } else {
-        secureConsole.warn('Pi SDK not available after waiting - ensure app is opened in Pi Browser');
-        resolve(false);
+      };
+      
+      checkForPi();
+    });
+  }
+
+  private async checkNativeFeatures(): Promise<void> {
+    try {
+      if (window.Pi?.nativeFeaturesList) {
+        this.nativeFeatures = await window.Pi.nativeFeaturesList();
+        this.adNetworkSupported = this.nativeFeatures.includes('ad_network');
       }
-    };
-    
-    // Start initialization
-    initializeWhenReady();
-  });
-};
-
-// Check if Pi SDK is available
-export const isPiAvailable = (): boolean => {
-  if (typeof window === 'undefined') {
-    console.debug('Window not available');
-    return false;
+    } catch (err) {
+      secureConsole.log('Native features check not available in this browser version');
+      this.nativeFeatures = [];
+      this.adNetworkSupported = false;
+    }
   }
-  
-  const available = !!window.Pi;
-  if (!available) {
-    console.debug('Pi SDK not available. Ensure app is opened in Pi Browser.');
-  }
-  return available;
-};
 
-// Pi Authentication - Official Pi Network implementation
+  // Check if Pi SDK is available and initialized
+  isAvailable(): boolean {
+    return typeof window !== 'undefined' && !!window.Pi && this.initialized;
+  }
+
+  // Check if specific feature is supported
+  isFeatureSupported(feature: string): boolean {
+    return this.nativeFeatures.includes(feature);
+  }
+
+  // Get native features list
+  getNativeFeatures(): string[] {
+    return [...this.nativeFeatures];
+  }
+
+  // Check if ads are supported
+  isAdNetworkSupported(): boolean {
+    return this.adNetworkSupported;
+  }
+}
+
+// Singleton instance
+export const piSDK = new PiSDKManager();
+
+// Authentication
 export const authenticateWithPi = async (
   onIncompletePaymentFound?: (payment: PiPaymentDTO) => void,
   reqScopes?: string[]
 ): Promise<PiAuthResult | null> => {
-  if (!isPiAvailable()) {
-    const error = 'Pi SDK not available - ensure app is opened in Pi Browser';
-    console.error('✗', error);
-    throw new Error(error);
+  if (!piSDK.isAvailable()) {
+    throw new Error('Pi SDK not available - ensure app is opened in Pi Browser');
   }
 
-  if (!window.Pi || !window.Pi.authenticate) {
-    const error = 'window.Pi.authenticate is not available';
-    console.error('✗', error);
-    throw new Error(error);
+  if (!window.Pi?.authenticate) {
+    throw new Error('Pi authentication method not available');
   }
 
   try {
@@ -187,277 +221,235 @@ export const authenticateWithPi = async (
     const defaultScopes = ['username', 'payments', 'wallet_address'];
     const scopes = reqScopes && reqScopes.length > 0 ? reqScopes : defaultScopes;
     
-    // Ensure username is always included as per official docs
+    // Ensure username is always included
     if (!scopes.includes('username')) {
       scopes.push('username');
     }
     
-    console.log('Starting Pi authentication with scopes:', scopes);
+    secureConsole.log('Starting Pi authentication with scopes:', scopes);
     
     const result = await window.Pi.authenticate(
       scopes,
       onIncompletePaymentFound || ((payment: PiPaymentDTO) => {
-        console.warn('Incomplete payment detected:', payment);
+        secureConsole.warn('Incomplete payment detected:', {
+          paymentId: payment.identifier,
+          amount: payment.amount,
+          status: payment.status
+        });
       })
     );
     
-    // Validate result
-    if (!result) {
-      console.error('✗ Pi authentication returned null result');
-      return null;
-    }
-
-    if (!result.user) {
-      console.error('✗ Pi authentication result missing user object:', result);
-      return null;
-    }
-
-    const { user, accessToken } = result;
-
-    // Validate required user fields
-    if (!user.uid || !user.username) {
-      console.error('✗ Pi authentication result missing required user fields:', {
-        uid: user.uid || 'MISSING',
-        username: user.username || 'MISSING'
-      });
-      return null;
-    }
-    
-    // Log successful authentication
-    console.log('✓ Pi authentication successful:', {
-      username: user.username,
-      uid: user.uid,
-      wallet_address: user.wallet_address || 'will be fetched separately',
-      hasAccessToken: !!accessToken
+    secureConsole.log('✓ Pi authentication successful:', {
+      username: result.user.username,
+      uid: result.user.uid,
+      hasWalletAddress: !!result.user.wallet_address,
+      timestamp: new Date().toISOString()
     });
     
     return result;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('✗ Pi authentication failed:', errorMessage);
+    secureConsole.error('✗ Pi authentication failed:', error);
     throw error;
   }
 };
 
-// Create Pi Payment
+// Payment Creation
 export const createPiPayment = (
   paymentData: PiPaymentData,
   callbacks: PiPaymentCallbacks
 ): void => {
-  if (!isPiAvailable()) {
-    const error = new Error('Pi SDK not available - ensure app is opened in Pi Browser');
-    callbacks.onError(error);
-    console.error('Payment creation failed:', error);
-    return;
+  if (!piSDK.isAvailable()) {
+    throw new Error('Pi SDK not available - ensure app is opened in Pi Browser');
   }
 
-  if (!paymentData || paymentData.amount <= 0) {
-    const error = new Error('Invalid payment data: amount must be greater than 0');
-    callbacks.onError(error);
-    console.error('Payment validation failed:', error);
-    return;
+  if (!window.Pi?.createPayment) {
+    throw new Error('Pi payment method not available');
   }
 
-  try {
-    window.Pi!.createPayment(paymentData, callbacks);
-    console.log('Payment created:', { amount: paymentData.amount, memo: paymentData.memo });
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error('Unknown payment creation error');
-    callbacks.onError(err);
-    console.error('Payment creation error:', err);
+  // Validate payment data
+  if (!paymentData.amount || paymentData.amount <= 0) {
+    throw new Error('Invalid payment amount');
   }
+
+  if (!paymentData.memo || paymentData.memo.trim() === '') {
+    throw new Error('Payment memo is required');
+  }
+
+  secureConsole.log('Creating Pi payment:', {
+    amount: paymentData.amount,
+    memo: paymentData.memo,
+    metadata: paymentData.metadata
+  });
+
+  window.Pi.createPayment(paymentData, callbacks);
 };
 
-// Pi AdNetwork - Check if AdNetwork is supported in current Pi Browser
-export const isPiAdNetworkSupported = async (): Promise<boolean> => {
-  if (!isPiAvailable()) {
-    console.debug('Pi SDK not available');
-    return false;
+// Ad Network Functions
+export class PiAdNetwork {
+  // Check if ads are supported
+  static isSupported(): boolean {
+    return piSDK.isAdNetworkSupported() && !!window.Pi?.Ads;
   }
 
-  if (!window.Pi?.nativeFeaturesList) {
-    console.debug('Pi nativeFeaturesList not available');
-    return false;
-  }
-
-  try {
-    const nativeFeatures = await window.Pi.nativeFeaturesList();
-    const adNetworkSupported = nativeFeatures.includes('ad_network');
-    console.log('Pi AdNetwork supported:', adNetworkSupported, 'Features:', nativeFeatures);
-    return adNetworkSupported;
-  } catch (error) {
-    console.error('Error checking AdNetwork support:', error);
-    return false;
-  }
-};
-
-// Pi AdNetwork - Check if ad is ready
-export const isPiAdReady = async (adType: 'interstitial' | 'rewarded'): Promise<boolean> => {
-  if (!isPiAvailable()) {
-    console.debug('Pi SDK not available for ad check');
-    return false;
-  }
-
-  if (!window.Pi?.Ads?.isAdReady) {
-    console.debug('Pi Ads API not available');
-    return false;
-  }
-
-  try {
-    const response = await window.Pi.Ads.isAdReady(adType);
-    console.log(`${adType} ad ready status:`, response);
-    return response?.ready === true;
-  } catch (error) {
-    console.error(`Error checking if ${adType} ad is ready:`, error);
-    return false;
-  }
-};
-
-// Pi AdNetwork - Request ad (manually load ad)
-export const requestPiAd = async (
-  adType: 'interstitial' | 'rewarded'
-): Promise<string | null> => {
-  if (!isPiAvailable()) {
-    console.debug('Pi SDK not available for ad request');
-    return null;
-  }
-
-  if (!window.Pi?.Ads?.requestAd) {
-    console.debug('Pi Ads requestAd API not available');
-    return null;
-  }
-
-  try {
-    console.log(`Requesting ${adType} ad...`);
-    const response = await window.Pi.Ads.requestAd(adType);
-    console.log(`${adType} ad request result:`, response?.result);
-    return response?.result || null;
-  } catch (error) {
-    console.error(`Failed to request ${adType} ad:`, error);
-    return null;
-  }
-};
-
-// Pi AdNetwork - Show ad (Official Pi Documentation implementation)
-export const showPiAd = async (
-  adType: 'interstitial' | 'rewarded'
-): Promise<{ adId?: string; result: string; reward?: boolean } | null> => {
-  if (!isPiAvailable()) {
-    console.error('Pi SDK not available for showing ads');
-    return null;
-  }
-
-  if (!window.Pi?.Ads?.showAd) {
-    console.error('Pi Ads showAd API not available');
-    return null;
-  }
-
-  try {
-    console.log(`Showing ${adType} ad...`);
-    const response = await window.Pi.Ads.showAd(adType);
-    
-    console.log(`${adType} ad response:`, response);
-    
-    if (!response) {
-      console.warn(`Ad shown but no response returned`);
-      return { result: 'AD_NOT_AVAILABLE' };
+  // Check if specific ad type is ready
+  static async isAdReady(adType: AdType): Promise<PiAdReadyResponse> {
+    if (!this.isSupported()) {
+      throw new Error('Ad network not supported - update Pi Browser or check app approval status');
     }
-    
-    // Handle response according to official Pi docs
-    switch (response.result) {
-      case 'AD_REWARDED':
-        console.log(`Rewarded ad completed successfully`, { adId: response.adId });
-        return {
-          adId: response.adId,
-          result: response.result,
-          reward: true,
-        };
-      
-      case 'AD_CLOSED':
-        console.log(`Ad closed successfully`, { adId: response.adId });
-        return {
-          adId: response.adId,
-          result: response.result,
-          reward: false,
-        };
-      
-      case 'AD_NOT_AVAILABLE':
-      case 'AD_DISPLAY_ERROR':
-      case 'AD_NETWORK_ERROR':
-        console.warn(`Ad error: ${response.result}`);
-        return {
-          result: response.result,
-          reward: false,
-        };
-      
-      case 'ADS_NOT_SUPPORTED':
-        console.warn('Ads not supported on this Pi Browser version');
-        return {
-          result: response.result,
-          reward: false,
-        };
-      
-      case 'USER_UNAUTHENTICATED':
-        console.warn('User not authenticated for rewarded ads');
-        return {
-          result: response.result,
-          reward: false,
-        };
-      
-      default:
-        console.log(`Ad result: ${response.result}`);
-        return {
-          adId: response.adId,
-          result: response.result,
-          reward: false,
-        };
+
+    try {
+      return await window.Pi!.Ads.isAdReady(adType);
+    } catch (error) {
+      secureConsole.error('Failed to check ad readiness:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error(`Failed to show ${adType} ad:`, error);
-    return { result: 'AD_DISPLAY_ERROR' };
+  }
+
+  // Request an ad
+  static async requestAd(adType: AdType): Promise<PiAdRequestResponse> {
+    if (!this.isSupported()) {
+      throw new Error('Ad network not supported - update Pi Browser or check app approval status');
+    }
+
+    try {
+      const response = await window.Pi!.Ads.requestAd(adType);
+      secureConsole.log('Ad request result:', { adType, result: response.result });
+      return response;
+    } catch (error) {
+      secureConsole.error('Failed to request ad:', error);
+      throw error;
+    }
+  }
+
+  // Show an ad
+  static async showAd(adType: AdType): Promise<PiAdShowResponse> {
+    if (!this.isSupported()) {
+      throw new Error('Ad network not supported - update Pi Browser or check app approval status');
+    }
+
+    try {
+      const response = await window.Pi!.Ads.showAd(adType);
+      
+      secureConsole.log('Ad show result:', {
+        adType,
+        result: response.result,
+        hasAdId: !!response.adId,
+        timestamp: new Date().toISOString()
+      });
+      
+      return response;
+    } catch (error) {
+      secureConsole.error('Failed to show ad:', error);
+      throw error;
+    }
+  }
+
+  // Complete rewarded ad flow with verification
+  static async showRewardedAd(): Promise<PiAdShowResponse> {
+    try {
+      // Check if ad is ready
+      const readyResponse = await this.isAdReady('rewarded');
+      
+      if (!readyResponse.ready) {
+        // Try to request an ad
+        const requestResponse = await this.requestAd('rewarded');
+        
+        if (requestResponse.result === 'ADS_NOT_SUPPORTED') {
+          throw new Error('Ads not supported - please update Pi Browser');
+        }
+        
+        if (requestResponse.result !== 'AD_LOADED') {
+          throw new Error('No ads available at the moment');
+        }
+      }
+      
+      // Show the ad
+      return await this.showAd('rewarded');
+    } catch (error) {
+      secureConsole.error('Failed to show rewarded ad:', error);
+      throw error;
+    }
+  }
+
+  // Show interstitial ad
+  static async showInterstitialAd(): Promise<PiAdShowResponse> {
+    try {
+      // Check if ad is ready
+      const readyResponse = await this.isAdReady('interstitial');
+      
+      if (!readyResponse.ready) {
+        // Try to request an ad
+        const requestResponse = await this.requestAd('interstitial');
+        
+        if (requestResponse.result === 'ADS_NOT_SUPPORTED') {
+          throw new Error('Ads not supported - please update Pi Browser');
+        }
+        
+        if (requestResponse.result !== 'AD_LOADED') {
+          throw new Error('No ads available at the moment');
+        }
+      }
+      
+      // Show the ad
+      return await this.showAd('interstitial');
+    } catch (error) {
+      secureConsole.error('Failed to show interstitial ad:', error);
+      throw error;
+    }
+  }
+}
+
+// Utility Functions
+export const openShareDialog = (title: string, message: string): void => {
+  if (!piSDK.isAvailable()) {
+    throw new Error('Pi SDK not available');
+  }
+
+  if (window.Pi?.openShareDialog) {
+    window.Pi.openShareDialog(title, message);
+  } else {
+    // Fallback to web share API if available
+    if (navigator.share) {
+      navigator.share({ title, text: message });
+    } else {
+      throw new Error('Share functionality not available');
+    }
   }
 };
 
-// Verify rewarded ad status with Pi Platform API (Official requirement)
-export const verifyRewardedAdStatus = async (
-  adId: string,
-  accessToken: string
-): Promise<{ rewarded: boolean; error?: string }> => {
-  if (!adId || !accessToken) {
-    return { rewarded: false, error: 'Missing adId or access token' };
+export const openUrlInSystemBrowser = async (url: string): Promise<void> => {
+  if (!piSDK.isAvailable()) {
+    throw new Error('Pi SDK not available');
   }
 
-  try {
-    const response = await fetch(`https://api.minepi.com/v2/ads_network/status/${adId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+  if (window.Pi?.openUrlInSystemBrowser) {
+    try {
+      await window.Pi.openUrlInSystemBrowser(url);
+    } catch (error) {
+      secureConsole.error('Failed to open URL in system browser:', error);
+      throw error;
+    }
+  } else {
+    // Fallback to window.open
+    window.open(url, '_blank');
+  }
+};
+
+// Initialize Pi SDK automatically when imported
+if (typeof window !== 'undefined') {
+  // Initialize SDK when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      piSDK.init().catch((error) => {
+        secureConsole.error('Failed to auto-initialize Pi SDK:', error);
+      });
     });
-
-    if (!response.ok) {
-      console.error('Failed to verify ad status:', response.status, response.statusText);
-      return { rewarded: false, error: `API error: ${response.status}` };
-    }
-
-    const data = await response.json();
-    
-    // Check if reward is granted according to official Pi docs
-    const rewarded = data.mediator_ack_status === 'granted';
-    
-    console.log('Ad verification result:', {
-      adId,
-      status: data.mediator_ack_status,
-      rewarded,
+  } else {
+    piSDK.init().catch((error) => {
+      secureConsole.error('Failed to auto-initialize Pi SDK:', error);
     });
-
-    return { rewarded };
-  } catch (error) {
-    console.error('Error verifying ad status:', error);
-    return { rewarded: false, error: 'Network error' };
   }
-};
+}
 
 // Store Types
 export const STORE_TYPES = {
@@ -732,4 +724,58 @@ export const calculateNetAmount = (amount: number): number => {
 export const calculateTotalWithFee = (baseAmount: number): number => {
   // When merchant sets a price, calculate what customer pays to cover platform fee
   return baseAmount / (1 - PLATFORM_FEE_PERCENT);
+};
+
+// Export the SDK manager and main functions
+export { piSDK as default };
+
+// Legacy exports for backward compatibility
+export const initPiSdk = (sandbox: boolean = false) => piSDK.init(sandbox);
+export const isPiAvailable = () => piSDK.isAvailable();
+
+// Additional standalone exports for backward compatibility with existing hooks
+export const isPiAdNetworkSupported = () => piSDK.isAdNetworkSupported();
+export const isPiAdReady = (adType: AdType) => PiAdNetwork.isAdReady(adType);
+export const showPiAd = (adType: AdType) => PiAdNetwork.showAd(adType);
+export const requestPiAd = (adType: AdType) => PiAdNetwork.requestAd(adType);
+
+// Verify rewarded ad status with Pi Platform API
+export const verifyRewardedAdStatus = async (
+  adId: string,
+  accessToken: string
+): Promise<{ rewarded: boolean; error?: string }> => {
+  if (!adId || !accessToken) {
+    return { rewarded: false, error: 'Missing adId or access token' };
+  }
+
+  try {
+    const response = await fetch(`https://api.minepi.com/v2/ads_network/status/${adId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      secureConsole.error('Failed to verify ad status:', response.status, response.statusText);
+      return { rewarded: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    
+    // Check if reward is granted according to official Pi docs
+    const rewarded = data.mediator_ack_status === 'granted';
+    
+    secureConsole.log('Ad verification result:', {
+      adId,
+      status: data.mediator_ack_status,
+      rewarded,
+    });
+
+    return { rewarded };
+  } catch (error) {
+    secureConsole.error('Error verifying ad status:', error);
+    return { rewarded: false, error: 'Network error' };
+  }
 };

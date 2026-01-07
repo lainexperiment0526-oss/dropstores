@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -10,10 +10,15 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogOut, Mail, Lock, Users, Store, DollarSign, TrendingUp, Clock } from "lucide-react";
+import { Loader2, LogOut, Mail, Lock, Users, Store, DollarSign, TrendingUp, Clock, Wallet, AlertCircle, Shield } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AdminWithdrawalApproval } from "@/components/admin/AdminWithdrawalApproval";
 
-const ADMIN_EMAIL = "admin@example.com";
+// Only this Pi Network username can access admin features
+const AUTHORIZED_ADMIN_USERNAME = "Wain2020";
+
+// Admin email for authentication
+const ADMIN_EMAIL = "mrwain@dropstore.com";
 
 const Admin = () => {
   const { user, signIn, signOut, loading: authLoading } = useAuth();
@@ -24,6 +29,9 @@ const Admin = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [piUser, setPiUser] = useState(null);
+  const [isAuthorizedAdmin, setIsAuthorizedAdmin] = useState(false);
+  const [piAuthChecked, setPiAuthChecked] = useState(false);
 
   // Admin data states
   const [stats, setStats] = useState({
@@ -41,23 +49,82 @@ const Admin = () => {
   const isAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
-    // If user is logged in but not admin, redirect to dashboard
-    if (user && !isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access this page.",
-        variant: "destructive",
-      });
-      navigate("/dashboard");
-    }
-  }, [user, isAdmin, navigate, toast]);
+    checkPiAuth();
+  }, []);
 
-  // Fetch admin data
   useEffect(() => {
-    if (user && isAdmin) {
+    if (isAuthorizedAdmin) {
       fetchAdminData();
     }
-  }, [user, isAdmin]);
+  }, [isAuthorizedAdmin]);
+
+  const checkPiAuth = async () => {
+    try {
+      console.log('Checking Pi Network authentication...');
+      
+      // Check if Pi Network is available
+      if (typeof window !== 'undefined' && window.Pi) {
+        const pi = window.Pi;
+        
+        try {
+          // Authenticate with Pi Network
+          const piUserData = await pi.authenticate([
+            'payments', 
+            'username'
+          ], (payment: any) => {
+            // Handle incomplete payment as per Pi documentation
+            console.log('⚠️ Incomplete payment found:', payment);
+          });
+          
+          console.log('Pi User Data:', piUserData);
+          setPiUser(piUserData);
+          
+          // Get Pi username and check if it matches authorized admin
+          const piUsername = piUserData?.user?.username || '';
+          console.log('Pi Username:', piUsername);
+          
+          // Check for exact match with authorized admin username
+          if (piUsername === AUTHORIZED_ADMIN_USERNAME || piUsername === `@${AUTHORIZED_ADMIN_USERNAME}`) {
+            setIsAuthorizedAdmin(true);
+            toast({
+              title: "Admin Access Granted",
+              description: `Welcome ${piUsername}! You have admin privileges.`,
+            });
+            console.log('Admin access granted for:', piUsername);
+          } else {
+            setIsAuthorizedAdmin(false);
+            toast({
+              title: "Access Denied",
+              description: `Only ${AUTHORIZED_ADMIN_USERNAME} can access admin features. Current user: ${piUsername}`,
+              variant: "destructive",
+            });
+            console.log('Admin access denied for:', piUsername);
+          }
+        } catch (piError) {
+          console.error('Pi authentication failed:', piError);
+          setIsAuthorizedAdmin(false);
+          toast({
+            title: "Pi Authentication Failed",
+            description: "Could not authenticate with Pi Network. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.log('Pi Network not available - not in Pi Browser');
+        setIsAuthorizedAdmin(false);
+        toast({
+          title: "Pi Browser Required",
+          description: "Admin access requires Pi Browser. Please open this app in Pi Browser.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error checking Pi authentication:', error);
+      setIsAuthorizedAdmin(false);
+    } finally {
+      setPiAuthChecked(true);
+    }
+  };
 
   const fetchAdminData = async () => {
     setDataLoading(true);
@@ -184,81 +251,55 @@ const Admin = () => {
     });
   };
 
-  // Loading state
-  if (authLoading) {
+  // Loading state for Pi authentication
+  if (authLoading || !piAuthChecked) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Checking admin authentication...</p>
+        </div>
       </div>
     );
   }
 
-  // Sign in form if not authenticated or not admin
-  if (!user || !isAdmin) {
+  // Access denied if not authorized admin
+  if (!isAuthorizedAdmin) {
+    const currentUsername = piUser?.user?.username || 'Not authenticated';
+    
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader>
             <div className="flex flex-col items-center gap-2">
-              <Avatar className="w-16 h-16">
-                <AvatarImage src="https://i.ibb.co/rRN0sS7y/favicon.png" alt="Admin" />
-                <AvatarFallback>AD</AvatarFallback>
-              </Avatar>
-              <CardTitle className="text-2xl text-center">Admin Portal</CardTitle>
-              <p className="text-sm text-muted-foreground text-center">
-                Sign in with your admin credentials
-              </p>
+              <AlertCircle className="w-16 h-16 text-red-500" />
+              <CardTitle className="text-2xl text-center text-red-600">Admin Access Restricted</CardTitle>
+              <CardDescription className="text-center space-y-2">
+                <p>Only authorized administrators can access this panel.</p>
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="font-medium text-green-600">Required: {AUTHORIZED_ADMIN_USERNAME}</p>
+                  <p className="text-sm text-muted-foreground">Current: {currentUsername}</p>
+                </div>
+              </CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="Admin Email"
-                    className="pl-10"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoFocus
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    className="pl-10"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-              {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-            </form>
-            <div className="mt-4 text-center">
+          <CardContent className="text-center space-y-4">
+            <Button 
+              onClick={checkPiAuth}
+              variant="outline"
+              className="w-full"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Retry Pi Authentication
+            </Button>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Pi Browser Required</AlertTitle>
+              <AlertDescription>
+                Make sure you're using Pi Browser and logged in as {AUTHORIZED_ADMIN_USERNAME}
+              </AlertDescription>
+            </Alert>
+            <div className="mt-4">
               <Button
                 variant="link"
                 className="text-sm text-muted-foreground"
@@ -293,14 +334,19 @@ const Admin = () => {
             </Avatar>
             <div>
               <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Welcome, {user.email}</p>
+              <p className="text-sm text-muted-foreground">
+                Welcome, {piUser?.user?.username || AUTHORIZED_ADMIN_USERNAME} - Authenticated via Pi Network
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="default">Admin</Badge>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
+            <Badge variant="default" className="bg-green-100 text-green-800">
+              {piUser?.user?.username || AUTHORIZED_ADMIN_USERNAME}
+            </Badge>
+            <Badge variant="outline">2% Platform Fee</Badge>
+            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
               <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
+              Exit Admin
             </Button>
           </div>
         </div>
@@ -338,10 +384,11 @@ const Admin = () => {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="users" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="stores">Stores</TabsTrigger>
                 <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
               </TabsList>
 
               <TabsContent value="users">
@@ -458,6 +505,10 @@ const Admin = () => {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="withdrawals">
+                <AdminWithdrawalApproval />
               </TabsContent>
             </Tabs>
           </>

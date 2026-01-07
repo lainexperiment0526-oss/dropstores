@@ -68,6 +68,29 @@ CREATE TABLE IF NOT EXISTS public.pi_users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Merchants
+CREATE TABLE IF NOT EXISTS public.merchants (
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID,
+    business_name TEXT NOT NULL,
+    pi_username TEXT UNIQUE,
+    wallet_address TEXT,
+    business_description TEXT,
+    business_email TEXT,
+    business_phone TEXT,
+    business_website TEXT,
+    business_address TEXT,
+    business_city TEXT,
+    business_state TEXT,
+    business_country TEXT,
+    business_postal_code TEXT,
+    verification_status TEXT DEFAULT 'unverified' CHECK (verification_status IN ('unverified', 'pending', 'verified', 'rejected')),
+    verified_at TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Subscriptions
 CREATE TABLE IF NOT EXISTS public.subscriptions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

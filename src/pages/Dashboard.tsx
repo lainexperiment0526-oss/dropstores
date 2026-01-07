@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import WelcomeModal from './WelcomeModal';
 import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/AnalyticsCards';
+import { MerchantEarnings } from '@/components/dashboard/MerchantEarnings';
 import { useSubscription } from '@/hooks/useSubscription';
 import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
 import {
@@ -360,6 +361,12 @@ function Dashboard() {
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-foreground mb-4">Order Status</h2>
             <OrderStatusCards pending={pendingOrders} completed={completedOrders} />
+          </div>
+
+          {/* Merchant Earnings */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Earnings & Withdrawals</h2>
+            <MerchantEarnings />
           </div>
 
           {/* Stores Section */}
