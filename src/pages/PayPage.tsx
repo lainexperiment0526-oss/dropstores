@@ -9,6 +9,7 @@ import { Zap, CheckCircle, XCircle, Loader2, Shield, RefreshCw, ShoppingCart, Cr
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { PlatformFeeModal } from '@/components/PlatformFeeModal';
+import { FloatingAISupport } from '@/components/FloatingAISupport';
 
 interface PaymentLink {
   id: string;
@@ -979,6 +980,9 @@ export default function PayPage() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Floating AI Support for payment assistance */}
+      <FloatingAISupport />
     </div>
   );
 }

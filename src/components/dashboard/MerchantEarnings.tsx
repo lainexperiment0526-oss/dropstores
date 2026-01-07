@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Wallet, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, Download, PieChart } from 'lucide-react';
+import { FloatingAISupport } from '@/components/FloatingAISupport';
 
 interface Earning {
   id: string;
@@ -428,6 +429,9 @@ export function MerchantEarnings() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Floating AI Support for earnings/withdrawal assistance */}
+      <FloatingAISupport />
     </div>
   );
 }

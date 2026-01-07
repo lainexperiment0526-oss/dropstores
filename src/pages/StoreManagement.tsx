@@ -46,6 +46,7 @@ import {
   Grid3x3,
   List,
 } from 'lucide-react';
+import { FloatingAISupport } from '@/components/FloatingAISupport';
 import {
   Dialog,
   DialogContent,
@@ -1748,6 +1749,9 @@ export default function StoreManagement() {
           </TabsContent>
         </Tabs>
       </main>
+      
+      {/* Floating AI Support for store management assistance */}
+      <FloatingAISupport />
     </div>
   );
 }

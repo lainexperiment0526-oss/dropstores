@@ -13,6 +13,7 @@ import { ArrowLeft, Check, Coins, Loader2, AlertCircle, Crown, Zap, Building2, R
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import TermsPrivacyModal from './TermsPrivacyModal';
+import { FloatingAISupport } from '@/components/FloatingAISupport';
 
 interface CurrentSubscription {
   id: string;
@@ -1070,6 +1071,9 @@ const Subscription = () => {
           </div>
         </div>
       </main>
+      
+      {/* Floating AI Support for subscription assistance */}
+      <FloatingAISupport />
     </div>
   );
 };

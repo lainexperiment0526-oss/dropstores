@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StoreTypeSelector, StoreTypeInstructions } from '@/components/store/StoreTypeSelector';
 import { useSubscription } from '@/hooks/useSubscription';
 import { STORE_TYPES } from '@/lib/pi-sdk';
+import { FloatingAISupport } from '@/components/FloatingAISupport';
 
 const templates = [
   {
@@ -519,6 +520,9 @@ export default function CreateStore() {
           </Card>
         )}
       </main>
+      
+      {/* Floating AI Support for store creation assistance */}
+      <FloatingAISupport />
     </div>
   );
 }

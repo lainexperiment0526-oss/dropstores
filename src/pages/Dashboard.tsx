@@ -25,7 +25,8 @@ import {
   Download,
   Building,
   Lock,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 
 interface StoreData {
@@ -191,6 +192,12 @@ function Dashboard() {
                   <Link to="/stores">
                     <Store className="w-4 h-4 mr-2" />
                     <span className="hidden sm:inline">Store Directory</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/support">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">AI Support</span>
                   </Link>
                 </Button>
                 {isActive ? (
