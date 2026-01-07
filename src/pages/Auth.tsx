@@ -174,7 +174,7 @@ export default function Auth() {
                           className="w-full"
                           onClick={() => setEcosystemOpen(true)}
                         >
-                          Learn the Droplink Ecosystem
+                          Learn the Drop Ecosystem
                         </Button>
                       </div>
                       <div className="mt-2">
@@ -321,7 +321,7 @@ export default function Auth() {
       <Dialog open={ecosystemOpen} onOpenChange={setEcosystemOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>The Droplink Ecosystem for Business & Creators</DialogTitle>
+            <DialogTitle>The Drop Ecosystem for Business & Creators</DialogTitle>
             <DialogDescription>
               Build, sell, and get paid across fully connected Pi apps.
             </DialogDescription>
