@@ -187,6 +187,12 @@ function Dashboard() {
               </Link>
 
               <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/stores">
+                    <Store className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Store Directory</span>
+                  </Link>
+                </Button>
                 {isActive ? (
                   <Button variant="outline" size="sm" asChild>
                     <Link to="/subscription">

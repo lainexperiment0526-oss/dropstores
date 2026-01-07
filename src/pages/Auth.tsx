@@ -143,66 +143,69 @@ export default function Auth() {
             <CardContent>
               {!showEmailForm ? (
                 <>
-                  {/* Pi Network Login */}
-                  {isPiAvailable && (
-                    <>
-                      <div className="mt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full mt-4"
-                          onClick={() => signInWithPiScopes(['username', 'payments', 'wallet_address'])}
-                          disabled={piLoading}
-                        >
-                          {piLoading ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : null}
-                          Continue with Pi Network
-                        </Button>
-                      </div>
-                      {/* Terms and Privacy Modal Link Below Button */}
-                      <div className="mt-4 text-center">
-                        <span className="text-xs text-muted-foreground">
-                          By continuing, you agree to our
-                        </span>{' '}
-                        <TermsPrivacyModal />
-                      </div>
-                      <div className="mt-4">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="w-full"
-                          onClick={() => setEcosystemOpen(true)}
-                        >
-                          Learn the Drop Ecosystem
-                        </Button>
-                      </div>
-                      <div className="mt-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="w-full text-primary hover:text-primary"
-                          onClick={() => navigate('/AboutPiSupplier')}
-                        >
-                          <Coins className="w-4 h-4 mr-2" />
-                          Pi Supplier Partner Program
-                        </Button>
-                      </div>
-                    </>
-                  )}
+                  {/* Pi Network Login - Always show */}
+                  <div className="mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full mt-4"
+                      onClick={() => {
+                        if (isPiAvailable) {
+                          signInWithPiScopes(['username', 'payments', 'wallet_address']);
+                        } else {
+                          // Show message if Pi is not available
+                          toast({
+                            variant: 'destructive',
+                            title: 'Pi Browser Required',
+                            description: 'Please open this app in Pi Browser to use Pi Network authentication.',
+                          });
+                        }
+                      }}
+                      disabled={piLoading}
+                    >
+                      {piLoading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      Continue with Pi Network
+                    </Button>
+                  </div>
+
+                  {/* Terms and Privacy Modal Link Below Button */}
+                  <div className="mt-4 text-center">
+                    <span className="text-xs text-muted-foreground">
+                      By continuing, you agree to our
+                    </span>{' '}
+                    <TermsPrivacyModal />
+                  </div>
+
+                  <div className="mt-4">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setEcosystemOpen(true)}
+                    >
+                      Learn the Drop Ecosystem
+                    </Button>
+                  </div>
+
+                  <div className="mt-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full text-primary hover:text-primary"
+                      onClick={() => navigate('/AboutPiSupplier')}
+                    >
+                      <Coins className="w-4 h-4 mr-2" />
+                      Pi Supplier Partner Program
+                    </Button>
+                  </div>
 
                   {!isPiAvailable && (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-4">
-                        Please open this app in Pi Browser to continue with Pi Network authentication.
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground text-center">
+                        💡 For best experience, open in Pi Browser
                       </p>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => window.open('https://minepi.com', '_blank')}
-                      >
-                        Learn about Pi Network
-                      </Button>
                     </div>
                   )}
                 </>

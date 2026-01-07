@@ -42,6 +42,9 @@ export function Navbar() {
             <a href="#templates" className="text-muted-foreground hover:text-foreground transition-colors">
               Templates
             </a>
+            <Link to="/stores" className="text-muted-foreground hover:text-foreground transition-colors">
+              Store Directory
+            </Link>
             <Link to="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
               Pricing
             </Link>
@@ -105,6 +108,13 @@ export function Navbar() {
               >
                 Templates
               </a>
+              <Link
+                to="/stores"
+                className="text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
+                onClick={() => setIsOpen(false)}
+              >
+                Store Directory
+              </Link>
               <a
                 href="/templates"
                 className="text-muted-foreground hover:text-foreground transition-colors px-4 py-2"

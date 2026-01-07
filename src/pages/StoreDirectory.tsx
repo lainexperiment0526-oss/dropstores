@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, MapPin, Search, Store } from 'lucide-react';
+import { Loader2, MapPin, Search, Store, Globe, Download } from 'lucide-react';
+import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
+import { STORE_TYPES } from '@/lib/pi-sdk';
 
 interface StoreRow {
   id: string;
@@ -25,6 +27,14 @@ export default function StoreDirectory() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { showInterstitialAd, isLoading: adLoading } = usePiAdNetwork();
+
+  const storeTypeIcons = {
+    physical: Store,
+    online: Globe,
+    digital: Download,
+  };
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -63,6 +73,18 @@ export default function StoreDirectory() {
     stores.forEach((s) => s.store_type && types.add(s.store_type));
     return Array.from(types);
   }, [stores]);
+
+  const handleViewStore = async (storeSlug: string) => {
+    try {
+      // Show interstitial ad before navigating
+      await showInterstitialAd();
+    } catch (error) {
+      console.error('Error showing ad:', error);
+    } finally {
+      // Navigate regardless of ad success/failure
+      navigate(`/shop/${storeSlug}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,16 +125,22 @@ export default function StoreDirectory() {
               >
                 All types
               </Button>
-              {storeTypes.map((type) => (
-                <Button
-                  key={type}
-                  size="sm"
-                  variant={typeFilter === type ? 'default' : 'outline'}
-                  onClick={() => setTypeFilter(type)}
-                >
-                  {type}
-                </Button>
-              ))}
+              {storeTypes.map((type) => {
+                const storeTypeInfo = STORE_TYPES[type as keyof typeof STORE_TYPES];
+                const Icon = storeTypeIcons[type as keyof typeof storeTypeIcons];
+                return (
+                  <Button
+                    key={type}
+                    size="sm"
+                    variant={typeFilter === type ? 'default' : 'outline'}
+                    onClick={() => setTypeFilter(type)}
+                    className="flex items-center gap-2"
+                  >
+                    {Icon && <Icon className="w-4 h-4" />}
+                    {storeTypeInfo?.name || type}
+                  </Button>
+                );
+              })}
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -147,7 +175,20 @@ export default function StoreDirectory() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base truncate">{store.name}</CardTitle>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      {store.store_type && <Badge variant="outline">{store.store_type}</Badge>}
+                      {store.store_type && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          {(() => {
+                            const Icon = storeTypeIcons[store.store_type as keyof typeof storeTypeIcons];
+                            const storeTypeInfo = STORE_TYPES[store.store_type as keyof typeof STORE_TYPES];
+                            return (
+                              <>
+                                {Icon && <Icon className="w-3 h-3" />}
+                                {storeTypeInfo?.name || store.store_type}
+                              </>
+                            );
+                          })()} 
+                        </Badge>
+                      )}
                       <span>Published</span>
                     </div>
                   </div>
@@ -162,8 +203,15 @@ export default function StoreDirectory() {
                   )}
                   <div className="flex items-center justify-between pt-2">
                     <span className="text-xs text-muted-foreground">Updated {new Date(store.created_at).toLocaleDateString()}</span>
-                    <Button asChild size="sm">
-                      <Link to={`/shop/${store.slug}`}>View store</Link>
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleViewStore(store.slug)}
+                      disabled={adLoading}
+                    >
+                      {adLoading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      View store
                     </Button>
                   </div>
                 </CardContent>
