@@ -1,6 +1,16 @@
 // Pi Network SDK Types and Utilities - Complete Production Implementation
 import { secureConsole, getSafeEnvInfo } from './env-security';
 
+// Add timeout wrapper for Pi SDK operations
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 30000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`Pi SDK operation timed out after ${timeoutMs}ms`)), timeoutMs);
+    })
+  ]);
+};
+
 export interface PiUser {
   uid: string;
   username: string;
@@ -731,13 +741,51 @@ export { piSDK as default };
 
 // Legacy exports for backward compatibility
 export const initPiSdk = (sandbox: boolean = false) => piSDK.init(sandbox);
-export const isPiAvailable = () => piSDK.isAvailable();
+export const isPiAvailable = () => {
+  try {
+    return piSDK.isAvailable();
+  } catch (error) {
+    secureConsole.error('Error checking Pi availability:', error);
+    return false;
+  }
+};
 
 // Additional standalone exports for backward compatibility with existing hooks
-export const isPiAdNetworkSupported = () => piSDK.isAdNetworkSupported();
-export const isPiAdReady = (adType: AdType) => PiAdNetwork.isAdReady(adType);
-export const showPiAd = (adType: AdType) => PiAdNetwork.showAd(adType);
-export const requestPiAd = (adType: AdType) => PiAdNetwork.requestAd(adType);
+export const isPiAdNetworkSupported = (): Promise<boolean> => {
+  try {
+    return withTimeout(Promise.resolve(piSDK.isAdNetworkSupported()), 5000).catch(() => false);
+  } catch (error) {
+    secureConsole.error('Error checking Pi Ad Network support:', error);
+    return Promise.resolve(false);
+  }
+};
+
+export const isPiAdReady = (adType: AdType): Promise<any> => {
+  try {
+    return withTimeout(Promise.resolve(PiAdNetwork.isAdReady(adType)), 10000).catch(() => false);
+  } catch (error) {
+    secureConsole.error('Error checking Pi Ad ready status:', error);
+    return Promise.resolve(false);
+  }
+};
+
+export const showPiAd = (adType: AdType): Promise<any> => {
+  try {
+    return withTimeout(Promise.resolve(PiAdNetwork.showAd(adType)), 30000);
+  } catch (error) {
+    secureConsole.error('Error showing Pi Ad:', error);
+    return Promise.reject(error);
+  }
+};
+
+export const requestPiAd = (adType: AdType): Promise<any> => {
+  try {
+    return withTimeout(Promise.resolve(PiAdNetwork.requestAd(adType)), 15000);
+  } catch (error) {
+    secureConsole.error('Error requesting Pi Ad:', error);
+    return Promise.reject(error);
+  }
+};
 
 // Verify rewarded ad status with Pi Platform API
 export const verifyRewardedAdStatus = async (

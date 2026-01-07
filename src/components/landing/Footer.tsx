@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
+import { OfficialStatementModal } from './OfficialStatementModal';
+import { SoftwareLicenseModal } from './SoftwareLicenseModal';
 
 export function Footer() {
   return (
@@ -114,6 +116,12 @@ export function Footer() {
                   Business
                 </Link>
               </li>
+              <li>
+                <SoftwareLicenseModal />
+              </li>
+              <li>
+                <OfficialStatementModal />
+              </li>
             </ul>
           </div>
         </div>
@@ -121,9 +129,14 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-border mt-10 pt-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-            <p className="text-muted-foreground text-xs">
-              © {new Date().getFullYear()} Drop Store by MrWain Organization
-            </p>
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-xs">
+                © {new Date().getFullYear()} Drop Store by MrWain Organization
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Licensed for Pi Network Development • Powered by Pi Network
+              </p>
+            </div>
             <div className="flex items-center gap-4 text-xs">
               <span className="text-muted-foreground flex items-center gap-1.5">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>

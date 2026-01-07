@@ -143,17 +143,15 @@ export default function Auth() {
             <CardContent>
               {!showEmailForm ? (
                 <>
-                  {/* Pi Network Login - Always show */}
-                  <div className="mt-4">
+                  {/* Primary Pi Network Login */}
+                  <div className="space-y-4">
                     <Button
                       type="button"
-                      variant="outline"
-                      className="w-full mt-4"
+                      className="w-full h-12 gradient-hero shadow-glow text-lg font-semibold"
                       onClick={() => {
                         if (isPiAvailable) {
                           signInWithPiScopes(['username', 'payments', 'wallet_address']);
                         } else {
-                          // Show message if Pi is not available
                           toast({
                             variant: 'destructive',
                             title: 'Pi Browser Required',
@@ -164,48 +162,62 @@ export default function Auth() {
                       disabled={piLoading}
                     >
                       {piLoading ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="w-5 h-5 mr-3 animate-spin" />
                       ) : null}
                       Continue with Pi Network
                     </Button>
+
+                    {/* Terms and Privacy */}
+                    <div className="text-center">
+                      <span className="text-xs text-muted-foreground">
+                        By continuing, you agree to our
+                      </span>{' '}
+                      <TermsPrivacyModal />
+                    </div>
                   </div>
 
-                  {/* Terms and Privacy Modal Link Below Button */}
-                  <div className="mt-4 text-center">
-                    <span className="text-xs text-muted-foreground">
-                      By continuing, you agree to our
-                    </span>{' '}
-                    <TermsPrivacyModal />
+                  {/* Divider */}
+                  <div className="my-6 flex items-center gap-4">
+                    <div className="flex-1 h-px bg-border"></div>
+                    <span className="text-xs text-muted-foreground px-2">Explore Platform</span>
+                    <div className="flex-1 h-px bg-border"></div>
                   </div>
 
-                  <div className="mt-4">
+                  {/* Secondary Actions */}
+                  <div className="space-y-3">
                     <Button
                       type="button"
-                      variant="ghost"
-                      className="w-full"
+                      variant="outline"
+                      className="w-full h-11"
                       onClick={() => setEcosystemOpen(true)}
                     >
                       Learn the Drop Ecosystem
                     </Button>
-                  </div>
 
-                  <div className="mt-2">
                     <Button
                       type="button"
-                      variant="ghost"
-                      className="w-full text-primary hover:text-primary"
+                      variant="outline"
+                      className="w-full h-11 border-primary/20 text-primary hover:bg-primary/5"
                       onClick={() => navigate('/AboutPiSupplier')}
                     >
-                      <Coins className="w-4 h-4 mr-2" />
                       Pi Supplier Partner Program
                     </Button>
                   </div>
 
                   {!isPiAvailable && (
                     <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground text-center">
+                      <p className="text-xs text-muted-foreground text-center mb-3">
                         💡 For best experience, open in Pi Browser
                       </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-8 text-xs"
+                        onClick={() => window.open('https://minepi.com/Wain2020', '_blank')}
+                      >
+                        Open Pi Browser
+                      </Button>
                     </div>
                   )}
                 </>
@@ -330,57 +342,127 @@ export default function Auth() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 text-sm leading-relaxed">
-            <section className="space-y-2">
-              <h3 className="font-semibold">🔗 Droplink</h3>
-              <p>
-                Droplink connects your DropStore storefront to the masses, driving traffic, visibility,
-                and real buyers to your products through one powerful link.
-              </p>
-            </section>
+          <div className="space-y-6">
+            {/* Hero Section */}
+            <div className="text-center space-y-4 py-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl">
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  The Complete Pi Economy Platform
+                </h3>
+                <p className="text-muted-foreground max-w-xl mx-auto">
+                  Three powerful apps working together to help you build, sell, and earn in the Pi Network ecosystem
+                </p>
+              </div>
+            </div>
 
-            <section className="space-y-2">
-              <h3 className="font-semibold">🛒 DropStore</h3>
-              <p>Your complete storefront, designed to display and sell:</p>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Physical products</li>
-                <li>Digital products</li>
-                <li>Online services</li>
-              </ul>
-              <p>All in one Pi-powered marketplace.</p>
-            </section>
+            {/* Apps Grid */}
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-3 p-4 border rounded-lg bg-card">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <span className="text-2xl">🔗</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Droplink</h4>
+                    <p className="text-xs text-muted-foreground">Traffic & Visibility</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Drive massive traffic to your stores with powerful link sharing, social media integration, and viral marketing tools.
+                </p>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-1 bg-blue-500/10 text-blue-600 rounded">Link Sharing</span>
+                  <span className="px-2 py-1 bg-blue-500/10 text-blue-600 rounded">Analytics</span>
+                </div>
+              </div>
 
-            <section className="space-y-2">
-              <h3 className="font-semibold">💳 DropPay</h3>
-              <p>Handles payments and payouts, allowing you to:</p>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Accept Pi payments for your products</li>
-                <li>Create checkout links for everything</li>
-                <li>Embed Pi payments on your website or widgets</li>
-                <li>Automatically receive earnings from your DropStore</li>
-                <li>Manage merchant payouts seamlessly</li>
-              </ul>
-            </section>
+              <div className="space-y-3 p-4 border rounded-lg bg-card">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                    <span className="text-2xl">🛒</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">DropStore</h4>
+                    <p className="text-xs text-muted-foreground">Complete Storefront</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Build beautiful stores for physical, digital, and online products. Full inventory management and customization.
+                </p>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-1 bg-green-500/10 text-green-600 rounded">Physical</span>
+                  <span className="px-2 py-1 bg-green-500/10 text-green-600 rounded">Digital</span>
+                  <span className="px-2 py-1 bg-green-500/10 text-green-600 rounded">Online</span>
+                </div>
+              </div>
 
-            <section className="space-y-2">
-              <h3 className="font-semibold">🔁 One Connected Ecosystem</h3>
-              <p>These three Pi apps are fully connected, creating a complete business flow:</p>
-              <p className="font-mono bg-muted px-2 py-1 rounded w-fit">Exposure → Selling → Payment → Payout</p>
-            </section>
+              <div className="space-y-3 p-4 border rounded-lg bg-card">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                    <span className="text-2xl">💳</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">DropPay</h4>
+                    <p className="text-xs text-muted-foreground">Pi Payments</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Secure Pi payment processing, checkout links, merchant payouts, and earnings management.
+                </p>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-1 bg-purple-500/10 text-purple-600 rounded">Payments</span>
+                  <span className="px-2 py-1 bg-purple-500/10 text-purple-600 rounded">Payouts</span>
+                </div>
+              </div>
+            </div>
 
-            <section className="space-y-2">
-              <h3 className="font-semibold">✅ Recommended Usage</h3>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Creators & Influencers → Use Droplink to grow reach</li>
-                <li>Sellers & Merchants → Use DropStore to showcase and sell</li>
-                <li>Businesses → Use DropPay for secure Pi payments & earnings</li>
-              </ul>
-            </section>
+            {/* Flow Section */}
+            <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+              <h4 className="font-semibold text-center">🔄 Complete Business Flow</h4>
+              <div className="flex items-center justify-center gap-3 text-sm">
+                <div className="flex items-center gap-2 px-3 py-2 bg-background rounded-lg border">
+                  <span>🔗</span>
+                  <span>Exposure</span>
+                </div>
+                <span className="text-muted-foreground">→</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-background rounded-lg border">
+                  <span>🛒</span>
+                  <span>Selling</span>
+                </div>
+                <span className="text-muted-foreground">→</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-background rounded-lg border">
+                  <span>💳</span>
+                  <span>Payment</span>
+                </div>
+                <span className="text-muted-foreground">→</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-background rounded-lg border">
+                  <span>💰</span>
+                  <span>Earnings</span>
+                </div>
+              </div>
+            </div>
 
-            <section className="space-y-2">
-              <h3 className="font-semibold">💡 Flexible for Your Needs</h3>
-              <p>Use one, two, or all three — depending on your business or creator goals.</p>
-            </section>
+            {/* Use Cases */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-center">💡 Perfect For</h4>
+              <div className="grid gap-4 md:grid-cols-3 text-sm">
+                <div className="text-center space-y-2 p-3 bg-background rounded-lg border">
+                  <div className="text-2xl">🎨</div>
+                  <div className="font-medium">Creators</div>
+                  <div className="text-muted-foreground">Share content & earn from your audience</div>
+                </div>
+                <div className="text-center space-y-2 p-3 bg-background rounded-lg border">
+                  <div className="text-2xl">🏪</div>
+                  <div className="font-medium">Merchants</div>
+                  <div className="text-muted-foreground">Sell products & manage your business</div>
+                </div>
+                <div className="text-center space-y-2 p-3 bg-background rounded-lg border">
+                  <div className="text-2xl">🚀</div>
+                  <div className="font-medium">Entrepreneurs</div>
+                  <div className="text-muted-foreground">Build & scale your Pi-powered venture</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="flex items-center justify-between">

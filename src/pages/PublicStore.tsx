@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { PaymentModal, OrderForm } from '@/components/store/PaymentModal';
 import { StoreReportModal } from '@/components/store/StoreReportModal';
@@ -981,32 +981,38 @@ export default function PublicStore() {
       }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           {selectedProduct && (
-            <div className="flex flex-col gap-4">
-              <div className="w-full aspect-square bg-secondary rounded-lg overflow-hidden flex items-center justify-center">
-                {selectedProduct.images && selectedProduct.images[0] ? (
-                  <img src={selectedProduct.images[0]} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                ) : (
-                  <Package className="w-12 h-12 text-muted-foreground" />
-                )}
-              </div>
-              <h2 className="text-xl font-bold">{selectedProduct.name}</h2>
-              <div className="text-lg font-bold" style={{ color: primaryColor }}>
-                {(selectedProductVariant?.price || selectedProduct.price).toFixed(2)} π
-                {selectedProduct.compare_at_price && (
-                  <span className="text-muted-foreground line-through ml-2 text-base">
-                    {selectedProduct.compare_at_price.toFixed(2)} π
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedProduct.name}</DialogTitle>
+                <DialogDescription>
+                  Product details and purchase options
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex flex-col gap-4">
+                <div className="w-full aspect-square bg-secondary rounded-lg overflow-hidden flex items-center justify-center">
+                  {selectedProduct.images && selectedProduct.images[0] ? (
+                    <img src={selectedProduct.images[0]} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Package className="w-12 h-12 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="text-lg font-bold" style={{ color: primaryColor }}>
+                  {(selectedProductVariant?.price || selectedProduct.price).toFixed(2)} π
+                  {selectedProduct.compare_at_price && (
+                    <span className="text-muted-foreground line-through ml-2 text-base">
+                      {selectedProduct.compare_at_price.toFixed(2)} π
+                    </span>
+                  )}
+                </div>
+                {selectedProduct.product_type === 'digital' && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium w-fit">
+                    Digital Download
                   </span>
                 )}
-              </div>
-              {selectedProduct.product_type === 'digital' && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium w-fit">
-                  Digital Download
-                </span>
-              )}
-              {selectedProduct.description && (
-                <p className="text-muted-foreground text-sm">{selectedProduct.description}</p>
-              )}
-              
+                {selectedProduct.description && (
+                  <p className="text-muted-foreground text-sm">{selectedProduct.description}</p>
+                )}
               {/* Product Variants */}
               {selectedProduct.variants && selectedProduct.variants.length > 0 && (
                 <div className="space-y-2 border-t pt-4">
@@ -1090,6 +1096,7 @@ export default function PublicStore() {
                 </div>
               </div>
             </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

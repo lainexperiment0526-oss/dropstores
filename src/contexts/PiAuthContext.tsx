@@ -127,12 +127,20 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
       // Verify the authentication on the backend and get Supabase session
       console.log('PiAuth: Calling backend pi-auth function...');
-      const { data, error } = await supabase.functions.invoke('pi-auth', {
+      
+      // Add timeout to backend verification
+      const backendPromise = supabase.functions.invoke('pi-auth', {
         body: { 
           accessToken: result.accessToken,
           piUser: result.user
         }
       });
+      
+      const backendTimeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Backend verification timed out')), 15000)
+      );
+      
+      const { data, error } = await Promise.race([backendPromise, backendTimeoutPromise]) as any;
 
       if (error) {
         console.error('PiAuth: Backend verification failed:', error);
