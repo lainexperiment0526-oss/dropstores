@@ -93,6 +93,7 @@ declare global {
         callbacks: PiPaymentCallbacks
       ) => void;
       nativeFeaturesList: () => Promise<string[]>;
+      requestWalletAddress?: () => Promise<string>;
       openShareDialog: (title: string, message: string) => void;
       openUrlInSystemBrowser: (url: string) => Promise<void>;
       Ads: {

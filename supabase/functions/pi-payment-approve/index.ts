@@ -1,4 +1,12 @@
-// @ts-ignore: Deno types
+/**
+ * Pi Network Payment Approval Function
+ * 
+ * Called when onReadyForServerApproval callback fires
+ * Approves payment with Pi Platform API
+ * 
+ * Reference: https://github.com/pi-apps/pi-platform-docs/blob/master/payments.md
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -7,37 +15,41 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
     const { paymentId } = await req.json();
 
     if (!paymentId) {
-      console.error('Missing payment ID');
       return new Response(
-        JSON.stringify({ error: 'Missing payment ID' }),
+        JSON.stringify({ error: 'paymentId is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get PI_API_KEY from environment and trim any whitespace
+    // Get API key from environment
     const PI_API_KEY = Deno.env.get('PI_API_KEY')?.trim();
-    
     if (!PI_API_KEY) {
       console.error('PI_API_KEY not configured');
       return new Response(
-        JSON.stringify({ error: 'Server configuration error: PI_API_KEY not set' }),
+        JSON.stringify({ error: 'Server configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Approving Pi payment:', paymentId);
-    console.log('Using PI_API_KEY (first 10 chars):', PI_API_KEY.substring(0, 10) + '...');
-    console.log('PI_API_KEY length:', PI_API_KEY.length);
+    console.log(`[Pi Payment Approve] Approving payment: ${paymentId}`);
 
-    // Approve the payment with Pi Platform API (Mainnet)
+    // Approve payment with Pi Platform API
     const approveResponse = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
       method: 'POST',
       headers: {
@@ -47,7 +59,7 @@ serve(async (req: Request) => {
     });
 
     const responseText = await approveResponse.text();
-    console.log('Pi API response status:', approveResponse.status);
+    console.log(`[Pi Payment Approve] Response status: ${approveResponse.status}`);
     console.log('Pi API response body:', responseText);
 
     if (!approveResponse.ok) {
