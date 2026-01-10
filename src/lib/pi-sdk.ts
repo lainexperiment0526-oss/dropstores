@@ -407,6 +407,36 @@ export class PiAdNetwork {
       throw error;
     }
   }
+
+  // Verify rewarded ad status with Pi Platform API
+  static async verifyRewardedAdStatus(adId: string, accessToken: string): Promise<boolean> {
+    try {
+      const apiKey = import.meta.env.VITE_PI_API_KEY;
+      if (!apiKey || !accessToken) {
+        throw new Error('Missing API key or access token for verification');
+      }
+
+      const response = await fetch(`https://api.minepi.com/v2/ads/${adId}/verify`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Key ${apiKey}`,
+          'X-User-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        secureConsole.error('Ad verification failed:', response.status);
+        return false;
+      }
+
+      const result = await response.json();
+      return result.verified === true;
+    } catch (error) {
+      secureConsole.error('Ad verification error:', error);
+      return false;
+    }
+  }
 }
 
 // Utility Functions
@@ -445,9 +475,23 @@ export const openUrlInSystemBrowser = async (url: string): Promise<void> => {
   }
 };
 
+// Initialize Pi SDK with proper v2.0 configuration
+export const initPiSdk = async (sandbox: boolean = false): Promise<boolean> => {
+  // Force production mode for mainnet
+  const isProduction = import.meta.env.VITE_PI_MAINNET_MODE === 'true';
+  const actualSandbox = isProduction ? false : sandbox;
+  
+  return await piSDK.init(actualSandbox);
+};
+
+// Check if Pi SDK is available
+export const isPiAvailable = (): boolean => {
+  return piSDK.isAvailable();
+};
+
 // Initialize Pi SDK automatically when imported
 if (typeof window !== 'undefined') {
-  // Initialize SDK when DOM is ready
+  // Wait for DOM ready then initialize
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       piSDK.init().catch((error) => {
@@ -739,17 +783,6 @@ export const calculateTotalWithFee = (baseAmount: number): number => {
 // Export the SDK manager and main functions
 export { piSDK as default };
 
-// Legacy exports for backward compatibility
-export const initPiSdk = (sandbox: boolean = false) => piSDK.init(sandbox);
-export const isPiAvailable = () => {
-  try {
-    return piSDK.isAvailable();
-  } catch (error) {
-    secureConsole.error('Error checking Pi availability:', error);
-    return false;
-  }
-};
-
 // Additional standalone exports for backward compatibility with existing hooks
 export const isPiAdNetworkSupported = (): Promise<boolean> => {
   try {
@@ -787,43 +820,11 @@ export const requestPiAd = (adType: AdType): Promise<any> => {
   }
 };
 
-// Verify rewarded ad status with Pi Platform API
-export const verifyRewardedAdStatus = async (
-  adId: string,
-  accessToken: string
-): Promise<{ rewarded: boolean; error?: string }> => {
-  if (!adId || !accessToken) {
-    return { rewarded: false, error: 'Missing adId or access token' };
-  }
-
+export const verifyRewardedAdStatus = (adId: string, accessToken: string): Promise<boolean> => {
   try {
-    const response = await fetch(`https://api.minepi.com/v2/ads_network/status/${adId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      secureConsole.error('Failed to verify ad status:', response.status, response.statusText);
-      return { rewarded: false, error: `API error: ${response.status}` };
-    }
-
-    const data = await response.json();
-    
-    // Check if reward is granted according to official Pi docs
-    const rewarded = data.mediator_ack_status === 'granted';
-    
-    secureConsole.log('Ad verification result:', {
-      adId,
-      status: data.mediator_ack_status,
-      rewarded,
-    });
-
-    return { rewarded };
+    return withTimeout(Promise.resolve(PiAdNetwork.verifyRewardedAdStatus(adId, accessToken)), 10000);
   } catch (error) {
-    secureConsole.error('Error verifying ad status:', error);
-    return { rewarded: false, error: 'Network error' };
+    secureConsole.error('Error verifying rewarded ad status:', error);
+    return Promise.resolve(false);
   }
 };
