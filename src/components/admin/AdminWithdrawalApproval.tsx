@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,18 +12,15 @@ import { Wallet, CheckCircle, XCircle, Clock, AlertTriangle, UserCheck, DollarSi
 
 interface WithdrawalRequest {
   id: string;
-  merchant_id: string;
+  owner_id: string;
+  store_id: string;
   amount: number;
-  pi_wallet_address: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  wallet_address: string;
+  status: string;
   requested_at: string;
   processed_at: string | null;
-  admin_notes: string | null;
   notes: string | null;
-  merchants: {
-    pi_username: string | null;
-    business_name: string | null;
-  } | null;
+  pi_txid: string | null;
 }
 
 export function AdminWithdrawalApproval() {
@@ -41,15 +37,10 @@ export function AdminWithdrawalApproval() {
 
   const fetchWithdrawalRequests = async () => {
     try {
+      // Use merchant_payouts table instead of withdrawal_requests
       const { data, error } = await supabase
-        .from('withdrawal_requests')
-        .select(`
-          *,
-          merchants (
-            pi_username,
-            business_name
-          )
-        `)
+        .from('merchant_payouts')
+        .select('*')
         .order('requested_at', { ascending: false });
 
       if (error) throw error;
@@ -66,44 +57,18 @@ export function AdminWithdrawalApproval() {
   const handleRequestAction = async (requestId: string, action: 'approve' | 'reject' | 'complete') => {
     setProcessing(true);
     try {
-      const updateData: any = {
-        status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'completed',
-        processed_at: new Date().toISOString(),
-        admin_notes: adminNotes || null,
-      };
-
+      const newStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'completed';
+      
       const { error } = await supabase
-        .from('withdrawal_requests')
-        .update(updateData)
+        .from('merchant_payouts')
+        .update({
+          status: newStatus,
+          processed_at: new Date().toISOString(),
+          notes: adminNotes || null,
+        })
         .eq('id', requestId);
 
       if (error) throw error;
-
-      // If approving, update merchant earnings status
-      if (action === 'approve') {
-        const request = withdrawalRequests.find(r => r.id === requestId);
-        if (request) {
-          // Mark earnings as withdrawn up to the withdrawal amount
-          await supabase
-            .from('merchant_earnings')
-            .update({ status: 'withdrawn' })
-            .eq('merchant_id', request.merchant_id)
-            .eq('status', 'available')
-            .lte('amount', request.amount);
-        }
-      }
-
-      // If rejecting, revert earnings back to available
-      if (action === 'reject') {
-        const request = withdrawalRequests.find(r => r.id === requestId);
-        if (request) {
-          await supabase
-            .from('merchant_earnings')
-            .update({ status: 'available' })
-            .eq('merchant_id', request.merchant_id)
-            .eq('status', 'pending_withdrawal');
-        }
-      }
 
       const actionText = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'marked as completed';
       toast.success(`Withdrawal request ${actionText} successfully`);
@@ -166,8 +131,8 @@ export function AdminWithdrawalApproval() {
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
-          <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded-lg"></div>
+          <div className="h-32 bg-muted rounded-lg mb-4"></div>
+          <div className="h-64 bg-muted rounded-lg"></div>
         </div>
       </div>
     );
@@ -249,7 +214,7 @@ export function AdminWithdrawalApproval() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Merchant</TableHead>
+                  <TableHead>Store ID</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Wallet Address</TableHead>
                   <TableHead>Status</TableHead>
@@ -261,19 +226,12 @@ export function AdminWithdrawalApproval() {
                 {withdrawalRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {request.merchants?.business_name || `@${request.merchants?.pi_username}` || 'Unknown'}
-                        </p>
-                        {request.merchants?.pi_username && (
-                          <p className="text-xs text-muted-foreground">@{request.merchants.pi_username}</p>
-                        )}
-                      </div>
+                      <p className="font-medium text-sm truncate max-w-32">{request.store_id}</p>
                     </TableCell>
                     <TableCell className="font-mono">π {request.amount.toFixed(7)}</TableCell>
                     <TableCell>
                       <div className="max-w-32 truncate font-mono text-xs">
-                        {request.pi_wallet_address}
+                        {request.wallet_address}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -294,19 +252,17 @@ export function AdminWithdrawalApproval() {
                     </TableCell>
                     <TableCell>
                       {request.status === 'pending' ? (
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600 border-green-200 hover:bg-green-50"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setDialogOpen(true);
-                            }}
-                          >
-                            Review
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-green-600 border-green-200 hover:bg-green-50"
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          Review
+                        </Button>
                       ) : request.status === 'approved' ? (
                         <Button
                           size="sm"
@@ -351,10 +307,8 @@ export function AdminWithdrawalApproval() {
             <div className="space-y-4">
               <div className="p-4 rounded-lg bg-secondary/50 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Merchant:</span>
-                  <span className="text-sm font-medium">
-                    {selectedRequest.merchants?.business_name || `@${selectedRequest.merchants?.pi_username}`}
-                  </span>
+                  <span className="text-sm text-muted-foreground">Store:</span>
+                  <span className="text-sm font-medium truncate max-w-40">{selectedRequest.store_id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Amount:</span>
@@ -362,7 +316,7 @@ export function AdminWithdrawalApproval() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Wallet:</span>
-                  <span className="text-xs font-mono">{selectedRequest.pi_wallet_address}</span>
+                  <span className="text-xs font-mono truncate max-w-40">{selectedRequest.wallet_address}</span>
                 </div>
                 {selectedRequest.notes && (
                   <div>
