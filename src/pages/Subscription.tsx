@@ -1004,59 +1004,6 @@ const Subscription = () => {
             </div>
           </div>
 
-          {/* Christmas Gift Card Section */}
-          <div className="mt-16 bg-gradient-to-br from-red-50 to-green-50 dark:from-red-950/20 dark:to-green-950/20 rounded-xl p-8 border border-red-200 dark:border-red-800/50">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h3 className="text-2xl font-display font-bold mb-3">
-                  🎁 Gift Subscriptions This Holiday!
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Give the gift of premium features to your loved ones. Share subscriptions with unique gift codes that can be redeemed anytime.
-                </p>
-                <ul className="space-y-2 mb-6">
-                  <li className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>Generate unique gift codes</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>Include personalized messages</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>Valid for 12 months</span>
-                  </li>
-                  <li className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span>Share via email or link</span>
-                  </li>
-                </ul>
-                <Button asChild size="lg" className="bg-red-600 hover:bg-red-700">
-                  <Link to="/redeem-gift-card">
-                    Get Started with Gifts
-                  </Link>
-                </Button>
-              </div>
-              <div className="text-center">
-                <div className="text-6xl mb-4">🎄</div>
-                <Card className="bg-card/50 backdrop-blur-sm border-2 border-green-200 dark:border-green-800/50">
-                  <CardContent className="pt-6">
-                    <p className="font-mono text-lg font-bold text-primary mb-2">
-                      XMAS-2024-A7K9
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Example gift code
-                    </p>
-                    <div className="text-2xl font-display font-bold text-green-600 dark:text-green-400">
-                      Grow Plan • 3 months
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-
           {/* Footer Info */}
           <div className="mt-12 text-center">
             <p className="text-sm text-muted-foreground">

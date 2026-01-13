@@ -42,7 +42,7 @@ export function useGiftCard() {
       }
 
       if (data?.success) {
-        toast.success(data.subscription?.message || '🎁 Gift card redeemed successfully!');
+        toast.success(data.subscription?.message || 'Gift card redeemed successfully!');
         return data.subscription;
       } else {
         throw new Error(data?.error || 'Failed to redeem gift card');

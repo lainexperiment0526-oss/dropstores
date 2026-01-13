@@ -44,9 +44,9 @@ export function GiftCardDisplay({
   };
 
   const handleShareEmail = () => {
-    const subject = encodeURIComponent(`You received a DropStore ${planName} Gift Card! 🎄`);
+    const subject = encodeURIComponent(`You received a DropStore ${planName} Gift Card!`);
     const body = encodeURIComponent(
-      `Hi ${recipientName},\n\nYou've received a gift! Someone special sent you a ${planName} subscription gift card for DropStore.\n\nGift Code: ${code}\n\n${giftMessage ? `Message from sender: ${giftMessage}\n\n` : ''}To redeem your gift:\n1. Visit dropstore.space\n2. Go to Redeem Gift Card\n3. Enter code: ${code}\n\nThis gift expires on ${new Date(expiresAt).toLocaleDateString()}\n\nHappy Holidays! 🎁`
+      `Hi ${recipientName},\n\nYou've received a gift! Someone special sent you a ${planName} subscription gift card for DropStore.\n\nGift Code: ${code}\n\n${giftMessage ? `Message from sender: ${giftMessage}\n\n` : ''}To redeem your gift:\n1. Visit dropstore.space\n2. Go to Redeem Gift Card\n3. Enter code: ${code}\n\nThis gift expires on ${new Date(expiresAt).toLocaleDateString()}\n\nThank you!`
     );
     window.open(`mailto:${recipientEmail}?subject=${subject}&body=${body}`, '_blank');
   };

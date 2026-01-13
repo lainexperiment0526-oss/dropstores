@@ -502,7 +502,9 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         signInWithPi,
         linkPiAccount,
         fetchWalletAddress,
-        signInWithPiScopes        offerAuthReward,      }}
+        signInWithPiScopes,
+        offerAuthReward,
+      }}
     >
       {children}
     </PiAuthContext.Provider>

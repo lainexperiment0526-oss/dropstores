@@ -596,12 +596,6 @@ Example:
 - Bundle deals
 - Free shipping
 
-**Christmas (December)**
-- Gift shopping season
-- Offer: Gift bundles
-- Gift wrapping service
-- Extended returns
-
 **New Year (January)**
 - Fresh start mentality
 - Offer: 25-35% OFF
@@ -628,11 +622,6 @@ Example:
 7. Activate campaign
 
 **Banner Examples:**
-
-**Christmas:**
-🎄 "Merry Christmas! 30% OFF Everything" 🎅
-- Colors: Red, green, gold
-- Snowflake decorations
 
 **Black Friday:**
 🛍️ "BLACK FRIDAY: Up to 60% OFF!" 💥

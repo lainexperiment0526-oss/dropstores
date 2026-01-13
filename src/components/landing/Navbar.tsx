@@ -1,26 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Menu, X, Store, Snowflake } from 'lucide-react';
-import { toast } from 'sonner';
+import { Menu, X, Store } from 'lucide-react';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [christmasTheme, setChristmasTheme] = useState(() => {
-    const saved = localStorage.getItem('dropstore-christmas-theme');
-    // Default to standard theme; user can opt-in to Christmas mode
-    return saved !== null ? JSON.parse(saved) : false;
-  });
-
-  const toggleChristmasTheme = () => {
-    const newValue = !christmasTheme;
-    setChristmasTheme(newValue);
-    localStorage.setItem('dropstore-christmas-theme', JSON.stringify(newValue));
-    toast.success(newValue ? '🎄 Christmas theme enabled!' : 'Christmas theme disabled', {
-      icon: newValue ? '🎅' : '👋',
-    });
-  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
@@ -61,17 +45,6 @@ export function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Christmas Theme Toggle */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
-              <Snowflake className={`w-4 h-4 transition-colors ${christmasTheme ? 'text-blue-500' : 'text-muted-foreground'}`} />
-              <span className="text-sm font-medium">Christmas</span>
-              <Switch
-                checked={christmasTheme}
-                onCheckedChange={toggleChristmasTheme}
-                className="scale-90"
-              />
-            </div>
-            
             <Button variant="ghost" asChild>
               <Link to="/auth">Sign In</Link>
             </Button>
@@ -143,18 +116,6 @@ export function Navbar() {
               >
                 Admin
               </a>
-              
-              {/* Christmas Theme Toggle - Mobile */}
-              <div className="flex items-center justify-between px-4 py-2 border-t border-border mt-2 pt-4">
-                <div className="flex items-center gap-2">
-                  <Snowflake className={`w-4 h-4 transition-colors ${christmasTheme ? 'text-blue-500' : 'text-muted-foreground'}`} />
-                  <span className="text-sm font-medium">Christmas Theme</span>
-                </div>
-                <Switch
-                  checked={christmasTheme}
-                  onCheckedChange={toggleChristmasTheme}
-                />
-              </div>
               
               <div className="flex flex-col gap-2 px-4 pt-4 border-t border-border">
                 <Button variant="outline" asChild>

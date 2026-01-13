@@ -68,7 +68,7 @@ export function GiftCardPurchase({
           <Gift className="w-5 h-5 text-amber-600" />
           <div>
             <CardTitle className="text-lg">Gift This Plan</CardTitle>
-            <CardDescription>Share {planName} with someone special this holiday</CardDescription>
+            <CardDescription>Share {planName} with someone special</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -77,7 +77,7 @@ export function GiftCardPurchase({
         {/* Gift Preview */}
         <div className="p-4 bg-white dark:bg-slate-900 rounded-lg border border-amber-200 dark:border-amber-800">
           <div className="text-center space-y-2">
-            <div className="text-4xl">🎄</div>
+            <div className="text-4xl">🎁</div>
             <p className="font-semibold text-sm">{planName} Gift Card</p>
             <p className="text-xl font-bold text-amber-600">{amount} Pi</p>
           </div>
@@ -124,7 +124,7 @@ export function GiftCardPurchase({
             </Label>
             <Textarea
               id="giftMessage"
-              placeholder="Add a personal message... 'Wishing you a wonderful holiday season!'"
+              placeholder="Add a personal message... 'Enjoy your gift!'"
               value={formData.giftMessage}
               onChange={(e) =>
                 setFormData({ ...formData, giftMessage: e.target.value })
