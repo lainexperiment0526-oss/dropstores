@@ -39,6 +39,7 @@ import DropPaySuccess from "./pages/DropPaySuccess";
 import DropPayCancel from "./pages/DropPayCancel";
 import PayPage from "./pages/PayPage";
 import PiNetworkDemo from "./pages/PiNetworkDemo";
+import PiAdsDemoPage from "./pages/PiAdsDemoPage";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => {
                 <Route path="/gdpr" element={<GDPR />} />
                                 <Route path="/pi-test" element={<PiAuthTest />} />
                 <Route path="/pi-demo" element={<PiNetworkDemo />} />
+                <Route path="/ads-demo" element={<PiAdsDemoPage />} />
                 <Route path="/admin-payouts" element={<AdminPayouts />} />
                 <Route path="/admin-reports" element={<AdminReports />} />
                 <Route path="/store/:storeId/analytics" element={<AdvancedAnalytics />} />

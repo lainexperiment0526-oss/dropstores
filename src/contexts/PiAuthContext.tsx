@@ -10,6 +10,7 @@ import {
   PiPaymentDTO
 } from '@/lib/pi-sdk';
 import { toast } from 'sonner';
+import { showPiAd, isPiAdNetworkSupported } from '@/lib/pi-sdk';
 
 interface PiAuthContextType {
   piUser: PiUser | null;
@@ -22,6 +23,7 @@ interface PiAuthContextType {
   linkPiAccount: () => Promise<void>;
   fetchWalletAddress: () => Promise<void>;
   signInWithPiScopes: (scopes: string[], shouldNavigate?: boolean) => Promise<void>;
+  offerAuthReward: () => Promise<void>;
 }
 
 const PiAuthContext = createContext<PiAuthContextType | undefined>(undefined);
@@ -220,6 +222,33 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       toast.error(`Failed to authenticate: ${errorMessage}`);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Offer rewarded ad after authentication for bonus points/features
+  const offerAuthReward = async () => {
+    if (!piAvailable || !piUser) {
+      return;
+    }
+
+    try {
+      const adSupported = await isPiAdNetworkSupported();
+      if (!adSupported) {
+        console.log('Ad network not supported on this device');
+        return;
+      }
+
+      // Show rewarded ad
+      const result = await showPiAd('rewarded');
+      
+      if (result?.result === 'AD_REWARDED' && result.adId) {
+        // Grant bonus points or premium features
+        toast.success('🎉 Welcome bonus unlocked! +50 points');
+        console.log('Auth reward ad completed:', result.adId);
+        // TODO: Verify on backend and grant reward
+      }
+    } catch (error) {
+      console.error('Error showing auth reward ad:', error);
     }
   };
 
@@ -473,8 +502,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         signInWithPi,
         linkPiAccount,
         fetchWalletAddress,
-        signInWithPiScopes
-      }}
+        signInWithPiScopes        offerAuthReward,      }}
     >
       {children}
     </PiAuthContext.Provider>

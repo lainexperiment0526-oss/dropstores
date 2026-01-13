@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, MapPin, Search, Store, Globe, Download } from 'lucide-react';
 import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
+import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
+import { RewardedAdButton } from '@/components/ads/RewardedAdButton';
 import { STORE_TYPES } from '@/lib/pi-sdk';
 
 interface StoreRow {
@@ -27,6 +29,7 @@ export default function StoreDirectory() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [storeViewCount, setStoreViewCount] = useState(0);
   const navigate = useNavigate();
   const { showInterstitialAd, isLoading: adLoading } = usePiAdNetwork();
 
@@ -75,21 +78,23 @@ export default function StoreDirectory() {
   }, [stores]);
 
   const handleViewStore = async (storeSlug: string) => {
-    try {
-      // Show interstitial ad before navigating
-      await showInterstitialAd();
-    } catch (error) {
-      console.error('Error showing ad:', error);
-    } finally {
-      // Navigate regardless of ad success/failure
-      navigate(`/shop/${storeSlug}`);
-    }
+    // Increment store view count for ad triggers
+    setStoreViewCount(prev => prev + 1);
+    // Navigate to store
+    navigate(`/shop/${storeSlug}`);
   };
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Automatic interstitial ad trigger - shows every 3 store views */}
+      <InterstitialAdTrigger 
+        actionCount={storeViewCount}
+        showEvery={3}
+        delay={1500}
+      />
+      
       <header className="border-b border-border bg-card/60 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Store className="w-5 h-5" />
@@ -99,9 +104,19 @@ export default function StoreDirectory() {
               <p className="text-sm text-muted-foreground">Browse all published stores from the community</p>
             </div>
           </div>
-          <Button variant="outline" asChild>
-            <Link to="/create-store">Create your store</Link>
-          </Button>
+          <div className="flex gap-2">
+            <RewardedAdButton
+              onReward={async () => {
+                // Grant featured placement or discount
+                toast({ title: '🎉 Featured Store Access Unlocked!' });
+              }}
+              buttonText="Watch Ad to Unlock Featured"
+              rewardText="Featured store access granted!"
+            />
+            <Button variant="outline" asChild>
+              <Link to="/create-store">Create your store</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
