@@ -34,6 +34,22 @@
     
     <!-- Pi Network SDK - Must be loaded before app -->
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+      // Initialize Pi SDK immediately after loading
+      window.addEventListener('load', function() {
+        if (window.Pi) {
+          // Use production mainnet configuration
+          const isProd = true; // Always mainnet for production
+          window.Pi.init({ 
+            version: "2.0",
+            sandbox: false // Production mainnet mode
+          });
+          console.log('✓ Pi SDK initialized:', { version: '2.0', mode: 'mainnet' });
+        } else {
+          console.warn('⚠ Pi SDK not loaded - ensure app is opened in Pi Browser');
+        }
+      });
+    </script>
     
     <!-- Preconnect to important domains -->
     <link rel="preconnect" href="https://api.minepi.com" />

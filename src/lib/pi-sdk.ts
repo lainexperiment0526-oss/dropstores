@@ -111,9 +111,10 @@ class PiSDKManager {
   private nativeFeatures: string[] = [];
   private adNetworkSupported: boolean = false;
   
-  // Initialize Pi SDK - Production Mainnet Mode
+  // Initialize Pi SDK - PRODUCTION MAINNET MODE ONLY
   async init(sandbox: boolean = false): Promise<boolean> {
-    // Force production mode regardless of parameter
+    // PRODUCTION ONLY: Force mainnet mode for all Pi features
+    // Authentication, Payments, and Ad Network all use mainnet
     if (typeof window === 'undefined') {
       secureConsole.warn('Window object not available');
       return false;
@@ -126,10 +127,10 @@ class PiSDKManager {
     }
 
     try {
-      // Initialize with production configuration
+      // PRODUCTION CONFIGURATION - mainnet for auth, payments, ads
       const config = {
         version: '2.0',
-        sandbox: false  // Always mainnet for production
+        sandbox: false  // FALSE = Production mainnet for all features
       };
       
       window.Pi!.init(config);

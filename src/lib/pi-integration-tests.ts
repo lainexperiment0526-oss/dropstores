@@ -125,7 +125,7 @@ class PiIntegrationTestSuite {
     
     try {
       const mainnetMode = import.meta.env.VITE_PI_MAINNET_MODE === 'true';
-      const sandboxMode = import.meta.env.VITE_PI_SANDBOX_MODE === 'true';
+      const sandboxMode = false; // PRODUCTION ONLY - Force mainnet
       const environment = import.meta.env.VITE_PI_ENVIRONMENT;
       
       if (mainnetMode && !sandboxMode && environment === 'production') {

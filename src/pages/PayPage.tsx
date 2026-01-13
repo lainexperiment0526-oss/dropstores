@@ -319,8 +319,8 @@ export default function PayPage() {
       const Pi = (window as any).Pi;
       
       // Pi SDK is already initialized in AuthContext - do not re-initialize
-      const sandboxMode = import.meta.env.VITE_PI_SANDBOX_MODE === 'true';
-      console.log('💳 Using Pi SDK with config:', { sandbox: sandboxMode, mainnet: !sandboxMode });
+      const sandboxMode = false; // PRODUCTION ONLY - Force mainnet for authentication
+      console.log('💳 Using Pi SDK with config:', { sandbox: false, mainnet: true, mode: 'PRODUCTION' });
       
       const scopes = ['username', 'payments', 'wallet_address'];
       console.log('📋 Requesting authentication scopes:', scopes);
@@ -389,8 +389,8 @@ export default function PayPage() {
         const Pi = (window as any).Pi;
         
         // Pi SDK is already initialized in AuthContext with correct mainnet config
-        const sandboxMode = import.meta.env.VITE_PI_SANDBOX_MODE === 'true';
-        console.log('💳 Creating payment with config:', { sandbox: sandboxMode, mainnet: !sandboxMode });
+        const sandboxMode = false; // PRODUCTION ONLY - Force mainnet for payments
+        console.log('💳 Creating payment with config:', { sandbox: false, mainnet: true, mode: 'PRODUCTION' });
 
         const paymentAmount = paymentLink.pricing_type === 'free'
           ? 0.01 // Pi Network minimum
