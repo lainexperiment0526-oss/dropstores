@@ -10,35 +10,35 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Wallet, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, Download, PieChart } from 'lucide-react';
+import { Wallet, TrendingUp, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, PieChart } from 'lucide-react';
 import { FloatingAISupport } from '@/components/FloatingAISupport';
 
-interface Earning {
+interface Sale {
   id: string;
   amount: number;
-  payment_link_id: string;
-  transaction_id: string;
-  status: 'pending' | 'available' | 'withdrawn';
+  net_amount: number;
+  platform_fee: number;
+  order_id: string;
+  store_id: string;
+  payout_status: string;
+  pi_txid: string | null;
   created_at: string;
-  payment_links: {
-    title: string;
-  } | null;
 }
 
-interface WithdrawalRequest {
+interface PayoutRequest {
   id: string;
   amount: number;
-  pi_wallet_address: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  wallet_address: string;
+  status: string;
   requested_at: string;
   processed_at: string | null;
-  admin_notes: string | null;
+  notes: string | null;
 }
 
 export function MerchantEarnings() {
-  const { merchant, piUser } = useAuth();
-  const [earnings, setEarnings] = useState<Earning[]>([]);
-  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  const { user } = useAuth();
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
   const [availableBalance, setAvailableBalance] = useState(0);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -49,68 +49,61 @@ export function MerchantEarnings() {
   const [submittingWithdrawal, setSubmittingWithdrawal] = useState(false);
 
   useEffect(() => {
-    if (merchant?.id || piUser?.uid) {
-      fetchEarnings();
-      fetchWithdrawalRequests();
+    if (user?.id) {
+      fetchSales();
+      fetchPayoutRequests();
     }
-  }, [merchant?.id, piUser?.uid]);
+  }, [user?.id]);
 
-  const fetchEarnings = async () => {
+  const fetchSales = async () => {
     try {
-      const merchantId = merchant?.id || piUser?.uid;
-      if (!merchantId) return;
+      if (!user?.id) return;
 
       const { data, error } = await supabase
-        .from('merchant_earnings')
-        .select(`
-          *,
-          payment_links (
-            title
-          )
-        `)
-        .eq('merchant_id', merchantId)
+        .from('merchant_sales')
+        .select('*')
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setEarnings(data || []);
+      setSales(data || []);
       
       // Calculate totals
-      const total = (data || []).reduce((sum, earning) => sum + earning.amount, 0);
-      const available = (data || []).filter(e => e.status === 'available').reduce((sum, earning) => sum + earning.amount, 0);
+      const total = (data || []).reduce((sum, sale) => sum + sale.net_amount, 0);
+      const available = (data || []).filter(s => s.payout_status === 'pending').reduce((sum, sale) => sum + sale.net_amount, 0);
       
       setTotalEarnings(total);
       setAvailableBalance(available);
     } catch (error) {
-      console.error('Error fetching earnings:', error);
-      toast.error('Failed to load earnings');
+      console.error('Error fetching sales:', error);
+      toast.error('Failed to load sales');
     }
   };
 
-  const fetchWithdrawalRequests = async () => {
+  const fetchPayoutRequests = async () => {
     try {
-      const merchantId = merchant?.id || piUser?.uid;
-      if (!merchantId) return;
+      if (!user?.id) return;
 
       const { data, error } = await supabase
-        .from('withdrawal_requests')
+        .from('merchant_payouts')
         .select('*')
-        .eq('merchant_id', merchantId)
+        .eq('owner_id', user.id)
         .order('requested_at', { ascending: false });
 
       if (error) throw error;
 
-      setWithdrawalRequests(data || []);
+      setPayoutRequests(data || []);
     } catch (error) {
-      console.error('Error fetching withdrawal requests:', error);
-      toast.error('Failed to load withdrawal requests');
+      console.error('Error fetching payout requests:', error);
+      toast.error('Failed to load payout requests');
     } finally {
       setLoading(false);
     }
   };
 
   const handleWithdrawalRequest = async () => {
-    if (!merchant?.id && !piUser?.uid) {
+    if (!user?.id) {
       toast.error('Please sign in to request withdrawal');
       return;
     }
@@ -134,27 +127,31 @@ export function MerchantEarnings() {
     setSubmittingWithdrawal(true);
 
     try {
+      // Get user's first store
+      const { data: stores } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('owner_id', user.id)
+        .limit(1);
+
+      const storeId = stores?.[0]?.id;
+      if (!storeId) {
+        toast.error('No store found');
+        return;
+      }
+
       const { error } = await supabase
-        .from('withdrawal_requests')
+        .from('merchant_payouts')
         .insert({
-          merchant_id: merchant?.id || piUser?.uid,
+          owner_id: user.id,
+          store_id: storeId,
           amount: amount,
-          pi_wallet_address: piWalletAddress,
+          wallet_address: piWalletAddress,
           status: 'pending',
           notes: withdrawalNotes || null,
         });
 
       if (error) throw error;
-
-      // Update earnings status to 'pending_withdrawal'
-      const { error: earningsError } = await supabase
-        .from('merchant_earnings')
-        .update({ status: 'pending_withdrawal' })
-        .eq('merchant_id', merchant?.id || piUser?.uid)
-        .eq('status', 'available')
-        .lte('amount', amount);
-
-      if (earningsError) throw earningsError;
 
       toast.success('Withdrawal request submitted successfully! Admin will review it shortly.');
       setWithdrawalDialogOpen(false);
@@ -163,8 +160,8 @@ export function MerchantEarnings() {
       setWithdrawalNotes('');
       
       // Refresh data
-      fetchEarnings();
-      fetchWithdrawalRequests();
+      fetchSales();
+      fetchPayoutRequests();
     } catch (error) {
       console.error('Error submitting withdrawal request:', error);
       toast.error('Failed to submit withdrawal request');
@@ -183,10 +180,8 @@ export function MerchantEarnings() {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'available':
+      case 'paid':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'withdrawn':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -198,6 +193,7 @@ export function MerchantEarnings() {
         return <Clock className="w-4 h-4" />;
       case 'approved':
       case 'completed':
+      case 'paid':
         return <CheckCircle className="w-4 h-4" />;
       case 'rejected':
         return <XCircle className="w-4 h-4" />;
@@ -210,8 +206,8 @@ export function MerchantEarnings() {
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
-          <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded-lg"></div>
+          <div className="h-32 bg-muted rounded-lg mb-4"></div>
+          <div className="h-64 bg-muted rounded-lg"></div>
         </div>
       </div>
     );
@@ -256,8 +252,8 @@ export function MerchantEarnings() {
                 <Wallet className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Withdrawal Requests</p>
-                <p className="text-2xl font-bold text-foreground">{withdrawalRequests.length}</p>
+                <p className="text-sm text-muted-foreground">Payout Requests</p>
+                <p className="text-2xl font-bold text-foreground">{payoutRequests.length}</p>
               </div>
             </div>
           </CardContent>
@@ -328,21 +324,21 @@ export function MerchantEarnings() {
         </Dialog>
       </div>
 
-      {/* Withdrawal Requests */}
+      {/* Payout Requests */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wallet className="w-5 h-5" />
-            Withdrawal Requests
+            Payout Requests
           </CardTitle>
           <CardDescription>
-            Track the status of your withdrawal requests
+            Track the status of your payout requests
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {withdrawalRequests.length === 0 ? (
+          {payoutRequests.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No withdrawal requests yet
+              No payout requests yet
             </div>
           ) : (
             <Table>
@@ -356,10 +352,10 @@ export function MerchantEarnings() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {withdrawalRequests.map((request) => (
+                {payoutRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell className="font-medium">π {request.amount.toFixed(7)}</TableCell>
-                    <TableCell className="font-mono text-xs">{request.pi_wallet_address}</TableCell>
+                    <TableCell className="font-mono text-xs truncate max-w-32">{request.wallet_address}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getStatusColor(request.status)}>
                         <div className="flex items-center gap-1">
@@ -380,48 +376,48 @@ export function MerchantEarnings() {
         </CardContent>
       </Card>
 
-      {/* Earnings History */}
+      {/* Sales History */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PieChart className="w-5 h-5" />
-            Earnings History
+            Sales History
           </CardTitle>
           <CardDescription>
-            Detailed breakdown of your earnings from payments
+            Detailed breakdown of your sales
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {earnings.length === 0 ? (
+          {sales.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No earnings yet. Start selling to see your earnings here!
+              No sales yet. Start selling to see your earnings here!
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Payment Link</TableHead>
-                  <TableHead>Transaction</TableHead>
+                  <TableHead>Platform Fee</TableHead>
+                  <TableHead>Net Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {earnings.map((earning) => (
-                  <TableRow key={earning.id}>
-                    <TableCell className="font-medium">π {earning.amount.toFixed(7)}</TableCell>
-                    <TableCell>{earning.payment_links?.title || 'N/A'}</TableCell>
-                    <TableCell className="font-mono text-xs">{earning.transaction_id}</TableCell>
+                {sales.map((sale) => (
+                  <TableRow key={sale.id}>
+                    <TableCell className="font-medium">π {sale.amount.toFixed(7)}</TableCell>
+                    <TableCell className="text-muted-foreground">π {sale.platform_fee.toFixed(7)}</TableCell>
+                    <TableCell className="font-medium text-green-600">π {sale.net_amount.toFixed(7)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getStatusColor(earning.status)}>
+                      <Badge variant="outline" className={getStatusColor(sale.payout_status)}>
                         <div className="flex items-center gap-1">
-                          {getStatusIcon(earning.status)}
-                          {earning.status.charAt(0).toUpperCase() + earning.status.slice(1)}
+                          {getStatusIcon(sale.payout_status)}
+                          {sale.payout_status.charAt(0).toUpperCase() + sale.payout_status.slice(1)}
                         </div>
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(earning.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(sale.created_at).toLocaleDateString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

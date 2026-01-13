@@ -201,7 +201,12 @@ export function usePiAdNetwork() {
           try {
             const verification = await verifyRewardedAdStatus(result.adId, piAccessToken);
             
-            if (verification.rewarded) {
+            // Handle verification result - can be boolean or object with rewarded property
+            const isRewarded = typeof verification === 'boolean' 
+              ? verification 
+              : (verification as { rewarded?: boolean; error?: string })?.rewarded;
+            
+            if (isRewarded) {
               console.log('✅ Ad reward verified by Pi Platform API');
               setAdSession(prev => ({
                 adsShownCount: prev.adsShownCount + 1,
@@ -215,7 +220,10 @@ export function usePiAdNetwork() {
                 rewarded: true,
               };
             } else {
-              console.warn('❌ Ad reward not verified by Pi Platform API:', verification.error);
+              const errorMsg = typeof verification === 'object' 
+                ? (verification as { error?: string })?.error 
+                : 'Verification failed';
+              console.warn('❌ Ad reward not verified by Pi Platform API:', errorMsg);
               toast.error('Unable to verify ad reward. Please try again.');
               setIsLoading(false);
               return { success: false };
