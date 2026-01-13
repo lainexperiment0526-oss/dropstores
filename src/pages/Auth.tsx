@@ -3,12 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function Auth() {
   const { login, isLoading, isAuthenticated, isPiBrowser, isSdkReady } = useAuth();
+  const { showInterstitialAd, canShowAd } = usePiAdNetwork();
   const navigate = useNavigate();
   const [isConnecting, setIsConnecting] = useState(false);
   const [authError, setAuthError] = useState<string>('');
@@ -31,6 +33,16 @@ export default function Auth() {
     try {
       await login();
       toast.success('Successfully connected with Pi Network!');
+      
+      // Try to show an interstitial ad after successful auth (non-blocking)
+      if (isPiBrowser && canShowAd) {
+        console.log('Attempting to show welcome ad...');
+        showInterstitialAd().catch((err) => {
+          console.log('Ad not shown:', err);
+          // Continue to dashboard even if ad fails
+        });
+      }
+      
       navigate('/dashboard');
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to connect. Please try again.';
@@ -67,13 +79,6 @@ export default function Auth() {
           </Link>
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
           <p className="text-muted-foreground">Connect with Pi Network to access your dashboard</p>
-          <div className="mt-4 flex justify-center">
-            <img
-              src="https://i.ibb.co/rKBFSNft/media-89.gif"
-              alt="Welcome Gift"
-              className="w-40 h-40 rounded-lg border-2 border-orange-200 object-cover"
-            />
-          </div>
         </div>
 
         <Card className="border-border">

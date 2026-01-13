@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
 import { 
   initPiSdk, 
   authenticateWithPi, 
@@ -10,14 +9,12 @@ import {
   PiAuthResult,
   PiPaymentDTO
 } from '@/lib/pi-sdk';
-import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
 interface PiAuthContextType {
-  user: User | null;
   piUser: PiUser | null;
   piAccessToken: string | null;
-    walletAddress: string | null;
+  walletAddress: string | null;
   isPiAuthenticated: boolean;
   isPiAvailable: boolean;
   isLoading: boolean;
@@ -30,10 +27,11 @@ interface PiAuthContextType {
 const PiAuthContext = createContext<PiAuthContextType | undefined>(undefined);
 
 export function PiAuthProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  // Removed useAuth dependency to avoid circular dependency
+  // Auth is now handled in AuthContext directly
   const [piUser, setPiUser] = useState<PiUser | null>(null);
   const [piAccessToken, setPiAccessToken] = useState<string | null>(null);
-    const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [piAvailable, setPiAvailable] = useState(false);
   const navigate = useNavigate();
@@ -402,6 +400,9 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   // Link Pi account to existing user
   const linkPiAccount = async () => {
+    // Get current user from Supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) {
       toast.error('Please sign in first');
       return;
@@ -463,10 +464,9 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   return (
     <PiAuthContext.Provider 
       value={{ 
-        user,
         piUser, 
         piAccessToken, 
-          walletAddress,
+        walletAddress,
         isPiAuthenticated: !!piUser,
         isPiAvailable: piAvailable,
         isLoading,
