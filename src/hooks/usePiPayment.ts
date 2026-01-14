@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   createPiPayment, 
   PiPaymentData,
+  PiPaymentDTO,
   SUBSCRIPTION_PLANS,
   PlanType
 } from '@/lib/pi-sdk';
