@@ -13,6 +13,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
 import { AdNetworkWidget } from '@/components/ads/AdNetworkWidget';
 import { PiAuthButton } from '@/components/auth/PiAuthButton';
+import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
 import {
   Store, 
   Plus, 
@@ -64,6 +65,7 @@ function Dashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { isActive, isLoading: subscriptionLoading, subscription, daysRemaining } = useSubscription();
+  const { showInterstitialAd } = usePiAdNetwork();
   const [stores, setStores] = useState<StoreData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [products, setProducts] = useState<ProductData[]>([]);
@@ -173,9 +175,6 @@ function Dashboard() {
   return (
     <>
       <WelcomeModal open={welcomeOpen} onOpenChange={setWelcomeOpen} userName={user?.user_metadata?.full_name} />
-      
-      {/* Show interstitial ad after visiting dashboard (every 3 visits) */}
-      <InterstitialAdTrigger actionCount={stores.length} showEvery={3} delay={2000} />
       
       <div className="min-h-screen bg-background">
         {/* Header */}

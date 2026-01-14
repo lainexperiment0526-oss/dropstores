@@ -65,8 +65,21 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   // Handle incomplete payments found during authentication
   const handleIncompletePayment = useCallback((payment: PiPaymentDTO) => {
-    console.log('Incomplete payment found:', payment);
-    toast.info('You have an incomplete payment. Please complete it to continue.');
+    console.log('Incomplete payment found during auth:', payment);
+    toast.error('You have an incomplete payment. Please complete it to continue.', {
+      duration: 8000,
+      action: {
+        label: 'View Details',
+        onClick: () => {
+          console.log('Incomplete payment details:', {
+            id: payment.identifier,
+            amount: payment.amount,
+            status: payment.status,
+            memo: payment.memo
+          });
+        }
+      }
+    });
   }, []);
 
   // Sign in with Pi Network - Always requests username, payments, wallet_address scopes

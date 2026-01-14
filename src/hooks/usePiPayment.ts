@@ -179,26 +179,52 @@ export function usePiPayment() {
 
         onError: (error: Error) => {
           console.error('Payment error:', error);
+          
+          // Check if it's an incomplete payment error
+          const errorMessage = error.message || '';
+          const isIncompletePaymentError = errorMessage.includes('pending payment') || 
+                                           errorMessage.includes('incomplete payment') ||
+                                           errorMessage.includes('action from the developer');
+          
+          if (isIncompletePaymentError) {
+            toast.error('You have an incomplete payment. Please complete or cancel it before making a new payment.', {
+              duration: 6000
+            });
+          } else {
+            toast.error(`Payment error: ${errorMessage}`);
+          }
+          
           setPaymentState({
             isProcessing: false,
             paymentId: null,
             status: 'error',
-            error: error.message,
+            error: errorMessage,
             subscriptionData: null
           });
-          toast.error(`Payment error: ${error.message}`);
         }
       });
     } catch (err) {
       console.error('Failed to create payment:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to initiate payment';
+      const isIncompletePaymentError = errorMessage.includes('pending payment') || 
+                                       errorMessage.includes('incomplete payment') ||
+                                       errorMessage.includes('action from the developer');
+      
+      if (isIncompletePaymentError) {
+        toast.error('You have an incomplete payment. Please complete or cancel it before making a new payment.', {
+          duration: 6000
+        });
+      } else {
+        toast.error(errorMessage);
+      }
+      
       setPaymentState({
         isProcessing: false,
         paymentId: null,
         status: 'error',
-        error: 'Failed to initiate payment',
+        error: errorMessage,
         subscriptionData: null
       });
-      toast.error('Failed to initiate payment. Please try again.');
     }
   }, [user]);
 

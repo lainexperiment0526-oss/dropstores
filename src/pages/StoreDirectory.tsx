@@ -10,6 +10,7 @@ import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
 import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
 import { RewardedAdButton } from '@/components/ads/RewardedAdButton';
 import { STORE_TYPES } from '@/lib/pi-sdk';
+import { toast } from 'sonner';
 
 interface StoreRow {
   id: string;
@@ -29,7 +30,6 @@ export default function StoreDirectory() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [storeViewCount, setStoreViewCount] = useState(0);
   const navigate = useNavigate();
   const { showInterstitialAd, isLoading: adLoading } = usePiAdNetwork();
 
@@ -60,6 +60,13 @@ export default function StoreDirectory() {
     fetchStores();
   }, []);
 
+  // Show ad on page visit
+  useEffect(() => {
+    showInterstitialAd().catch((err) => {
+      console.log('Ad not shown on stores page:', err);
+    });
+  }, [showInterstitialAd]);
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return stores.filter((store) => {
@@ -78,21 +85,12 @@ export default function StoreDirectory() {
   }, [stores]);
 
   const handleViewStore = async (storeSlug: string) => {
-    // Increment store view count for ad triggers
-    setStoreViewCount(prev => prev + 1);
     // Navigate to store
     navigate(`/shop/${storeSlug}`);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Automatic interstitial ad trigger - shows every 3 store views */}
-      <InterstitialAdTrigger 
-        actionCount={storeViewCount}
-        showEvery={3}
-        delay={1500}
-      />
-      
       <header className="border-b border-border bg-card/60 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -108,7 +106,7 @@ export default function StoreDirectory() {
             <RewardedAdButton
               onReward={async () => {
                 // Grant featured placement or discount
-                toast({ title: '🎉 Featured Store Access Unlocked!' });
+                toast.success('🎉 Featured Store Access Unlocked!');
               }}
               buttonText="Watch Ad to Unlock Featured"
               rewardText="Featured store access granted!"

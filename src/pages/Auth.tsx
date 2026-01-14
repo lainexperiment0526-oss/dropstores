@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
+import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -21,6 +22,15 @@ export default function Auth() {
       navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
+
+  // Show ad on page visit
+  useEffect(() => {
+    if (!isAuthenticated && canShowAd) {
+      showInterstitialAd().catch((err) => {
+        console.log('Ad not shown on auth page:', err);
+      });
+    }
+  }, [canShowAd, showInterstitialAd, isAuthenticated]);
 
   const handlePiLogin = async () => {
     if (isConnecting) {

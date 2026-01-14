@@ -40,6 +40,8 @@ const Subscription = () => {
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [isActivating, setIsActivating] = useState(false);
+  const [incompletePaymentError, setIncompletePaymentError] = useState(false);
+  const [hasCheckedIncompletePayment, setHasCheckedIncompletePayment] = useState(false);
   
   // Get plan from URL parameter
   const planFromUrl = searchParams.get('plan') as PlanType | null;
@@ -120,7 +122,20 @@ const Subscription = () => {
     return null;
   }
 
+  const handleClearIncompletePayment = () => {
+    // This will simply clear the local flag
+    // The actual incomplete payment handling is done by Pi Network SDK
+    setIncompletePaymentError(false);
+    toast.success('You can try making a payment again. If the issue persists, please wait a few minutes.');
+  };
+
   const handleSubscribe = async (planType: PlanType) => {
+    // Check for incomplete payments before proceeding
+    if (incompletePaymentError) {
+      toast.error('Please clear your incomplete payment first.');
+      return;
+    }
+
     setSelectedPlan(planType);
     setIsActivating(true);
     
@@ -210,7 +225,20 @@ const Subscription = () => {
     } catch (error: any) {
       console.error('Subscription error:', error);
       const errorMessage = error?.message || 'Failed to process subscription';
-      toast.error(`Error: ${errorMessage}`);
+      
+      // Check if it's an incomplete payment error
+      const isIncompletePayment = errorMessage.includes('pending payment') || 
+                                   errorMessage.includes('incomplete payment') ||
+                                   errorMessage.includes('action from the developer');
+      
+      if (isIncompletePayment) {
+        setIncompletePaymentError(true);
+        toast.error('You have an incomplete payment. Please complete or cancel it before making a new payment.', {
+          duration: 8000
+        });
+      } else {
+        toast.error(`Error: ${errorMessage}`);
+      }
     } finally {
       setIsActivating(false);
       setSelectedPlan(null);
@@ -386,6 +414,29 @@ const Subscription = () => {
 
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
+          {/* Incomplete Payment Warning */}
+          {incompletePaymentError && (
+            <Alert className="mb-8 border-red-500 bg-red-50 dark:bg-red-950/20">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="flex items-center justify-between gap-4">
+                <div className="text-red-900 dark:text-red-100">
+                  <span className="font-semibold">Incomplete Payment Detected</span>
+                  <p className="text-sm mt-1">
+                    You have a pending payment that needs to be completed or cancelled before making a new payment.
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleClearIncompletePayment}
+                  size="sm"
+                  variant="destructive"
+                  className="whitespace-nowrap"
+                >
+                  Clear Payment
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Pi Network Notice */}
           {!isPiAvailable && (
             <Alert className="mb-8">
@@ -582,7 +633,7 @@ const Subscription = () => {
                       className="w-full" 
                       variant="outline"
                       onClick={() => handleSubscribe('basic')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       {((isProcessing || isActivating) && selectedPlan === 'basic') ? (
                         <>
@@ -600,7 +651,7 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('basic')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
                       Pay with Droppay
@@ -664,7 +715,7 @@ const Subscription = () => {
                     <Button 
                       className="w-full gradient-hero" 
                       onClick={() => handleSubscribe('grow')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       {((isProcessing || isActivating) && selectedPlan === 'grow') ? (
                         <>
@@ -682,7 +733,7 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('grow')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
                       Pay with Droppay
@@ -744,7 +795,7 @@ const Subscription = () => {
                     <Button 
                       className="w-full" 
                       onClick={() => handleSubscribe('advance')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       {((isProcessing || isActivating) && selectedPlan === 'advance') ? (
                         <>
@@ -762,7 +813,7 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('advance')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
                       Pay with Droppay
@@ -824,7 +875,7 @@ const Subscription = () => {
                     <Button 
                       className="w-full" 
                       onClick={() => handleSubscribe('plus')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       {((isProcessing || isActivating) && selectedPlan === 'plus') ? (
                         <>
@@ -842,7 +893,7 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('plus')}
-                      disabled={isProcessing || isActivating}
+                      disabled={isProcessing || isActivating || incompletePaymentError}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
                       Pay with Droppay

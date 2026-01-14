@@ -11,6 +11,7 @@ import { StoreThemeCustomizer } from '@/components/store/StoreThemeCustomizer';
 import { createPiPayment, initPiSdk } from '@/lib/pi-sdk';
 import { RewardedAdButton } from '@/components/ads/RewardedAdButton';
 import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
+import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
 import {
   Store,
   ShoppingCart,
@@ -154,10 +155,10 @@ export default function PublicStore() {
   const [cartOpen, setCartOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [productViewCount, setProductViewCount] = useState(0);
   const [selectedProductVariant, setSelectedProductVariant] = useState<ProductVariant | null>(null);
   const [giftMessage, setGiftMessage] = useState('');
   const [showGiftOptions, setShowGiftOptions] = useState(false);
+  const { showInterstitialAd } = usePiAdNetwork();
 
   useEffect(() => {
     initPiSdk(false); // Mainnet mode for production
@@ -165,6 +166,15 @@ export default function PublicStore() {
       fetchStore();
     }
   }, [slug]);
+
+  // Show ad on page visit
+  useEffect(() => {
+    if (store) {
+      showInterstitialAd().catch((err) => {
+        console.log('Ad not shown on store page:', err);
+      });
+    }
+  }, [store, showInterstitialAd]);
 
   // Apply theme colors
   useEffect(() => {
@@ -544,9 +554,6 @@ export default function PublicStore() {
 
   return (
     <>
-      {/* Show interstitial ad every 5 product views */}
-      <InterstitialAdTrigger actionCount={productViewCount} showEvery={5} delay={1500} />
-      
       <div className="min-h-screen bg-background" style={{ color: bodyTextColor, fontFamily: bodyFont }}>
         {/* Announcement Bar - Top Priority */}
         {store.show_announcement_bar && store.announcement_text && (
@@ -875,7 +882,6 @@ export default function PublicStore() {
             {products.map((product) => (
               <Card key={product.id} className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300" onClick={() => {
                 setSelectedProduct(product);
-                setProductViewCount(prev => prev + 1);
               }}>
                 <div className="aspect-square bg-secondary overflow-hidden relative">
                   {product.images && product.images[0] ? (
@@ -950,7 +956,7 @@ export default function PublicStore() {
                       size="sm"
                       variant="outline"
                       className="flex-1"
-                      onClick={e => { e.stopPropagation(); setSelectedProduct(product); setProductViewCount(prev => prev + 1); }}
+                      onClick={e => { e.stopPropagation(); setSelectedProduct(product); }}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
