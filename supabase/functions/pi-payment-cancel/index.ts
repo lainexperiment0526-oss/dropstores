@@ -1,9 +1,11 @@
 // Pi Payment Cancel Edge Function
 // Handles cancellation of incomplete/stuck payments
-
+// @ts-ignore: Deno imports
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-ignore: Deno imports
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
+// @ts-ignore: Deno global
 const PI_API_KEY = Deno.env.get('PI_API_KEY');
 const PI_API_URL = 'https://api.minepi.com';
 
@@ -16,15 +18,19 @@ interface CancelPaymentRequest {
   paymentId: string;
 }
 
-serve(async (req) => {
+// @ts-ignore: Deno serve
+serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    // @ts-ignore: Deno global
     const supabaseClient = createClient(
+      // @ts-ignore: Deno global
       Deno.env.get('SUPABASE_URL') ?? '',
+      // @ts-ignore: Deno global
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
