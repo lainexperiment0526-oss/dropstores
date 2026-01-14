@@ -50,11 +50,34 @@ export function StorePagesManager({ storeId, storeSlug }: StorePagesManagerProps
         .eq('store_id', storeId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error loading pages:', error);
+        // Check if table doesn't exist
+        if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          toast({ 
+            title: 'Database Setup Required', 
+            description: 'The store_pages table needs to be created. Please run the migration SQL in your Supabase dashboard.', 
+            variant: 'destructive' 
+          });
+        } else if (error.message?.includes('permission') || error.message?.includes('denied')) {
+          toast({ 
+            title: 'Permission Error', 
+            description: 'Unable to access store pages. Please check database permissions.', 
+            variant: 'destructive' 
+          });
+        } else {
+          toast({ 
+            title: 'Error', 
+            description: `Failed to load pages: ${error.message}`, 
+            variant: 'destructive' 
+          });
+        }
+        throw error;
+      }
       setPages((data as StorePage[]) || []);
     } catch (error) {
       console.error('Error loading pages', error);
-      toast({ title: 'Error', description: 'Failed to load pages', variant: 'destructive' });
+      // Already showed specific toast above
     } finally {
       setLoading(false);
     }

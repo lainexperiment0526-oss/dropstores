@@ -171,6 +171,21 @@ export function StoreThemeCustomizer({ storeId, theme, onUpdate }: StoreThemeCus
 
       if (error) {
         console.error('❌ Theme save error:', error);
+        
+        // Check for specific column errors
+        if (error.message?.includes('column') || error.message?.includes('does not exist')) {
+          toast({ 
+            title: 'Database Update Required', 
+            description: 'Some theme color columns are missing from your database. Please run the theme colors migration SQL.', 
+            variant: 'destructive' 
+          });
+        } else {
+          toast({ 
+            title: 'Error', 
+            description: `Failed to save theme: ${error.message}`, 
+            variant: 'destructive' 
+          });
+        }
         throw error;
       }
 

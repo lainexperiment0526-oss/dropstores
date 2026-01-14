@@ -34,6 +34,7 @@ $functions = @(
     "pi-auth",
     "pi-payment-approve",
     "pi-payment-complete",
+    "pi-payment-cancel",
     "verify-pi-transaction",
     "merchant-payout",
     "request-payout",

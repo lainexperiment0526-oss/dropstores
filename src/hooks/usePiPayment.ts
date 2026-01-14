@@ -177,7 +177,7 @@ export function usePiPayment() {
           toast.info('Payment cancelled');
         },
 
-        onError: (error: Error) => {
+        onError: (error: Error, payment?: PiPaymentDTO) => {
           console.error('Payment error:', error);
           
           // Check if it's an incomplete payment error
@@ -187,16 +187,30 @@ export function usePiPayment() {
                                            errorMessage.includes('action from the developer');
           
           if (isIncompletePaymentError) {
-            toast.error('You have an incomplete payment. Please complete or cancel it before making a new payment.', {
-              duration: 6000
+            // Auto-cancel the stuck payment after 3 seconds
+            const currentPaymentId = payment?.identifier || paymentState.paymentId;
+            
+            toast.error('You have an incomplete payment. Auto-cancelling in 3 seconds...', {
+              duration: 3000
             });
+            
+            setTimeout(() => {
+              if (currentPaymentId) {
+                console.log('🔄 Auto-cancelling incomplete payment:', currentPaymentId);
+                cancelIncompletePayment(currentPaymentId);
+              } else {
+                // If no paymentId, just reset state
+                resetPayment();
+                toast.success('Payment cleared. Please try again.');
+              }
+            }, 3000);
           } else {
             toast.error(`Payment error: ${errorMessage}`);
           }
           
           setPaymentState({
             isProcessing: false,
-            paymentId: null,
+            paymentId: payment?.identifier || null,
             status: 'error',
             error: errorMessage,
             subscriptionData: null
@@ -314,10 +328,48 @@ export function usePiPayment() {
     });
   }, []);
 
+  // Auto-cancel incomplete payment and reset state
+  const cancelIncompletePayment = useCallback(async (paymentId?: string) => {
+    try {
+      console.log('🚫 Cancelling incomplete payment:', paymentId || 'unknown');
+      
+      // Try to cancel via backend if we have a paymentId
+      if (paymentId) {
+        try {
+          const { error } = await supabase.functions.invoke('pi-payment-cancel', {
+            body: { paymentId }
+          });
+          
+          if (error) {
+            console.error('Backend cancel failed:', error);
+          } else {
+            console.log('✓ Backend cancelled payment');
+          }
+        } catch (err) {
+          console.error('Failed to call cancel function:', err);
+        }
+      }
+      
+      // Reset local payment state
+      resetPayment();
+      
+      toast.success('Payment cleared. You can try again now.', {
+        duration: 3000
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to cancel payment:', error);
+      toast.error('Failed to clear payment. Please wait a few minutes and try again.');
+      return false;
+    }
+  }, [resetPayment]);
+
   return {
     ...paymentState,
     createSubscriptionPayment,
     createProductPayment,
-    resetPayment
+    resetPayment,
+    cancelIncompletePayment
   };
 }

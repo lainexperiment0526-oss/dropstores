@@ -35,7 +35,7 @@ const Subscription = () => {
     piUser,
     walletAddress
   } = usePiAuth();
-  const { isProcessing, status, createSubscriptionPayment, resetPayment } = usePiPayment();
+  const { isProcessing, status, createSubscriptionPayment, resetPayment, cancelIncompletePayment } = usePiPayment();
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
@@ -81,6 +81,22 @@ const Subscription = () => {
     fetchActiveSubscription();
   }, [fetchActiveSubscription]);
 
+  // Auto-cancel stuck payments on mount if detected
+  useEffect(() => {
+    if (!hasCheckedIncompletePayment && status === 'error') {
+      setHasCheckedIncompletePayment(true);
+      
+      // If there's an error status, try to auto-clear after a delay
+      const timer = setTimeout(() => {
+        console.log('🔄 Auto-clearing error state after mount');
+        resetPayment();
+        setIncompletePaymentError(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [status, hasCheckedIncompletePayment, resetPayment]);
+
   // Redirect to dashboard when payment completes
   useEffect(() => {
     if (status === 'completed') {
@@ -122,11 +138,14 @@ const Subscription = () => {
     return null;
   }
 
-  const handleClearIncompletePayment = () => {
-    // This will simply clear the local flag
-    // The actual incomplete payment handling is done by Pi Network SDK
-    setIncompletePaymentError(false);
-    toast.success('You can try making a payment again. If the issue persists, please wait a few minutes.');
+  const handleClearIncompletePayment = async () => {
+    // Clear the incomplete payment via the hook
+    const success = await cancelIncompletePayment();
+    if (success) {
+      setIncompletePaymentError(false);
+      // Also reset the payment state
+      resetPayment();
+    }
   };
 
   const handleSubscribe = async (planType: PlanType) => {
@@ -416,22 +435,23 @@ const Subscription = () => {
         <div className="max-w-6xl mx-auto">
           {/* Incomplete Payment Warning */}
           {incompletePaymentError && (
-            <Alert className="mb-8 border-red-500 bg-red-50 dark:bg-red-950/20">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="flex items-center justify-between gap-4">
-                <div className="text-red-900 dark:text-red-100">
-                  <span className="font-semibold">Incomplete Payment Detected</span>
+            <Alert className="mb-8 border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="text-red-900 dark:text-red-100 flex-1">
+                  <span className="font-bold text-base">⚠️ Incomplete Payment Detected</span>
                   <p className="text-sm mt-1">
-                    You have a pending payment that needs to be completed or cancelled before making a new payment.
+                    You have a pending payment that needs to be cancelled before making a new payment. Click the button to force cancel.
                   </p>
                 </div>
                 <Button 
                   onClick={handleClearIncompletePayment}
-                  size="sm"
+                  size="lg"
                   variant="destructive"
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap font-bold shadow-lg"
                 >
-                  Clear Payment
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  Force Cancel Payment
                 </Button>
               </AlertDescription>
             </Alert>
