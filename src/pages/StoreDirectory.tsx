@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Loader2, MapPin, Search, Store, Globe, Download } from 'lucide-react';
 import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
 import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
-import { RewardedAdButton } from '@/components/ads/RewardedAdButton';
 import { STORE_TYPES } from '@/lib/pi-sdk';
 import { toast } from 'sonner';
 
@@ -103,14 +102,6 @@ export default function StoreDirectory() {
             </div>
           </div>
           <div className="flex gap-2">
-            <RewardedAdButton
-              onReward={async () => {
-                // Grant featured placement or discount
-                toast.success('🎉 Featured Store Access Unlocked!');
-              }}
-              buttonText="Watch Ad to Unlock Featured"
-              rewardText="Featured store access granted!"
-            />
             <Button variant="outline" asChild>
               <Link to="/create-store">Create your store</Link>
             </Button>

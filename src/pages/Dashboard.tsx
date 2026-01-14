@@ -11,9 +11,7 @@ import { AnalyticsCards, OrderStatusCards } from '@/components/dashboard/Analyti
 import { MerchantEarnings } from '@/components/dashboard/MerchantEarnings';
 import { useSubscription } from '@/hooks/useSubscription';
 import { InterstitialAdTrigger } from '@/components/ads/InterstitialAdTrigger';
-import { AdNetworkWidget } from '@/components/ads/AdNetworkWidget';
 import { PiAuthButton } from '@/components/auth/PiAuthButton';
-import { usePiAdNetwork } from '@/hooks/usePiAdNetwork';
 import {
   Store, 
   Plus, 
@@ -65,7 +63,6 @@ function Dashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { isActive, isLoading: subscriptionLoading, subscription, daysRemaining } = useSubscription();
-  const { showInterstitialAd } = usePiAdNetwork();
   const [stores, setStores] = useState<StoreData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [products, setProducts] = useState<ProductData[]>([]);
@@ -372,15 +369,10 @@ function Dashboard() {
             <AnalyticsCards data={analyticsData} />
           </div>
 
-          {/* Ad Network Widget and Order Status - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-1">
-              <AdNetworkWidget />
-            </div>
-            <div className="lg:col-span-2">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Order Status</h2>
-              <OrderStatusCards pending={pendingOrders} completed={completedOrders} />
-            </div>
+          {/* Order Status */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Order Status</h2>
+            <OrderStatusCards pending={pendingOrders} completed={completedOrders} />
           </div>
 
           {/* Merchant Earnings */}
