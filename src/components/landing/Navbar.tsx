@@ -41,6 +41,44 @@ export function Navbar() {
             <Link to="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
               Admin
             </Link>
+            
+            {/* Mrwain Organization */}
+            <div className="relative group">
+              <span className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                Mrwain Org
+              </span>
+              <div className="absolute top-full left-0 mt-2 w-64 glass rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 p-4">
+                <div className="flex flex-col gap-3">
+                  <a 
+                    href="https://www.droplink.space/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-1 p-2 rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <span className="font-semibold text-foreground">Droplink</span>
+                    <span className="text-xs text-muted-foreground">Link in bio profile and earnings</span>
+                  </a>
+                  <a 
+                    href="https://droppay.space/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-1 p-2 rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <span className="font-semibold text-foreground">DropPay</span>
+                    <span className="text-xs text-muted-foreground">Secure payment solutions</span>
+                  </a>
+                  <a 
+                    href="https://dropshare.space/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-1 p-2 rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <span className="font-semibold text-foreground">DropShare</span>
+                    <span className="text-xs text-muted-foreground">Discover and share products from your favorite stores and social</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Desktop CTA */}
@@ -116,6 +154,43 @@ export function Navbar() {
               >
                 Admin
               </a>
+              
+              {/* Mrwain Organization - Mobile */}
+              <div className="px-4 py-2 border-t border-border mt-2">
+                <div className="font-semibold text-foreground mb-2">Mrwain Organization</div>
+                <div className="flex flex-col gap-3 ml-2">
+                  <a 
+                    href="https://www.droplink.space/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-1"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <span className="text-foreground">Droplink</span>
+                    <span className="text-xs text-muted-foreground">Link in bio profile and earnings</span>
+                  </a>
+                  <a 
+                    href="https://droppay.space/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-1"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <span className="text-foreground">DropPay</span>
+                    <span className="text-xs text-muted-foreground">Secure payment solutions</span>
+                  </a>
+                  <a 
+                    href="https://dropshare.space/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-1"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <span className="text-foreground">DropShare</span>
+                    <span className="text-xs text-muted-foreground">Discover and share products from your favorite stores and social</span>
+                  </a>
+                </div>
+              </div>
               
               <div className="flex flex-col gap-2 px-4 pt-4 border-t border-border">
                 <Button variant="outline" asChild>
