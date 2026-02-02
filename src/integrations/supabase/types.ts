@@ -1223,13 +1223,56 @@ export type Database = {
           },
         ]
       }
+      store_pages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          is_published: boolean | null
+          slug: string
+          store_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          slug: string
+          store_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          slug?: string
+          store_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_pages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           about_page: string | null
           address: string | null
+          announcement_bar_text_color: string | null
           announcement_link: string | null
           announcement_text: string | null
           banner_url: string | null
+          body_text_color: string | null
           contact_email: string | null
           contact_page: string | null
           contact_phone: string | null
@@ -1243,10 +1286,13 @@ export type Database = {
           font_heading: string | null
           footer_style: string | null
           header_style: string | null
+          heading_text_color: string | null
           hero_button_link: string | null
           hero_button_text: string | null
           hero_subtitle: string | null
+          hero_subtitle_text_color: string | null
           hero_title: string | null
+          hero_title_text_color: string | null
           id: string
           is_published: boolean | null
           layout_style: string | null
@@ -1278,9 +1324,11 @@ export type Database = {
         Insert: {
           about_page?: string | null
           address?: string | null
+          announcement_bar_text_color?: string | null
           announcement_link?: string | null
           announcement_text?: string | null
           banner_url?: string | null
+          body_text_color?: string | null
           contact_email?: string | null
           contact_page?: string | null
           contact_phone?: string | null
@@ -1294,10 +1342,13 @@ export type Database = {
           font_heading?: string | null
           footer_style?: string | null
           header_style?: string | null
+          heading_text_color?: string | null
           hero_button_link?: string | null
           hero_button_text?: string | null
           hero_subtitle?: string | null
+          hero_subtitle_text_color?: string | null
           hero_title?: string | null
+          hero_title_text_color?: string | null
           id?: string
           is_published?: boolean | null
           layout_style?: string | null
@@ -1329,9 +1380,11 @@ export type Database = {
         Update: {
           about_page?: string | null
           address?: string | null
+          announcement_bar_text_color?: string | null
           announcement_link?: string | null
           announcement_text?: string | null
           banner_url?: string | null
+          body_text_color?: string | null
           contact_email?: string | null
           contact_page?: string | null
           contact_phone?: string | null
@@ -1345,10 +1398,13 @@ export type Database = {
           font_heading?: string | null
           footer_style?: string | null
           header_style?: string | null
+          heading_text_color?: string | null
           hero_button_link?: string | null
           hero_button_text?: string | null
           hero_subtitle?: string | null
+          hero_subtitle_text_color?: string | null
           hero_title?: string | null
+          hero_title_text_color?: string | null
           id?: string
           is_published?: boolean | null
           layout_style?: string | null

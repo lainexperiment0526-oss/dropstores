@@ -213,7 +213,7 @@ export default function StoreManagement() {
     try {
       const { data: storeData, error: storeError } = await supabase
         .from('stores')
-        .select('*')
+        .select('*, announcement_bar_text_color, heading_text_color, body_text_color, hero_title_text_color, hero_subtitle_text_color')
         .eq('id', storeId)
         .maybeSingle();
 
@@ -618,7 +618,7 @@ export default function StoreManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4">

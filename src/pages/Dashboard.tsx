@@ -173,7 +173,7 @@ function Dashboard() {
     <>
       <WelcomeModal open={welcomeOpen} onOpenChange={setWelcomeOpen} userName={user?.user_metadata?.full_name} />
       
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-x-hidden">
         {/* Header */}
         <header className="border-b border-border bg-card">
           <div className="container mx-auto px-4">
