@@ -327,7 +327,6 @@ export default function PublicStore() {
 
     setSubmitting(true);
 
-    // Allow free orders without payment
     try {
       const orderItems = cart.map((item) => ({
         product_id: item.product.id,
@@ -346,34 +345,146 @@ export default function PublicStore() {
       const downloadExpiresAt = hasDigitalProducts 
         ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
         : null;
-      
-      await supabase.from('orders').insert({
-        store_id: store.id,
-        customer_name: orderForm.name.trim(),
-        customer_email: orderForm.email.trim(),
-        customer_phone: orderForm.phone.trim() || null,
-        shipping_address: orderForm.address.trim() || null,
-        notes: orderForm.notes.trim() || null,
-        items: orderItems,
-        total: cartTotal,
-        status: 'paid',
-        pi_payment_id: null,
-        pi_txid: null,
-        payout_status: 'pending',
-        download_expires_at: downloadExpiresAt,
-      });
 
-      toast({
-        title: 'Order placed successfully!',
-        description: hasDigitalProducts 
-          ? 'Check your email for download links.' 
-          : 'Thank you for your purchase!',
-      });
-      
-      setCart([]);
-      setCartOpen(false);
-      setPaymentModalOpen(false);
-      setSubmitting(false);
+      // Create order with Pi payment
+      if (store.payout_wallet && cartTotal > 0) {
+        // Use Pi Network payment
+        createPiPayment(
+          {
+            amount: cartTotal,
+            memo: `Order from ${store.name}`,
+            metadata: {
+              store_id: store.id,
+              merchant_wallet: store.payout_wallet,
+              customer_name: orderForm.name.trim(),
+              customer_email: orderForm.email.trim(),
+              items: orderItems,
+            },
+          },
+          {
+            onReadyForServerApproval: async (paymentId) => {
+              try {
+                await supabase.functions.invoke('pi-payment-approve', {
+                  body: { paymentId }
+                });
+              } catch (error) {
+                console.error('Payment approval error:', error);
+              }
+            },
+            onReadyForServerCompletion: async (paymentId, txid) => {
+              try {
+                await supabase.functions.invoke('pi-payment-complete', {
+                  body: { 
+                    paymentId, 
+                    txid,
+                    planType: 'product_purchase',
+                    storeId: store.id
+                  }
+                });
+
+                // Create order record
+                const { error: orderError } = await supabase.from('orders').insert({
+                  store_id: store.id,
+                  customer_name: orderForm.name.trim(),
+                  customer_email: orderForm.email.trim(),
+                  customer_phone: orderForm.phone.trim() || null,
+                  shipping_address: orderForm.address.trim() || null,
+                  notes: orderForm.notes.trim() || null,
+                  items: orderItems,
+                  total: cartTotal,
+                  status: 'paid',
+                  pi_payment_id: paymentId,
+                  pi_txid: txid,
+                  payout_status: 'pending',
+                  download_expires_at: downloadExpiresAt,
+                });
+
+                if (orderError) throw orderError;
+
+                // Create merchant sale record
+                const platformFee = cartTotal * 0.02; // 2% platform fee
+                const netAmount = cartTotal - platformFee;
+
+                await supabase.from('merchant_sales').insert({
+                  store_id: store.id,
+                  order_id: paymentId, // Using payment ID as reference
+                  owner_id: store.payout_wallet, // Store owner
+                  amount: cartTotal,
+                  platform_fee: platformFee,
+                  net_amount: netAmount,
+                  pi_txid: txid,
+                  payout_status: 'pending',
+                });
+
+                toast({
+                  title: 'Payment successful!',
+                  description: hasDigitalProducts 
+                    ? 'Check your email for download links.' 
+                    : 'Thank you for your purchase!',
+                });
+                
+                setCart([]);
+                setCartOpen(false);
+                setPaymentModalOpen(false);
+                setSubmitting(false);
+              } catch (error) {
+                console.error('Error completing order:', error);
+                setSubmitting(false);
+                toast({
+                  title: 'Order error',
+                  description: 'Payment completed but order creation failed. Please contact support.',
+                  variant: 'destructive',
+                });
+              }
+            },
+            onCancel: () => {
+              setSubmitting(false);
+              toast({
+                title: 'Payment cancelled',
+                description: 'You cancelled the Pi payment.',
+                variant: 'destructive',
+              });
+            },
+            onError: (error) => {
+              setSubmitting(false);
+              toast({
+                title: 'Payment error',
+                description: error.message || 'Payment failed. Please try again.',
+                variant: 'destructive',
+              });
+            },
+          }
+        );
+      } else {
+        // Free order or no wallet configured - create order directly
+        await supabase.from('orders').insert({
+          store_id: store.id,
+          customer_name: orderForm.name.trim(),
+          customer_email: orderForm.email.trim(),
+          customer_phone: orderForm.phone.trim() || null,
+          shipping_address: orderForm.address.trim() || null,
+          notes: orderForm.notes.trim() || null,
+          items: orderItems,
+          total: cartTotal,
+          status: cartTotal === 0 ? 'paid' : 'pending',
+          pi_payment_id: null,
+          pi_txid: null,
+          payout_status: 'pending',
+          download_expires_at: downloadExpiresAt,
+        });
+
+        toast({
+          title: 'Order placed successfully!',
+          description: hasDigitalProducts 
+            ? 'Check your email for download links.' 
+            : cartTotal === 0 ? 'Thank you!' : 'Please complete payment to receive your order.',
+        });
+        
+        setCart([]);
+        setCartOpen(false);
+        setPaymentModalOpen(false);
+        setSubmitting(false);
+      }
     } catch (error) {
       console.error('Error submitting order:', error);
       setSubmitting(false);
@@ -384,136 +495,8 @@ export default function PublicStore() {
       });
       throw error;
     }
-
-    return;
-
-    // Old Pi payment code (disabled)
-    /*
-    if (!store.payout_wallet) {
-      toast({
-        title: 'Store not ready',
-        description: 'This store has not configured payment settings yet.',
-        variant: 'destructive',
-      });
-      throw new Error('No payout wallet configured');
-    }
-
-    return new Promise<void>((resolve, reject) => {
-      createPiPayment(
-        {
-          amount: cartTotal,
-          memo: `Order from ${store.name}`,
-          metadata: {
-            store_id: store.id,
-            merchant_wallet: store.payout_wallet,
-            customer_name: orderForm.name.trim(),
-            customer_email: orderForm.email.trim(),
-            items: cart.map((item) => ({
-              product_id: item.product.id,
-              name: item.product.name,
-              price: item.product.price,
-              quantity: item.quantity,
-              product_type: item.product.product_type,
-              digital_file_url: item.product.digital_file_url,
-            })),
-          },
-        },
-        {
-          onReadyForServerApproval: async (paymentId) => {
-            try {
-              const response = await supabase.functions.invoke('pi-payment-approve', {
-                body: { paymentId }
-              });
-              if (response.error) {
-                console.error('Payment approval error:', response.error);
-              }
-            } catch (error) {
-              console.error('Error approving payment:', error);
-            }
-          },
-          onReadyForServerCompletion: async (paymentId, txid) => {
-            try {
-              await supabase.functions.invoke('pi-payment-complete', {
-                body: { 
-                  paymentId, 
-                  txid,
-                  planType: 'product_purchase',
-                  storeId: store.id
-                }
-              });
-
-              const orderItems = cart.map((item) => ({
-                product_id: item.product.id,
-                name: item.product.name,
-                price: item.product.price,
-                quantity: item.quantity,
-                product_type: item.product.product_type,
-                digital_file_url: item.product.digital_file_url,
-              }));
-
-              // Check if any digital products
-              const hasDigitalProducts = cart.some(item => item.product.product_type === 'digital');
-              const downloadExpiresAt = hasDigitalProducts 
-                ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
-                : null;
-              
-              await supabase.from('orders').insert({
-                store_id: store.id,
-                customer_name: orderForm.name.trim(),
-                customer_email: orderForm.email.trim(),
-                customer_phone: orderForm.phone.trim() || null,
-                shipping_address: orderForm.address.trim() || null,
-                notes: orderForm.notes.trim() || null,
-                items: orderItems,
-                total: cartTotal,
-                status: 'paid',
-                pi_payment_id: paymentId,
-                pi_txid: txid,
-                payout_status: 'pending',
-                download_expires_at: downloadExpiresAt,
-              });
-
-              toast({
-                title: 'Order placed successfully!',
-                description: hasDigitalProducts 
-                  ? 'Check your email for download links.' 
-                  : 'Thank you for your purchase!',
-              });
-              
-              setCart([]);
-              setCartOpen(false);
-              setPaymentModalOpen(false);
-              setSubmitting(false);
-              resolve();
-            } catch (error) {
-              console.error('Error submitting order:', error);
-              setSubmitting(false);
-              reject(error);
-            }
-          },
-          onCancel: () => {
-            setSubmitting(false);
-            toast({
-              title: 'Payment cancelled',
-              description: 'You cancelled the Pi payment.',
-              variant: 'destructive',
-            });
-            reject(new Error('Payment cancelled'));
-          },
-          onError: (error) => {
-            setSubmitting(false);
-            toast({
-              title: 'Payment error',
-              description: error.message,
-              variant: 'destructive',
-            });
-            reject(error);
-          },
-        }
-      );
-    });
-    */
   };
+
 
   if (loading) {
     return (
@@ -554,7 +537,7 @@ export default function PublicStore() {
 
   return (
     <>
-      <div className="min-h-screen bg-background" style={{ color: bodyTextColor, fontFamily: bodyFont }}>
+      <div className="min-h-screen bg-background overflow-x-hidden" style={{ color: bodyTextColor, fontFamily: bodyFont }}>
         {/* Announcement Bar - Top Priority */}
         {store.show_announcement_bar && store.announcement_text && (
           <div className="py-3 px-4 bg-muted border-b border-border">

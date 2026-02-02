@@ -214,46 +214,46 @@ export function MerchantEarnings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Balance Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-green-600" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Available Balance</p>
-                <p className="text-2xl font-bold text-foreground">π {availableBalance.toFixed(7)}</p>
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Available Balance</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground">π {availableBalance.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Earnings</p>
-                <p className="text-2xl font-bold text-foreground">π {totalEarnings.toFixed(7)}</p>
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Total Earnings</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground">π {totalEarnings.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-purple-600" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <Wallet className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Payout Requests</p>
-                <p className="text-2xl font-bold text-foreground">{payoutRequests.length}</p>
+              <div className="min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Payout Requests</p>
+                <p className="text-lg md:text-2xl font-bold text-foreground">{payoutRequests.length}</p>
               </div>
             </div>
           </CardContent>
