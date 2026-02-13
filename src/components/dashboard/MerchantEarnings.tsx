@@ -59,10 +59,25 @@ export function MerchantEarnings() {
     try {
       if (!user?.id) return;
 
+      // Get stores owned by this user
+      const { data: userStores } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('owner_id', user.id);
+
+      if (!userStores || userStores.length === 0) {
+        setSales([]);
+        setTotalEarnings(0);
+        setAvailableBalance(0);
+        return;
+      }
+
+      const storeIds = userStores.map(s => s.id);
+
       const { data, error } = await supabase
         .from('merchant_sales')
         .select('*')
-        .eq('owner_id', user.id)
+        .in('store_id', storeIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

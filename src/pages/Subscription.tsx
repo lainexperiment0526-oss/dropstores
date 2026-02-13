@@ -516,30 +516,7 @@ const Subscription = () => {
             </Alert>
           )}
 
-          {/* No active plan? Offer ad-supported access */}
-          {!currentSubscription && (
-            <Card className="mb-10 border-dashed">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Gift className="w-5 h-5 text-primary" />
-                  No plan? Watch a Pi Ad
-                </CardTitle>
-                <CardDescription>
-                  Watch a Pi Network ad to continue with limited access. Ads respect cooldown and frequency caps.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="text-sm text-muted-foreground">
-                  • Cooldown: {import.meta.env.VITE_PI_AD_COOLDOWN_MINUTES || '5'} minutes • Max {import.meta.env.VITE_PI_AD_FREQUENCY_CAP || '3'} ads per session
-                </div>
-                <RewardedAdButton
-                  buttonText="Watch Ad to Continue"
-                  rewardText="Access granted after ad"
-                  className="sm:w-auto w-full"
-                />
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Subscription Plans Grid */}
           <div className="grid md:grid-cols-3 gap-8 mb-12">
