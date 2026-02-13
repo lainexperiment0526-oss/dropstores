@@ -27,6 +27,7 @@ interface PaymentMethod {
   id: string;
   method_type: 'pi_payment' | 'manual_wallet';
   wallet_address?: string;
+  merchant_username?: string;
   display_name: string;
   instructions?: string;
 }
@@ -40,8 +41,10 @@ interface PaymentModalEnhancedProps {
   storeName: string;
   primaryColor: string;
   merchantWallet?: string;
+  merchantUsername?: string;
   paymentMethods?: PaymentMethod[];
-  onSubmit: (orderForm: OrderForm, paymentMethod: string) => Promise<void>;
+  includeAdditionalFees?: boolean;
+  onSubmit: (orderForm: OrderForm, paymentMethod: string, paymentData?: { manualTxid?: string }) => Promise<void>;
   submitting: boolean;
 }
 
@@ -63,7 +66,9 @@ export function PaymentModalEnhanced({
   storeName,
   primaryColor,
   merchantWallet,
+  merchantUsername,
   paymentMethods = [],
+  includeAdditionalFees = false,
   onSubmit,
   submitting
 }: PaymentModalEnhancedProps) {
@@ -80,20 +85,22 @@ export function PaymentModalEnhanced({
   const [piAuthLoading, setPiAuthLoading] = useState(false);
   const [qrCodeDataURL, setQrCodeDataURL] = useState<string>('');
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [manualTxid, setManualTxid] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number | null>(null);
   const piAvailable = isPiAvailable();
 
   const hasDigitalProducts = cart.some(item => item.product.product_type === 'digital');
   const hasPhysicalProducts = cart.some(item => item.product.product_type !== 'digital');
+  const isPhysicalOnlyOrder = cart.length > 0 && cart.every(item => item.product.product_type !== 'digital');
 
   // Fee calculations
-  const platformFee = 1.00; // Fixed 1π per product
+  const platformFee = includeAdditionalFees ? 1.0 : 0;
   const subtotal = cartTotal;
   
   // Check if free delivery applies
   const qualifiesForFreeDelivery = freeDeliveryThreshold !== null && subtotal >= freeDeliveryThreshold && hasPhysicalProducts;
-  const finalDeliveryFee = hasPhysicalProducts && !qualifiesForFreeDelivery ? deliveryFee : 0;
+  const finalDeliveryFee = includeAdditionalFees && hasPhysicalProducts && !qualifiesForFreeDelivery ? deliveryFee : 0;
   const finalTotal = subtotal + platformFee + finalDeliveryFee;
 
   useEffect(() => {
@@ -146,8 +153,8 @@ export function PaymentModalEnhanced({
   }, [merchantWallet, orderForm.paymentMethod]);
 
   // Determine available payment methods
-  const availablePaymentMethods = paymentMethods.length > 0 
-    ? paymentMethods 
+  const configuredPaymentMethods = paymentMethods.length > 0 
+    ? paymentMethods
     : [
         { 
           id: 'pi', 
@@ -163,6 +170,12 @@ export function PaymentModalEnhanced({
           instructions: 'Send Pi directly to merchant wallet'
         }] : [])
       ];
+
+  // Manual wallet transfer is only available for physical-only carts.
+  const availablePaymentMethods = configuredPaymentMethods.filter((method) => {
+    if (method.method_type === 'manual_wallet' && !isPhysicalOnlyOrder) return false;
+    return true;
+  });
 
   const handleCopyAddress = async () => {
     if (merchantWallet) {
@@ -199,6 +212,16 @@ export function PaymentModalEnhanced({
       toast.error('Please fill in required fields');
       return;
     }
+
+    if (hasPhysicalProducts && (!orderForm.phone.trim() || !orderForm.address.trim())) {
+      toast.error('Phone and shipping address are required for physical products');
+      return;
+    }
+
+    if (availablePaymentMethods.length === 0) {
+      toast.error('No payment method is available for this order');
+      return;
+    }
     
     if (availablePaymentMethods.length === 1) {
       // If only one payment method, skip selection
@@ -211,6 +234,11 @@ export function PaymentModalEnhanced({
   };
 
   const handlePaymentMethodSelected = (method: 'pi_payment' | 'manual_wallet') => {
+    if (method === 'manual_wallet' && !isPhysicalOnlyOrder) {
+      toast.error('Manual wallet payment is only available for physical orders');
+      return;
+    }
+
     setOrderForm({ ...orderForm, paymentMethod: method });
     
     if (method === 'pi_payment') {
@@ -233,6 +261,11 @@ export function PaymentModalEnhanced({
       toast.error('Please fill in required fields');
       return;
     }
+
+    if (hasPhysicalProducts && (!orderForm.phone.trim() || !orderForm.address.trim())) {
+      toast.error('Phone and shipping address are required for physical products');
+      return;
+    }
     
     setStep('processing');
     try {
@@ -250,7 +283,17 @@ export function PaymentModalEnhanced({
         }
       }
 
-      await onSubmit(orderForm, orderForm.paymentMethod);
+      if (orderForm.paymentMethod === 'manual_wallet' && !manualTxid.trim()) {
+        toast.error('Please enter the transaction ID after sending payment');
+        setStep('manual-payment');
+        return;
+      }
+
+      await onSubmit(
+        orderForm,
+        orderForm.paymentMethod,
+        orderForm.paymentMethod === 'manual_wallet' ? { manualTxid: manualTxid.trim() } : undefined
+      );
       setStep('success');
     } catch (error) {
       console.error('Payment failed:', error);
@@ -272,6 +315,7 @@ export function PaymentModalEnhanced({
     setPiAuthenticated(false);
     setQrCodeDataURL('');
     setCopiedAddress(false);
+    setManualTxid('');
     onOpenChange(false);
   };
 
@@ -455,6 +499,24 @@ export function PaymentModalEnhanced({
               </div>
             </div>
 
+            {merchantUsername && (
+              <div className="space-y-2">
+                <Label>Merchant Username</Label>
+                <Input value={`@${merchantUsername}`} readOnly />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="manual-txid">Transaction ID *</Label>
+              <Input
+                id="manual-txid"
+                value={manualTxid}
+                onChange={(e) => setManualTxid(e.target.value)}
+                placeholder="Paste Pi transaction ID after sending payment"
+                className="font-mono text-xs"
+              />
+            </div>
+
             {/* Important Notice */}
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
               <div className="flex items-start gap-2">
@@ -475,13 +537,19 @@ export function PaymentModalEnhanced({
               <Button variant="outline" className="flex-1" onClick={() => setStep('payment-method')}>
                 Back
               </Button>
-              <Button
-                className="flex-1"
-                style={{ backgroundColor: primaryColor }}
-                onClick={() => setStep('confirm')}
-              >
-                I've Sent the Payment
-              </Button>
+                <Button
+                  className="flex-1"
+                  style={{ backgroundColor: primaryColor }}
+                  onClick={() => {
+                    if (!manualTxid.trim()) {
+                      toast.error('Enter transaction ID to continue');
+                      return;
+                    }
+                    setStep('confirm');
+                  }}
+                >
+                  I've Sent the Payment
+                </Button>
             </div>
           </div>
         )}

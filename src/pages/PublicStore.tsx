@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { PaymentModal, OrderForm } from '@/components/store/PaymentModal';
+import { PaymentModalEnhanced, OrderForm } from '@/components/store/PaymentModalEnhanced';
 import { StoreReportModal } from '@/components/store/StoreReportModal';
 import { StoreThemeCustomizer } from '@/components/store/StoreThemeCustomizer';
 import { createPiPayment, initPiSdk } from '@/lib/pi-sdk';
@@ -64,6 +64,9 @@ interface StoreData {
   contact_phone: string | null;
   address: string | null;
   payout_wallet: string | null;
+  checkout_payment_mode?: 'pi_only' | 'manual_only' | 'both' | null;
+  manual_pi_wallet_address?: string | null;
+  manual_pi_wallet_username?: string | null;
   store_type: string | null;
   owner_id: string;
   // Theme customization fields - Colors
@@ -323,7 +326,11 @@ export default function PublicStore() {
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleSubmitOrder = async (orderForm: OrderForm) => {
+  const handleSubmitOrder = async (
+    orderForm: OrderForm,
+    paymentMethod: string,
+    paymentData?: { manualTxid?: string }
+  ) => {
     if (!store || cart.length === 0) return;
 
     setSubmitting(true);
@@ -347,113 +354,8 @@ export default function PublicStore() {
         ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
         : null;
 
-      // Always use Pi Network payment for checkout
-      if (cartTotal > 0) {
-        createPiPayment(
-          {
-            amount: cartTotal,
-            memo: `Order from ${store.name}`,
-            metadata: {
-              store_id: store.id,
-              merchant_wallet: store.payout_wallet || '',
-              customer_name: orderForm.name.trim(),
-              customer_email: orderForm.email.trim(),
-              items: orderItems,
-            },
-          },
-          {
-            onReadyForServerApproval: async (paymentId) => {
-              try {
-                await supabase.functions.invoke('pi-payment-approve', {
-                  body: { paymentId }
-                });
-              } catch (error) {
-                console.error('Payment approval error:', error);
-              }
-            },
-            onReadyForServerCompletion: async (paymentId, txid) => {
-              try {
-                // Complete payment on Pi API
-                await supabase.functions.invoke('pi-payment-complete', {
-                  body: { paymentId, txid }
-                });
-
-                // Create order record
-                const { data: orderData, error: orderError } = await supabase.from('orders').insert({
-                  store_id: store.id,
-                  customer_name: orderForm.name.trim(),
-                  customer_email: orderForm.email.trim(),
-                  customer_phone: orderForm.phone.trim() || null,
-                  shipping_address: orderForm.address.trim() || null,
-                  notes: orderForm.notes.trim() || null,
-                  items: orderItems,
-                  total: cartTotal,
-                  status: 'paid',
-                  pi_payment_id: paymentId,
-                  pi_txid: txid,
-                  payout_status: 'pending',
-                  download_expires_at: downloadExpiresAt,
-                }).select('id').single();
-
-                if (orderError) throw orderError;
-
-                // Create merchant sale record with 2% platform fee
-                const platformFee = cartTotal * 0.02;
-                const netAmount = cartTotal - platformFee;
-
-                await supabase.from('merchant_sales').insert({
-                  store_id: store.id,
-                  order_id: orderData.id,
-                  owner_id: store.owner_id,
-                  amount: cartTotal,
-                  platform_fee: platformFee,
-                  net_amount: netAmount,
-                  pi_txid: txid,
-                  payout_status: 'pending',
-                });
-
-                toast({
-                  title: 'Payment successful!',
-                  description: hasDigitalProducts 
-                    ? 'Check your email for download links.' 
-                    : 'Thank you for your purchase!',
-                });
-                
-                setCart([]);
-                setCartOpen(false);
-                setPaymentModalOpen(false);
-                setSubmitting(false);
-              } catch (error) {
-                console.error('Error completing order:', error);
-                setSubmitting(false);
-                toast({
-                  title: 'Order error',
-                  description: 'Payment completed but order creation failed. Please contact support.',
-                  variant: 'destructive',
-                });
-              }
-            },
-            onCancel: () => {
-              setSubmitting(false);
-              toast({
-                title: 'Payment cancelled',
-                description: 'You cancelled the Pi payment.',
-                variant: 'destructive',
-              });
-            },
-            onError: (error) => {
-              setSubmitting(false);
-              toast({
-                title: 'Payment error',
-                description: error.message || 'Payment failed. Please try again.',
-                variant: 'destructive',
-              });
-            },
-          }
-        );
-      } else {
-        // Free order
-        const { data: orderData } = await supabase.from('orders').insert({
+      const createPaidOrder = async (txid: string, paymentId?: string) => {
+        const { data: orderData, error: orderError } = await supabase.from('orders').insert({
           store_id: store.id,
           customer_name: orderForm.name.trim(),
           customer_email: orderForm.email.trim(),
@@ -461,24 +363,149 @@ export default function PublicStore() {
           shipping_address: orderForm.address.trim() || null,
           notes: orderForm.notes.trim() || null,
           items: orderItems,
-          total: 0,
+          total: cartTotal,
           status: 'paid',
+          pi_payment_id: paymentId || null,
+          pi_txid: txid,
           payout_status: 'pending',
           download_expires_at: downloadExpiresAt,
         }).select('id').single();
 
-        toast({
-          title: 'Order placed successfully!',
-          description: hasDigitalProducts 
-            ? 'Check your email for download links.' 
-            : 'Thank you!',
+        if (orderError) throw orderError;
+
+        if (cartTotal > 0) {
+          const platformFee = cartTotal * 0.02;
+          const netAmount = cartTotal - platformFee;
+
+          await supabase.from('merchant_sales').insert({
+            store_id: store.id,
+            order_id: orderData.id,
+            owner_id: store.owner_id,
+            amount: cartTotal,
+            platform_fee: platformFee,
+            net_amount: netAmount,
+            pi_txid: txid,
+            payout_status: 'pending',
+          });
+        }
+      };
+
+      if (cartTotal <= 0) {
+        await createPaidOrder('free-order');
+      } else if (paymentMethod === 'pi_payment') {
+        await new Promise<void>((resolve, reject) => {
+          let approvalPassed = false;
+          let settled = false;
+          const safeResolve = () => {
+            if (!settled) {
+              settled = true;
+              resolve();
+            }
+          };
+          const safeReject = (error: Error) => {
+            if (!settled) {
+              settled = true;
+              reject(error);
+            }
+          };
+
+          createPiPayment(
+            {
+              amount: cartTotal,
+              memo: `Order from ${store.name}`,
+              metadata: {
+                store_id: store.id,
+                merchant_wallet: store.payout_wallet || '',
+                customer_name: orderForm.name.trim(),
+                customer_email: orderForm.email.trim(),
+                items: orderItems,
+              },
+            },
+            {
+              onReadyForServerApproval: async (paymentId) => {
+                try {
+                  const { data, error } = await supabase.functions.invoke('pi-payment-approve', {
+                    body: { paymentId }
+                  });
+
+                  if (error || !data?.success) {
+                    throw new Error('Payment approval failed');
+                  }
+
+                  approvalPassed = true;
+                } catch (error) {
+                  safeReject(error instanceof Error ? error : new Error('Payment approval failed'));
+                }
+              },
+              onReadyForServerCompletion: async (paymentId, txid) => {
+                try {
+                  if (!approvalPassed) {
+                    throw new Error('Payment is not approved yet. Cannot complete checkout.');
+                  }
+
+                  const { data, error } = await supabase.functions.invoke('pi-payment-complete', {
+                    body: { paymentId, txid }
+                  });
+
+                  if (error || !data?.success) {
+                    throw new Error('Payment completion failed');
+                  }
+
+                  await createPaidOrder(txid, paymentId);
+                  safeResolve();
+                } catch (error) {
+                  safeReject(error instanceof Error ? error : new Error('Failed to complete payment'));
+                }
+              },
+              onCancel: () => {
+                safeReject(new Error('Payment cancelled by user'));
+              },
+              onError: (error) => {
+                safeReject(error instanceof Error ? error : new Error('Payment failed'));
+              },
+            }
+          );
         });
-        
-        setCart([]);
-        setCartOpen(false);
-        setPaymentModalOpen(false);
-        setSubmitting(false);
+      } else if (paymentMethod === 'manual_wallet') {
+        const manualTxid = paymentData?.manualTxid?.trim();
+        const merchantWallet = (store.manual_pi_wallet_address || store.payout_wallet || '').trim();
+
+        if (!manualTxid) {
+          throw new Error('Manual transaction ID is required');
+        }
+        if (!merchantWallet) {
+          throw new Error('Merchant manual wallet is not configured');
+        }
+
+        const { data, error } = await supabase.functions.invoke('verify-pi-transaction', {
+          body: {
+            transaction_hash: manualTxid,
+            expected_amount: cartTotal,
+            expected_recipient: merchantWallet,
+            auto_release: false,
+          },
+        });
+
+        if (error || !data?.verified) {
+          throw new Error(data?.error || 'Manual payment verification failed');
+        }
+
+        await createPaidOrder(manualTxid);
+      } else {
+        throw new Error('Unsupported payment method');
       }
+
+      toast({
+        title: 'Payment successful!',
+        description: hasDigitalProducts
+          ? 'Check your email for download links.'
+          : 'Thank you for your purchase!',
+      });
+
+      setCart([]);
+      setCartOpen(false);
+      setPaymentModalOpen(false);
+      setSubmitting(false);
     } catch (error) {
       console.error('Error submitting order:', error);
       setSubmitting(false);
@@ -528,6 +555,28 @@ export default function PublicStore() {
   const announcementBarTextColor = store?.announcement_bar_text_color || '#FFFFFF';
   const headingFont = store?.font_heading || 'Inter';
   const bodyFont = store?.font_body || 'Inter';
+  const checkoutPaymentMode = store.checkout_payment_mode || 'pi_only';
+  const manualWalletAddress = store.manual_pi_wallet_address || store.payout_wallet || '';
+  const checkoutPaymentMethods = [
+    ...(checkoutPaymentMode === 'pi_only' || checkoutPaymentMode === 'both'
+      ? [{
+          id: 'pi',
+          method_type: 'pi_payment' as const,
+          display_name: 'Pi Payment',
+          instructions: 'Pay instantly with Pi Network',
+        }]
+      : []),
+    ...((checkoutPaymentMode === 'manual_only' || checkoutPaymentMode === 'both') && manualWalletAddress
+      ? [{
+          id: 'manual',
+          method_type: 'manual_wallet' as const,
+          wallet_address: manualWalletAddress,
+          merchant_username: store.manual_pi_wallet_username || undefined,
+          display_name: 'Manual Pi Transfer',
+          instructions: 'Scan QR or copy wallet address and send Pi manually',
+        }]
+      : []),
+  ];
 
   return (
     <>
@@ -1073,13 +1122,18 @@ export default function PublicStore() {
       </Dialog>
 
       {/* Payment Modal - Shopify Style */}
-      <PaymentModal
+      <PaymentModalEnhanced
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
         cart={cart}
         cartTotal={cartTotal}
+        storeId={store.id}
         storeName={store.name}
         primaryColor={primaryColor}
+        merchantWallet={manualWalletAddress}
+        merchantUsername={store.manual_pi_wallet_username || undefined}
+        paymentMethods={checkoutPaymentMethods}
+        includeAdditionalFees={false}
         onSubmit={handleSubmitOrder}
         submitting={submitting}
       />

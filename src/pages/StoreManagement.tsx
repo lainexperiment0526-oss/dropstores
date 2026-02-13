@@ -73,6 +73,9 @@ interface StoreData {
   is_published: boolean;
   template_id: string | null;
   payout_wallet: string | null;
+  checkout_payment_mode?: 'pi_only' | 'manual_only' | 'both' | null;
+  manual_pi_wallet_address?: string | null;
+  manual_pi_wallet_username?: string | null;
   store_type: string | null;
   // Theme customization fields (optional until migration applied)
   font_heading?: string;
@@ -232,6 +235,9 @@ export default function StoreManagement() {
       const data = storeData as any;
       setStore({
         ...storeData,
+        checkout_payment_mode: data.checkout_payment_mode || 'pi_only',
+        manual_pi_wallet_address: data.manual_pi_wallet_address || '',
+        manual_pi_wallet_username: data.manual_pi_wallet_username || '',
         font_heading: data.font_heading || 'Inter',
         font_body: data.font_body || 'Inter',
         layout_style: data.layout_style || 'grid',
@@ -296,9 +302,12 @@ export default function StoreManagement() {
           address: store.address,
           primary_color: store.primary_color,
           payout_wallet: store.payout_wallet,
+          checkout_payment_mode: store.checkout_payment_mode || 'pi_only',
+          manual_pi_wallet_address: store.manual_pi_wallet_address || null,
+          manual_pi_wallet_username: store.manual_pi_wallet_username || null,
           logo_url: store.logo_url,
           banner_url: store.banner_url,
-        })
+        } as any)
         .eq('id', store.id);
 
       if (error) throw error;
@@ -1696,6 +1705,50 @@ export default function StoreManagement() {
                         }
                         placeholder="G..."
                         className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-payment-mode">Checkout Payment Mode</Label>
+                      <select
+                        id="checkout-payment-mode"
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                        value={store.checkout_payment_mode || 'pi_only'}
+                        onChange={(e) =>
+                          setStore({
+                            ...store,
+                            checkout_payment_mode: e.target.value as 'pi_only' | 'manual_only' | 'both',
+                          })
+                        }
+                      >
+                        <option value="pi_only">Pi Payment Only</option>
+                        <option value="both">Pi Payment + Manual Wallet</option>
+                        <option value="manual_only">Manual Wallet Only (Physical orders)</option>
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        Manual wallet checkout is available only for physical product orders.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="manual-wallet-address">Manual Pi Wallet Address</Label>
+                      <Input
+                        id="manual-wallet-address"
+                        value={store.manual_pi_wallet_address || ''}
+                        onChange={(e) =>
+                          setStore({ ...store, manual_pi_wallet_address: e.target.value })
+                        }
+                        placeholder="Optional. Leave empty to use payout wallet"
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="manual-wallet-username">Pi Merchant Username</Label>
+                      <Input
+                        id="manual-wallet-username"
+                        value={store.manual_pi_wallet_username || ''}
+                        onChange={(e) =>
+                          setStore({ ...store, manual_pi_wallet_username: e.target.value.replace(/^@/, '') })
+                        }
+                        placeholder="merchant_username (without @)"
                       />
                     </div>
                     {store.payout_wallet ? (
