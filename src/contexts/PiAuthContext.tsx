@@ -21,7 +21,7 @@ interface PiAuthContextType {
   isLoading: boolean;
   signInWithPi: (shouldNavigate?: boolean) => Promise<void>;
   linkPiAccount: () => Promise<void>;
-  fetchWalletAddress: () => Promise<void>;
+  fetchWalletAddress: (token?: string, options?: { silent?: boolean }) => Promise<void>;
   signInWithPiScopes: (scopes: string[], shouldNavigate?: boolean) => Promise<void>;
   offerAuthReward: () => Promise<void>;
 }
@@ -66,16 +66,26 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   // Handle incomplete payments found during authentication
   const handleIncompletePayment = useCallback((payment: PiPaymentDTO) => {
     console.log('Incomplete payment found during auth:', payment);
-    toast.error('You have an incomplete payment. Please complete it to continue.', {
+    toast.error('You have an incomplete payment. Please complete or cancel it to continue.', {
       duration: 8000,
       action: {
-        label: 'View Details',
+        label: 'Cancel Now',
         onClick: () => {
-          console.log('Incomplete payment details:', {
-            id: payment.identifier,
-            amount: payment.amount,
-            status: payment.status,
-            memo: payment.memo
+          if (!payment.identifier) {
+            return;
+          }
+          supabase.functions.invoke('pi-payment-cancel', {
+            body: { paymentId: payment.identifier }
+          }).then(({ error }) => {
+            if (error) {
+              console.error('Failed to cancel incomplete payment:', error);
+              toast.error('Failed to cancel payment. Please try again.');
+              return;
+            }
+            toast.success('Payment cancelled. You can try again now.');
+          }).catch((err) => {
+            console.error('Failed to cancel incomplete payment:', err);
+            toast.error('Failed to cancel payment. Please try again.');
           });
         }
       }
@@ -136,7 +146,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       } else {
         console.log('PiAuth: Wallet address not in authentication response, will fetch separately');
         // Try to fetch wallet address immediately
-        setTimeout(() => fetchWalletAddress(result.accessToken), 500);
+        setTimeout(() => fetchWalletAddress(result.accessToken, { silent: true }), 500);
       }
 
       // Verify the authentication on the backend and get Supabase session
@@ -389,12 +399,14 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Fetch wallet address from Pi Platform API
-  const fetchWalletAddress = async (token?: string) => {
+  const fetchWalletAddress = async (token?: string, options: { silent?: boolean } = {}) => {
     const accessToken = token || piAccessToken;
     
     if (!accessToken) {
       console.warn('PiAuth: No access token available for wallet address fetch');
-      toast.error('Please authenticate first');
+      if (!options.silent) {
+        toast.error('Please authenticate first');
+      }
       return;
     }
 
@@ -426,15 +438,21 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         }
         
         console.log('✓ PiAuth: Wallet address retrieved:', userData.wallet_address);
-        toast.success('Wallet address retrieved!');
+        if (!options.silent) {
+          toast.success('Wallet address retrieved!');
+        }
       } else {
         console.warn('PiAuth: No wallet address found for this account');
-        toast.warning('No wallet address found for this account');
+        if (!options.silent) {
+          toast.info('No wallet address found for this account');
+        }
       }
     } catch (error) {
       console.error('✗ PiAuth: Failed to fetch wallet:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(`Failed to fetch wallet address: ${errorMessage}`);
+      if (!options.silent) {
+        toast.error(`Failed to fetch wallet address: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
     }

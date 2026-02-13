@@ -19,7 +19,7 @@ interface PiAuthContextType {
   
   // Methods
   authenticateWithPi: () => Promise<void>;
-  fetchWalletAddress: () => Promise<void>;
+  fetchWalletAddress: (token?: string, options?: { silent?: boolean }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -187,17 +187,28 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   // ========================================================================
   // 5. Fetch wallet address separately
   // ========================================================================
-  const fetchWalletAddress = async () => {
+  const fetchWalletAddress = async (token?: string, options: { silent?: boolean } = {}) => {
+    const accessToken = token || piAccessToken;
+    if (!accessToken) {
+      if (!options.silent) {
+        toast.error('Please authenticate first');
+      }
+      return;
+    }
     try {
       const address = await PiSDK.requestWalletAddress();
       if (address) {
         setWalletAddress(address);
         localStorage.setItem('walletAddress', address);
-        toast.success('Wallet address retrieved!');
+        if (!options.silent) {
+          toast.success('Wallet address retrieved!');
+        }
       }
     } catch (error) {
       console.error('Error fetching wallet address:', error);
-      toast.error('Failed to fetch wallet address');
+      if (!options.silent) {
+        toast.error('Failed to fetch wallet address');
+      }
     }
   };
 

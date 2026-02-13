@@ -35,13 +35,14 @@ const Subscription = () => {
     piUser,
     walletAddress
   } = usePiAuth();
-  const { isProcessing, status, createSubscriptionPayment, resetPayment, cancelIncompletePayment } = usePiPayment();
+  const { isProcessing, status, error: paymentError, createSubscriptionPayment, resetPayment, cancelIncompletePayment } = usePiPayment();
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [isActivating, setIsActivating] = useState(false);
   const [incompletePaymentError, setIncompletePaymentError] = useState(false);
   const [hasCheckedIncompletePayment, setHasCheckedIncompletePayment] = useState(false);
+  const dropPayEnabled = false;
   
   // Get plan from URL parameter
   const planFromUrl = searchParams.get('plan') as PlanType | null;
@@ -96,6 +97,18 @@ const Subscription = () => {
       return () => clearTimeout(timer);
     }
   }, [status, hasCheckedIncompletePayment, resetPayment]);
+
+  // Detect incomplete payment errors from the payment hook
+  useEffect(() => {
+    if (status !== 'error' || !paymentError) return;
+    const message = paymentError.toLowerCase();
+    const isIncomplete = message.includes('pending payment') ||
+      message.includes('incomplete payment') ||
+      message.includes('action from the developer');
+    if (isIncomplete) {
+      setIncompletePaymentError(true);
+    }
+  }, [status, paymentError]);
 
   // Redirect to dashboard when payment completes
   useEffect(() => {
@@ -266,6 +279,10 @@ const Subscription = () => {
 
   // Droppay payment handler
   const handleDropPayPayment = (planType: PlanType) => {
+    if (!dropPayEnabled) {
+      toast.info('DropPay coming soon. Please use Pi Network payment for now.');
+      return;
+    }
     const plan = SUBSCRIPTION_PLANS[planType];
     const baseUrl = window.location.origin;
     
@@ -423,7 +440,7 @@ const Subscription = () => {
               </Button>
               <div>
                 <h1 className="text-xl font-display font-bold">Subscription Plans</h1>
-                <p className="text-sm text-muted-foreground">Pay with Pi • Powered by Droplink</p>
+                <p className="text-sm text-muted-foreground">Pay with Pi • DropPay coming soon</p>
               </div>
             </div>
             {/* Test Mode removed */}
@@ -648,10 +665,10 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('basic')}
-                      disabled={isProcessing || isActivating || incompletePaymentError}
+                      disabled={true}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
-                      Pay with Droppay
+                      DropPay coming soon
                     </Button>
                   </>
                 ) : (
@@ -730,10 +747,10 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('grow')}
-                      disabled={isProcessing || isActivating || incompletePaymentError}
+                      disabled={true}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
-                      Pay with Droppay
+                      DropPay coming soon
                     </Button>
                   </>
                 ) : (
@@ -810,10 +827,10 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('advance')}
-                      disabled={isProcessing || isActivating || incompletePaymentError}
+                      disabled={true}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
-                      Pay with Droppay
+                      DropPay coming soon
                     </Button>
                   </>
                 ) : (
@@ -890,10 +907,10 @@ const Subscription = () => {
                       className="w-full" 
                       variant="secondary"
                       onClick={() => handleDropPayPayment('plus')}
-                      disabled={isProcessing || isActivating || incompletePaymentError}
+                      disabled={true}
                     >
                       <CreditCard className="w-4 h-4 mr-2" />
-                      Pay with Droppay
+                      DropPay coming soon
                     </Button>
                   </>
                 ) : (

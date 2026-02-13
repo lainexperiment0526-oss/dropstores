@@ -283,12 +283,6 @@ export function PaymentModalEnhanced({
         }
       }
 
-      if (orderForm.paymentMethod === 'manual_wallet' && !manualTxid.trim()) {
-        toast.error('Please enter the transaction ID after sending payment');
-        setStep('manual-payment');
-        return;
-      }
-
       await onSubmit(
         orderForm,
         orderForm.paymentMethod,
@@ -507,12 +501,12 @@ export function PaymentModalEnhanced({
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="manual-txid">Transaction ID *</Label>
+              <Label htmlFor="manual-txid">Transaction ID (optional)</Label>
               <Input
                 id="manual-txid"
                 value={manualTxid}
                 onChange={(e) => setManualTxid(e.target.value)}
-                placeholder="Paste Pi transaction ID after sending payment"
+                placeholder="Paste Pi transaction ID if you already sent payment"
                 className="font-mono text-xs"
               />
             </div>
@@ -540,13 +534,7 @@ export function PaymentModalEnhanced({
                 <Button
                   className="flex-1"
                   style={{ backgroundColor: primaryColor }}
-                  onClick={() => {
-                    if (!manualTxid.trim()) {
-                      toast.error('Enter transaction ID to continue');
-                      return;
-                    }
-                    setStep('confirm');
-                  }}
+                  onClick={() => setStep('confirm')}
                 >
                   I've Sent the Payment
                 </Button>

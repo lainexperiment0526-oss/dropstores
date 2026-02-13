@@ -546,9 +546,10 @@ export default function StoreManagement() {
       fetchStoreData();
     } catch (error) {
       console.error('Error saving product:', error);
+      const message = error instanceof Error ? error.message : 'Failed to save product.';
       toast({
         title: 'Error',
-        description: 'Failed to save product.',
+        description: message,
         variant: 'destructive',
       });
     } finally {

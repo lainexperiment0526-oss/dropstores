@@ -460,8 +460,28 @@ export default function PublicStore() {
               onCancel: () => {
                 safeReject(new Error('Payment cancelled by user'));
               },
-              onError: (error) => {
-                safeReject(error instanceof Error ? error : new Error('Payment failed'));
+              onError: async (error, payment) => {
+                const message = error instanceof Error ? error.message : 'Payment failed';
+                const lower = message.toLowerCase();
+                const isIncomplete = lower.includes('pending payment') ||
+                  lower.includes('incomplete payment') ||
+                  lower.includes('action from the developer');
+
+                if (isIncomplete) {
+                  try {
+                    if (payment?.identifier) {
+                      await supabase.functions.invoke('pi-payment-cancel', {
+                        body: { paymentId: payment.identifier }
+                      });
+                    }
+                  } catch (cancelError) {
+                    console.error('Auto-cancel failed:', cancelError);
+                  }
+                  safeReject(new Error('You have a pending Pi payment. Please cancel it and try again.'));
+                  return;
+                }
+
+                safeReject(new Error(message));
               },
             }
           );
@@ -470,36 +490,54 @@ export default function PublicStore() {
         const manualTxid = paymentData?.manualTxid?.trim();
         const merchantWallet = (store.manual_pi_wallet_address || store.payout_wallet || '').trim();
 
-        if (!manualTxid) {
-          throw new Error('Manual transaction ID is required');
-        }
         if (!merchantWallet) {
           throw new Error('Merchant manual wallet is not configured');
         }
 
-        const { data, error } = await supabase.functions.invoke('verify-pi-transaction', {
-          body: {
-            transaction_hash: manualTxid,
-            expected_amount: cartTotal,
-            expected_recipient: merchantWallet,
-            auto_release: false,
-          },
-        });
+        if (manualTxid) {
+          const { data, error } = await supabase.functions.invoke('verify-pi-transaction', {
+            body: {
+              transaction_hash: manualTxid,
+              expected_amount: cartTotal,
+              expected_recipient: merchantWallet,
+              auto_release: false,
+            },
+          });
 
-        if (error || !data?.verified) {
-          throw new Error(data?.error || 'Manual payment verification failed');
+          if (error || !data?.verified) {
+            throw new Error(data?.error || 'Manual payment verification failed');
+          }
+
+          await createPaidOrder(manualTxid);
+        } else {
+          const { error: orderError } = await supabase.from('orders').insert({
+            store_id: store.id,
+            customer_name: orderForm.name.trim(),
+            customer_email: orderForm.email.trim(),
+            customer_phone: orderForm.phone.trim() || null,
+            shipping_address: orderForm.address.trim() || null,
+            notes: orderForm.notes.trim() || null,
+            items: orderItems,
+            total: cartTotal,
+            status: 'pending',
+            payout_status: 'pending',
+            download_expires_at: downloadExpiresAt,
+          });
+
+          if (orderError) throw orderError;
         }
-
-        await createPaidOrder(manualTxid);
       } else {
         throw new Error('Unsupported payment method');
       }
 
+      const manualPending = paymentMethod === 'manual_wallet' && !paymentData?.manualTxid?.trim();
       toast({
-        title: 'Payment successful!',
-        description: hasDigitalProducts
-          ? 'Check your email for download links.'
-          : 'Thank you for your purchase!',
+        title: manualPending ? 'Order placed' : 'Payment successful!',
+        description: manualPending
+          ? 'Awaiting manual payment verification.'
+          : (hasDigitalProducts
+              ? 'Check your email for download links.'
+              : 'Thank you for your purchase!'),
       });
 
       setCart([]);
