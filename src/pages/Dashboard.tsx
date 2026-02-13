@@ -186,7 +186,7 @@ function Dashboard() {
               </Link>
 
               <div className="flex items-center gap-2">
-                <PiAuthButton showRewardOption={true} />
+                <PiAuthButton showRewardOption={false} />
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/stores">
                     <Store className="w-4 h-4 mr-2" />

@@ -767,7 +767,7 @@ export type PlanType = keyof typeof SUBSCRIPTION_PLANS;
 export type StoreType = keyof typeof STORE_TYPES;
 
 // Platform Fee Configuration
-export const PLATFORM_FEE_PERCENT = 0.05; // 5%
+export const PLATFORM_FEE_PERCENT = 0.02; // 2%
 
 export const calculatePlatformFee = (amount: number): number => {
   return amount * PLATFORM_FEE_PERCENT;

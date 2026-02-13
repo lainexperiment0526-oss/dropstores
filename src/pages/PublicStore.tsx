@@ -65,6 +65,7 @@ interface StoreData {
   address: string | null;
   payout_wallet: string | null;
   store_type: string | null;
+  owner_id: string;
   // Theme customization fields - Colors
   heading_text_color?: string | null;
   body_text_color?: string | null;
@@ -346,16 +347,15 @@ export default function PublicStore() {
         ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
         : null;
 
-      // Create order with Pi payment
-      if (store.payout_wallet && cartTotal > 0) {
-        // Use Pi Network payment
+      // Always use Pi Network payment for checkout
+      if (cartTotal > 0) {
         createPiPayment(
           {
             amount: cartTotal,
             memo: `Order from ${store.name}`,
             metadata: {
               store_id: store.id,
-              merchant_wallet: store.payout_wallet,
+              merchant_wallet: store.payout_wallet || '',
               customer_name: orderForm.name.trim(),
               customer_email: orderForm.email.trim(),
               items: orderItems,
@@ -373,17 +373,13 @@ export default function PublicStore() {
             },
             onReadyForServerCompletion: async (paymentId, txid) => {
               try {
+                // Complete payment on Pi API
                 await supabase.functions.invoke('pi-payment-complete', {
-                  body: { 
-                    paymentId, 
-                    txid,
-                    planType: 'product_purchase',
-                    storeId: store.id
-                  }
+                  body: { paymentId, txid }
                 });
 
                 // Create order record
-                const { error: orderError } = await supabase.from('orders').insert({
+                const { data: orderData, error: orderError } = await supabase.from('orders').insert({
                   store_id: store.id,
                   customer_name: orderForm.name.trim(),
                   customer_email: orderForm.email.trim(),
@@ -397,18 +393,18 @@ export default function PublicStore() {
                   pi_txid: txid,
                   payout_status: 'pending',
                   download_expires_at: downloadExpiresAt,
-                });
+                }).select('id').single();
 
                 if (orderError) throw orderError;
 
-                // Create merchant sale record
-                const platformFee = cartTotal * 0.02; // 2% platform fee
+                // Create merchant sale record with 2% platform fee
+                const platformFee = cartTotal * 0.02;
                 const netAmount = cartTotal - platformFee;
 
                 await supabase.from('merchant_sales').insert({
                   store_id: store.id,
-                  order_id: paymentId, // Using payment ID as reference
-                  owner_id: store.payout_wallet, // Store owner
+                  order_id: orderData.id,
+                  owner_id: store.owner_id,
                   amount: cartTotal,
                   platform_fee: platformFee,
                   net_amount: netAmount,
@@ -456,8 +452,8 @@ export default function PublicStore() {
           }
         );
       } else {
-        // Free order or no wallet configured - create order directly
-        await supabase.from('orders').insert({
+        // Free order
+        const { data: orderData } = await supabase.from('orders').insert({
           store_id: store.id,
           customer_name: orderForm.name.trim(),
           customer_email: orderForm.email.trim(),
@@ -465,19 +461,17 @@ export default function PublicStore() {
           shipping_address: orderForm.address.trim() || null,
           notes: orderForm.notes.trim() || null,
           items: orderItems,
-          total: cartTotal,
-          status: cartTotal === 0 ? 'paid' : 'pending',
-          pi_payment_id: null,
-          pi_txid: null,
+          total: 0,
+          status: 'paid',
           payout_status: 'pending',
           download_expires_at: downloadExpiresAt,
-        });
+        }).select('id').single();
 
         toast({
           title: 'Order placed successfully!',
           description: hasDigitalProducts 
             ? 'Check your email for download links.' 
-            : cartTotal === 0 ? 'Thank you!' : 'Please complete payment to receive your order.',
+            : 'Thank you!',
         });
         
         setCart([]);
@@ -680,18 +674,6 @@ export default function PublicStore() {
                         <span style={{ color: primaryColor }}>{cartTotal.toFixed(2)} π</span>
                       </div>
                       
-                      {/* Rewarded Ad Button - Earn discount */}
-                      <div className="mb-3">
-                        <RewardedAdButton
-                          onReward={async (adId) => {
-                            console.log('User earned reward by watching ad:', adId);
-                            toast({ title: '🎉 Discount Applied!', description: 'You earned 5% off for watching the ad!' });
-                          }}
-                          buttonText="Watch Ad for 5% Off"
-                          rewardText="🎉 You earned 5% off!"
-                          className="w-full"
-                        />
-                      </div>
                       
                       <Button
                         className="w-full"
