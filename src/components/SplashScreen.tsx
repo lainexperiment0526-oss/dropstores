@@ -119,6 +119,15 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             >
               #1 E-commerce Platform on Pi Network
             </motion.p>
+
+            <motion.p
+              className="mt-1 text-xs text-white/80"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.55, duration: 0.5, ease: "easeOut" }}
+            >
+              by mrwain organization
+            </motion.p>
             
             {/* Progress Percentage */}
             <motion.p
